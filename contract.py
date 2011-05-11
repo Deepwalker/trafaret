@@ -36,11 +36,9 @@ class Contract(object):
 class AnyC(Contract):
     
     """
-    Any value can go though AnyC
     >>> AnyC()
     <AnyC>
-    >>> AnyC().check(object()) is None
-    True
+    >>> AnyC().check(object())
     """
     
     def check(self, value):
