@@ -336,9 +336,31 @@ class SquareBracketsMeta(ContractMeta):
     
     >>> ListC[IntC]
     <ListC(<IntC>)>
+    >>> ListC[IntC, 1:]
+    <ListC(min_length=1 | <IntC>)>
+    >>> ListC[:10, IntC]
+    <ListC(max_length=10 | <IntC>)>
+    >>> ListC[1:10]
+    Traceback (most recent call last):
+    ...
+    RuntimeError: Contract is required for ListC initialization
     """
     
-    def __getitem__(self, contract):
+    def __getitem__(self, args):
+        slice_ = None
+        contract = None
+        if not isinstance(args, tuple):
+            args = (args, )
+        for arg in args:
+            if isinstance(arg, slice):
+                slice_ = arg
+            elif isinstance(arg, Contract) or issubclass(arg, Contract):
+                contract = arg
+        if not contract:
+            raise RuntimeError("Contract is required for ListC initialization")
+        if slice_:
+            return self(contract, min_length=slice_.start or 0,
+                                  max_length=slice_.stop)
         return self(contract)
 
 
