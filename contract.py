@@ -41,12 +41,12 @@ class ContractMeta(type):
 
 class Contract(object):
     
-    __metaclass__ = ContractMeta
-    
     """
     Base class for contracts, provides only one method for
     contract validation failure reporting
     """
+    
+    __metaclass__ = ContractMeta
     
     def check(self, value):
         """
@@ -109,8 +109,6 @@ class OrCMeta(ContractMeta):
 
 class OrC(Contract):
     
-    __metaclass__ = OrCMeta
-    
     """
     >>> nullString = OrC(StringC, NullC)
     >>> nullString
@@ -122,6 +120,8 @@ class OrC(Contract):
     ...
     ContractValidationError: no one contract matches
     """
+    
+    __metaclass__ = OrCMeta
     
     def __init__(self, *contracts):
         self.contracts = map(self._contract, contracts)
@@ -168,6 +168,26 @@ class NullC(Contract):
         return "<NullC>"
 
 
+class NumberCMeta(ContractMeta):
+    
+    """
+    Allows slicing syntax for min and max arguments for
+    number contracts
+    
+    >>> IntC[1:]
+    <IntC(min=1)>
+    >>> IntC[1:10]
+    <IntC(min=1, max=10)>
+    >>> IntC[:10]
+    <IntC(max=10)>
+    >>> FloatC[1:]
+    <FloatC(min=1)>
+    """
+    
+    def __getitem__(self, slice_):
+        return self(min_=slice_.start, max_=slice_.stop)
+
+
 class IntC(Contract):
     
     """
@@ -194,6 +214,8 @@ class IntC(Contract):
     ...
     ContractValidationError: value is greater than 3
     """
+    
+    __metaclass__ = NumberCMeta
     
     def __init__(self, min_=None, max_=None):
         self.min = min_
@@ -247,6 +269,8 @@ class FloatC(Contract):
     ...
     ContractValidationError: value is greater than 3
     """
+    
+    __metaclass__ = NumberCMeta
     
     def __init__(self, min_=None, max_=None):
         self.min = min_
