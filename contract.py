@@ -329,6 +329,19 @@ class StringC(Contract):
         return "<StringC(blank)>" if self.allow_blank else "<StringC>"
 
 
+class SquareBracketsMeta(ContractMeta):
+    
+    """
+    Allows usage of square brackets for ListC initialization
+    
+    >>> ListC[IntC]
+    <ListC(<IntC>)>
+    """
+    
+    def __getitem__(self, contract):
+        return self(contract)
+
+
 class ListC(Contract):
     
     """
@@ -359,6 +372,8 @@ class ListC(Contract):
     ...
     ContractValidationError: list length is greater than 2
     """
+    
+    __metaclass__ = SquareBracketsMeta
     
     def __init__(self, contract, min_length=0, max_length=None):
         self.contract = self._contract(contract)
