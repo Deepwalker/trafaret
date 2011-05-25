@@ -11,7 +11,7 @@ Look at doctests for usage examples
 
 __all__ = ("ContractValidationError", "Contract", "AnyC", "IntC", "StringC",
            "ListC", "DictC", "OrC", "NullC", "FloatC", "EnumC", "CallableC",
-           "CallC", "guard", )
+           "CallC", "ForwardC", "BoolC", "guard", )
 
 
 class ContractValidationError(Exception):
@@ -20,7 +20,11 @@ class ContractValidationError(Exception):
     Basic contract validation error
     """
     
-    pass
+    def __init__(self, msg, name=None):
+        message = msg if not name else "%s: %s" % (name, msg)
+        super(ContractValidationError, self).__init__(message)
+        self.msg = msg
+        self.name = name
 
 
 class ContractMeta(type):
@@ -166,6 +170,27 @@ class NullC(Contract):
     
     def __repr__(self):
         return "<NullC>"
+
+
+class BoolC(Contract):
+    
+    """
+    >>> BoolC()
+    <BoolC>
+    >>> BoolC().check(True)
+    >>> BoolC().check(False)
+    >>> BoolC().check(1)
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value should be True or False
+    """
+    
+    def check(self, value):
+        if not isinstance(value, bool):
+            self._failure("value should be True or False")
+    
+    def __repr__(self):
+        return "<BoolC>"
 
 
 class NumberCMeta(ContractMeta):
@@ -382,7 +407,7 @@ class ListC(Contract):
     >>> ListC(IntC).check([1, 2, 3.0])
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is not int
+    ContractValidationError: 2: value is not int
     >>> ListC(IntC, min_length=1).check([1, 2, 3])
     >>> ListC(IntC, min_length=1).check([])
     Traceback (most recent call last):
@@ -409,8 +434,12 @@ class ListC(Contract):
             self._failure("list length is less than %s" % self.min_length)
         if self.max_length is not None and len(value) > self.max_length:
             self._failure("list length is greater than %s" % self.max_length)
-        for item in value:
-            self.contract.check(item)
+        for index, item in enumerate(value):
+            try:
+                self.contract.check(item)
+            except ContractValidationError as err:
+                name = "%i.%s" % (index, err.name) if err.name else str(index)
+                raise ContractValidationError(err.msg, name)
     
     def __repr__(self):
         r = "<ListC("
@@ -435,7 +464,7 @@ class DictC(Contract):
     >>> contract.check({"foo": 1, "bar": 2})
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is not string
+    ContractValidationError: bar: value is not string
     >>> contract.check({"foo": 1})
     Traceback (most recent call last):
     ...
@@ -470,7 +499,7 @@ class DictC(Contract):
     >>> contract.check({"foo": 1, "bar": 1, "ham": 100, "baz": None})
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is not string
+    ContractValidationError: bar: value is not string
     """
     
     def __init__(self, **contracts):
@@ -511,7 +540,11 @@ class DictC(Contract):
     def check_item(self, item):
         key, value = item
         if key in self.contracts:
-            self.contracts[key].check(value)
+            try:
+                self.contracts[key].check(value)
+            except ContractValidationError as err:
+                name = "%s.%s" % (key, err.name) if err.name else key
+                raise ContractValidationError(err.msg, name)
         elif not self.allow_any and key not in self.extras:
             self._failure("%s is not allowed key" % key)
     
@@ -611,6 +644,45 @@ class CallC(Contract):
     
     def __repr__(self):
         return "<CallC(%s)>" % self.fn.__name__
+
+
+class ForwardC(Contract):
+    
+    """
+    >>> nodeC = ForwardC()
+    >>> nodeC << DictC(name=StringC, children=ListC[nodeC])
+    >>> nodeC
+    <ForwardC(<DictC(children=<ListC(<recur>)>, name=<StringC>)>)>
+    >>> nodeC.check({"name": "foo", "children": []})
+    >>> nodeC.check({"name": "foo", "children": [1]})
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: children.0: value is not dict
+    >>> nodeC.check({"name": "foo", "children": [ \
+                        {"name": "bar", "children": []} \
+                     ]})
+    """
+    
+    def __init__(self):
+        self.contract = None
+        self._recur_repr = False
+    
+    def __lshift__(self, contract):
+        if self.contract:
+            raise RuntimeError("contract for ForwardC is already specified")
+        self.contract = self._contract(contract)
+    
+    def check(self, value):
+        self.contract.check(value)
+    
+    def __repr__(self):
+        # XXX not threadsafe
+        if self._recur_repr:
+            return "<recur>"
+        self._recur_repr = True
+        r = "<ForwardC(%r)>" % self.contract
+        self._recur_repr = False
+        return r
 
 
 class GuardValidationError(Exception):
