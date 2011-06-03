@@ -685,7 +685,7 @@ class ForwardC(Contract):
         return r
 
 
-class GuardValidationError(Exception):
+class GuardValidationError(ContractValidationError):
     
     """
     Raised when guarded function gets invalid arguments,
@@ -699,46 +699,45 @@ def guard(**kwargs):
     """
     Decorator for protecting function with contracts
     
-    >>> @guard(a=StringC)
-    ... def fn(a, b, c=None):
+    >>> @guard(a=StringC, b=IntC, c=StringC)
+    ... def fn(a, b, c="default"):
+    ...     '''docstring'''
     ...     return (a, b, c)
     ...
-    >>> fn("foo", "bar")
-    ('foo', 'bar', None)
-    >>> fn(1, "bar")
+    >>> help(fn)
+    Help on function fn in module contract:
+    <BLANKLINE>
+    fn(*args, **kwargs)
+        guarded with <DictC(a=<StringC>, b=<IntC>, c=<StringC>)>
+    <BLANKLINE>
+        docstring
+    <BLANKLINE>
+    >>> fn("foo", 1)
+    ('foo', 1, 'default')
+    >>> fn("foo", 1, 2)
     Traceback (most recent call last):
     ...
-    GuardValidationError: value is not string
-    >>> @guard(c=IntC)
-    ... def fn(a, b, c=None):
-    ...    return (a, b, c)
-    ...
-    >>> fn(1, 2)
-    (1, 2, None)
-    >>> fn(1, 2, "foo")
+    GuardValidationError: c: value is not string
+    >>> fn("foo")
     Traceback (most recent call last):
     ...
-    GuardValidationError: value is not int
+    GuardValidationError: b is required
     """
-    contracts = {}
-    for name, contract in kwargs.items():
-        contracts[name] = contract if isinstance(contract, Contract) \
-                                   else contract()
+    contract = DictC(**kwargs)
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
         @functools.wraps(fn)
         def decor(*args, **kwargs):
             try:
-                for argname, value in zip(argspec.args, args) + kwargs.items():
-                    if argname in contracts:
-                        contracts[argname].check(value)
+                call_args = dict(zip(argspec.args, args) + kwargs.items())
+                for name, default in zip(reversed(argspec.args), argspec.defaults):
+                    if name not in call_args:
+                        call_args[name] = default
+                contract.check(call_args)
             except ContractValidationError as (errno, ):
                 raise GuardValidationError(errno)
             return fn(*args, **kwargs)
-        guards = []
-        for name, contract in contracts.items():
-            guards.append("%s=%r" % (name, contract))
-        decor.__doc__ = "guarded with %s\n\n" % (", ".join(guards)) + \
+        decor.__doc__ = "guarded with %r\n\n" % contract + \
                         (decor.__doc__ or "")
         return decor
     return wrapper
