@@ -200,71 +200,37 @@ class NumberCMeta(ContractMeta):
     number contracts
     
     >>> IntC[1:]
-    <IntC(min=1)>
+    <IntC(gte=1)>
     >>> IntC[1:10]
-    <IntC(min=1, max=10)>
+    <IntC(gte=1, lte=10)>
     >>> IntC[:10]
-    <IntC(max=10)>
+    <IntC(lte=10)>
     >>> FloatC[1:]
-    <FloatC(min=1)>
+    <FloatC(gte=1)>
+    >>> IntC > 3
+    <IntC(gt=3)>
+    >>> 1 < (FloatC < 10)
+    <FloatC(gt=1, lt=10)>
+    >>> (IntC > 5).check(10)
+    >>> (IntC > 5).check(1)
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value should be greater than 5
+    >>> (IntC < 3).check(1)
+    >>> (IntC < 3).check(3)
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value should be less than 3
     """
     
     def __getitem__(self, slice_):
-        return self(min_=slice_.start, max_=slice_.stop)
-
-
-class IntC(Contract):
+        return self(gte=slice_.start, lte=slice_.stop)
     
-    """
-    >>> IntC()
-    <IntC>
-    >>> IntC(min_=1)
-    <IntC(min=1)>
-    >>> IntC(max_=10)
-    <IntC(max=10)>
-    >>> IntC(min_=1, max_=10)
-    <IntC(min=1, max=10)>
-    >>> IntC().check("foo")
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not int
-    >>> IntC(min_=1).check(1)
-    >>> IntC(min_=2).check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is less than 2
-    >>> IntC(max_=10).check(5)
-    >>> IntC(max_=3).check(5)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is greater than 3
-    """
+    def __lt__(self, lt):
+        return self(lt=lt)
     
-    __metaclass__ = NumberCMeta
-    
-    def __init__(self, min_=None, max_=None):
-        self.min = min_
-        self.max = max_
-    
-    def check(self, value):
-        if not isinstance(value, int):
-            self._failure("value is not int")
-        if self.min is not None and value < self.min:
-            self._failure("value is less than %s" % self.min)
-        if self.max is not None and value > self.max:
-            self._failure("value is greater than %s" % self.max)
-    
-    def __repr__(self):
-        r = "<IntC"
-        options = []
-        if self.min is not None:
-            options.append("min=%s" % self.min)
-        if self.max is not None:
-            options.append("max=%s" % self.max)
-        if options:
-            r += "(%s)" % (", ".join(options))
-        r += ">"
-        return r
+    def __gt__(self, gt):
+        return self(gt=gt)
 
 
 class FloatC(Contract):
@@ -272,24 +238,24 @@ class FloatC(Contract):
     """
     >>> FloatC()
     <FloatC>
-    >>> FloatC(min_=1)
-    <FloatC(min=1)>
-    >>> FloatC(max_=10)
-    <FloatC(max=10)>
-    >>> FloatC(min_=1, max_=10)
-    <FloatC(min=1, max=10)>
+    >>> FloatC(gte=1)
+    <FloatC(gte=1)>
+    >>> FloatC(lte=10)
+    <FloatC(lte=10)>
+    >>> FloatC(gte=1, lte=10)
+    <FloatC(gte=1, lte=10)>
     >>> FloatC().check(1.0)
     >>> FloatC().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not float
-    >>> FloatC(min_=2).check(3.0)
-    >>> FloatC(min_=2).check(1.0)
+    >>> FloatC(gte=2).check(3.0)
+    >>> FloatC(gte=2).check(1.0)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is less than 2
-    >>> FloatC(max_=10).check(5.0)
-    >>> FloatC(max_=3).check(5.0)
+    >>> FloatC(lte=10).check(5.0)
+    >>> FloatC(lte=3).check(5.0)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is greater than 3
@@ -297,29 +263,57 @@ class FloatC(Contract):
     
     __metaclass__ = NumberCMeta
     
-    def __init__(self, min_=None, max_=None):
-        self.min = min_
-        self.max = max_
+    value_type = float
+    
+    def __init__(self, gte=None, lte=None, gt=None, lt=None):
+        self.gte = gte
+        self.lte = lte
+        self.gt = gt
+        self.lt = lt
     
     def check(self, value):
-        if not isinstance(value, float):
-            self._failure("value is not float")
-        if self.min is not None and value < self.min:
-            self._failure("value is less than %s" % self.min)
-        if self.max is not None and value > self.max:
-            self._failure("value is greater than %s" % self.max)
+        if not isinstance(value, self.value_type):
+            self._failure("value is not %s" % self.value_type.__name__)
+        if self.gte is not None and value < self.gte:
+            self._failure("value is less than %s" % self.gte)
+        if self.lte is not None and value > self.lte:
+            self._failure("value is greater than %s" % self.lte)
+        if self.lt is not None and value >= self.lt:
+            self._failure("value should be less than %s" % self.lt)
+        if self.gt is not None and value <= self.gt:
+            self._failure("value should be greater than %s" % self.gt)
+    
+    def __lt__(self, lt):
+        return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
+    
+    def __gt__(self, gt):
+        return type(self)(gte=self.gte, lte=self.lte, gt=gt, lt=self.lt)
     
     def __repr__(self):
-        r = "<FloatC"
+        r = "<%s" % type(self).__name__
         options = []
-        if self.min is not None:
-            options.append("min=%s" % self.min)
-        if self.max is not None:
-            options.append("max=%s" % self.max)
+        for param in ("gte", "lte", "gt", "lt"):
+            if getattr(self, param) is not None:
+                options.append("%s=%s" % (param, getattr(self, param)))
         if options:
             r += "(%s)" % (", ".join(options))
         r += ">"
         return r
+
+
+class IntC(FloatC):
+    
+    """
+    >>> IntC()
+    <IntC>
+    >>> IntC().check(5)
+    >>> IntC().check(1.1)
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value is not int
+    """
+    
+    value_type = int
 
 
 class StringC(Contract):
