@@ -11,7 +11,7 @@ Look at doctests for usage examples
 
 __all__ = ("ContractValidationError", "Contract", "AnyC", "IntC", "StringC",
            "ListC", "DictC", "OrC", "NullC", "FloatC", "EnumC", "CallableC",
-           "CallC", "ForwardC", "BoolC", "guard", )
+           "CallC", "ForwardC", "BoolC", "TypeC", "guard", )
 
 
 class ContractValidationError(Exception):
@@ -75,12 +75,45 @@ class Contract(object):
             return contract
         elif issubclass(contract, Contract):
             return contract()
+        elif isinstance(contract, type):
+            return TypeC(contract)
         else:
             raise RuntimeError("%r should be instance or subclass"
                                " of Contract" % contract)
     
     def __or__(self, other):
         return OrC(self, other)
+
+
+class TypeC(Contract):
+    
+    """
+    >>> TypeC(int)
+    <TypeC(int)>
+    >>> TypeC[int]
+    <TypeC(int)>
+    >>> c = TypeC[int]
+    >>> c.check(1)
+    >>> c.check("foo")
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value is not int
+    """
+    
+    class __metaclass__(ContractMeta):
+        
+        def __getitem__(self, type_):
+            return self(type_)
+    
+    def __init__(self, type_):
+        self.type_ = type_
+    
+    def check(self, value):
+        if not isinstance(value, self.type_):
+            self._failure("value is not %s" % self.type_.__name__)
+    
+    def __repr__(self):
+        return "<TypeC(%s)>" % self.type_.__name__
 
 
 class AnyC(Contract):
@@ -373,7 +406,8 @@ class SquareBracketsMeta(ContractMeta):
         for arg in args:
             if isinstance(arg, slice):
                 slice_ = arg
-            elif isinstance(arg, Contract) or issubclass(arg, Contract):
+            elif isinstance(arg, Contract) or issubclass(arg, Contract) \
+                 or isinstance(arg, type):
                 contract = arg
         if not contract:
             raise RuntimeError("Contract is required for ListC initialization")
