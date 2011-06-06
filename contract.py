@@ -778,8 +778,8 @@ def guard(contract=None, **kwargs):
                     if name not in call_args:
                         call_args[name] = default
                 contract.check(call_args)
-            except ContractValidationError as (errno, ):
-                raise GuardValidationError(errno)
+            except ContractValidationError as err:
+                raise GuardValidationError(unicode(err))
             return fn(*args, **kwargs)
         decor.__doc__ = "guarded with %r\n\n" % contract + \
                         (decor.__doc__ or "")
