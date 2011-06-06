@@ -14,7 +14,7 @@ __all__ = ("ContractValidationError", "Contract", "AnyC", "IntC", "StringC",
            "CallC", "ForwardC", "BoolC", "TypeC", "guard", )
 
 
-class ContractValidationError(Exception):
+class ContractValidationError(TypeError):
     
     """
     Basic contract validation error
