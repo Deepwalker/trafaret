@@ -723,7 +723,7 @@ class GuardValidationError(ContractValidationError):
     pass
 
 
-def guard(**kwargs):
+def guard(contract=None, **kwargs):
     """
     Decorator for protecting function with contracts
     
@@ -732,8 +732,9 @@ def guard(**kwargs):
     ...     '''docstring'''
     ...     return (a, b, c)
     ...
+    >>> fn.__module__ = None
     >>> help(fn)
-    Help on function fn in module contract:
+    Help on function fn:
     <BLANKLINE>
     fn(*args, **kwargs)
         guarded with <DictC(a=<StringC>, b=<IntC>, c=<StringC>)>
@@ -750,8 +751,23 @@ def guard(**kwargs):
     Traceback (most recent call last):
     ...
     GuardValidationError: b is required
+    >>> g = guard(DictC())
+    >>> c = ForwardC()
+    >>> c << DictC(name=basestring, children=ListC[c])
+    >>> g = guard(c)
+    >>> g = guard(IntC())
+    Traceback (most recent call last):
+    ...
+    RuntimeError: contract should be instance of DictC or ForwardC
     """
-    contract = DictC(**kwargs)
+    if contract and not isinstance(contract, DictC) and \
+                    not isinstance(contract, ForwardC):
+        raise RuntimeError("contract should be instance of DictC or ForwardC")
+    elif contract and kwargs:
+        raise RuntimeError("choose one way of initialization,"
+                           " contract or kwargs")
+    if not contract:
+        contract = DictC(**kwargs)
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
         @functools.wraps(fn)
@@ -769,3 +785,8 @@ def guard(**kwargs):
                         (decor.__doc__ or "")
         return decor
     return wrapper
+
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
