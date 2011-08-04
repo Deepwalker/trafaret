@@ -11,7 +11,7 @@ Look at doctests for usage examples
 
 __all__ = ("ContractValidationError", "Contract", "AnyC", "IntC", "StringC",
            "ListC", "DictC", "OrC", "NullC", "FloatC", "EnumC", "CallableC",
-           "CallC", "ForwardC", "BoolC", "TypeC", "guard", )
+           "CallC", "ForwardC", "BoolC", "TypeC", "MappingC", "guard", )
 
 
 class ContractValidationError(TypeError):
@@ -594,6 +594,43 @@ class DictC(Contract):
         r += ", ".join(options)
         r += ")>"
         return r
+
+
+class MappingC(Contract):
+    
+    """
+    >>> contract = MappingC(StringC, IntC)
+    >>> contract
+    <MappingC(<StringC> => <IntC>)>
+    >>> contract.check({"foo": 1, "bar": 2})
+    >>> contract.check({"foo": 1, "bar": None})
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: (value for key 'bar'): value is not int
+    >>> contract.check({"foo": 1, 2: "bar"})
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: (key 2): value is not string
+    """
+    
+    def __init__(self, keyC, valueC):
+        self.keyC = self._contract(keyC)
+        self.valueC = self._contract(valueC)
+    
+    def check(self, mapping):
+        for key in mapping:
+            value = mapping[key]
+            try:
+                self.keyC.check(key)
+            except ContractValidationError as err:
+                raise ContractValidationError(err.msg, "(key %r)" % key)
+            try:
+                self.valueC.check(value)
+            except ContractValidationError as err:
+                raise ContractValidationError(err.msg, "(value for key %r)" % key)
+    
+    def __repr__(self):
+        return "<MappingC(%r => %r)>" % (self.keyC, self.valueC)
 
 
 class EnumC(Contract):
