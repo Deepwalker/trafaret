@@ -809,17 +809,24 @@ def guard(contract=None, **kwargs):
         argspec = inspect.getargspec(fn)
         @functools.wraps(fn)
         def decor(*args, **kwargs):
+            fnargs = argspec.args
+            if fnargs[0] == 'self':
+                fnargs = fnargs[1:]
+                checkargs = args[1:]
+            else:
+                checkargs = args
+
             try:
-                call_args = dict(zip(argspec.args, args) + kwargs.items())
-                for name, default in zip(reversed(argspec.args), argspec.defaults):
+                call_args = dict(zip(fnargs, checkargs) + kwargs.items())
+                for name, default in zip(reversed(fnargs),
+                                         argspec.defaults or ()):
                     if name not in call_args:
                         call_args[name] = default
                 contract.check(call_args)
             except ContractValidationError as err:
                 raise GuardValidationError(unicode(err))
             return fn(*args, **kwargs)
-        decor.__doc__ = "guarded with %r\n\n" % contract + \
-                        (decor.__doc__ or "")
+        decor.__doc__ = "guarded with %r\n\n" % contract + (decor.__doc__ or "")
         return decor
     return wrapper
 
