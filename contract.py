@@ -2,6 +2,7 @@
 
 import functools
 import inspect
+import re
 
 """
 Contract is tiny library for data validation
@@ -379,6 +380,36 @@ class StringC(Contract):
 
     def __repr__(self):
         return "<StringC(blank)>" if self.allow_blank else "<StringC>"
+
+
+class EmailC(Contract):
+
+    """
+    """
+
+    email_re = re.compile(
+        r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
+        r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
+        r')@((?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
+        r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
+
+    def __init__(self):
+        pass
+
+    def check(self, value):
+        if self.email_re.search(value):
+            return
+        # Trivial case failed. Try for possible IDN domain-part
+        if value and u'@' in value:
+            parts = value.split(u'@')
+            try:
+                parts[-1] = parts[-1].encode('idna')
+            except UnicodeError:
+                pass
+            else:
+                if self.email_re.search(u'@'.join(parts)):
+                    return
+        self._failure('value is not email')
 
 
 class SquareBracketsMeta(ContractMeta):
