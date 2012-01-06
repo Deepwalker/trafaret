@@ -393,38 +393,61 @@ class String(Contract):
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not string
+    >>> String(regex='\w+').check('wqerwqer')
+    'wqerwqer'
+    >>> String(regex='^\w+$').check('wqe rwqer')
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value does not match pattern
     """
 
-    def __init__(self, allow_blank=False):
+    def __init__(self, allow_blank=False, regex=None):
         self.allow_blank = allow_blank
+        self.re = re.compile(regex) if isinstance(regex, basestring) else regex
 
-    def _check(self, value):
+    def _check_val(self, value):
         if not isinstance(value, basestring):
             self._failure("value is not string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
+        if self.re is not None:
+            match = self.re.match(value)
+            if not match:
+                self._failure("value does not match pattern")
+            return match
+        return value
+
+    def converter(self, value):
+        if isinstance(value, basestring):
+            return value
+        return value.group()
 
     def __repr__(self):
         return "<String(blank)>" if self.allow_blank else "<String>"
 
 
-class EmailC(Contract):
+class Email(Contract):
 
     """
+    >>> Email().check('someone@example.net')
+    'someone@example.net'
+    >>> (Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
+    'example.net'
     """
 
     email_re = re.compile(
-        r"(^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
+        r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
-        r')@((?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
+        r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
 
     def __init__(self):
         pass
 
-    def _check(self, value):
-        if self.email_re.search(value):
-            return
+    def _check_val(self, value):
+        match = self.email_re.search(value)
+        if match:
+            return match
         # Trivial case failed. Try for possible IDN domain-part
         if value and u'@' in value:
             parts = value.split(u'@')
@@ -433,9 +456,13 @@ class EmailC(Contract):
             except UnicodeError:
                 pass
             else:
-                if self.email_re.search(u'@'.join(parts)):
-                    return
+                match = self.email_re.search(u'@'.join(parts))
+                if match:
+                    return match
         self._failure('value is not email')
+
+    def converter(self, value):
+        return value.group()
 
 
 class SquareBracketsMeta(ContractMeta):
