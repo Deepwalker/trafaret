@@ -10,9 +10,9 @@ It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
 
-__all__ = ("ContractValidationError", "Contract", "AnyC", "IntC", "StringC",
-           "ListC", "DictC", "OrC", "NullC", "FloatC", "EnumC", "CallableC",
-           "CallC", "ForwardC", "BoolC", "TypeC", "MappingC", "guard", )
+__all__ = ("ContractValidationError", "Contract", "Any", "Int", "String",
+           "List", "Dict", "Or", "Null", "Float", "Enum", "Callable"
+           "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
 
 
 class ContractValidationError(TypeError):
@@ -34,10 +34,10 @@ class ContractMeta(type):
     Metaclass for contracts to make using "|" operator possible not only
     on instances but on classes
 
-    >>> IntC | StringC
-    <OrC(<IntC>, <StringC>)>
-    >>> IntC | StringC | NullC
-    <OrC(<IntC>, <StringC>, <NullC>)>
+    >>> Int | String
+    <Or(<Int>, <String>)>
+    >>> Int | String | Null
+    <Or(<Int>, <String>, <Null>)>
     """
 
     def __or__(cls, other):
@@ -57,9 +57,20 @@ class Contract(object):
         """
         Implement this method in Contract subclasses
         """
+        if hasattr(self, '_check'):
+            self._check(value)
+            return self.converter(value)
+        if hasattr(self, '_check_val'):
+            return self.converter(self._check_val(value))
         cls = "%s.%s" % (type(self).__module__, type(self).__name__)
         raise NotImplementedError("method check is not implemented in"
                                   " '%s'" % cls)
+
+    def converter(self, value):
+        """
+        You can change converter with `>>` operator
+        """
+        return value
 
     def _failure(self, message):
         """
@@ -77,24 +88,29 @@ class Contract(object):
         elif issubclass(contract, Contract):
             return contract()
         elif isinstance(contract, type):
-            return TypeC(contract)
+            return Type(contract)
         else:
             raise RuntimeError("%r should be instance or subclass"
                                " of Contract" % contract)
 
     def __or__(self, other):
-        return OrC(self, other)
+        return Or(self, other)
+
+    def __rshift__(self, other):
+        self.converter = other
+        return self
 
 
-class TypeC(Contract):
+class Type(Contract):
 
     """
-    >>> TypeC(int)
-    <TypeC(int)>
-    >>> TypeC[int]
-    <TypeC(int)>
-    >>> c = TypeC[int]
+    >>> Type(int)
+    <Type(int)>
+    >>> Type[int]
+    <Type(int)>
+    >>> c = Type[int]
     >>> c.check(1)
+    1
     >>> c.check("foo")
     Traceback (most recent call last):
     ...
@@ -109,65 +125,66 @@ class TypeC(Contract):
     def __init__(self, type_):
         self.type_ = type_
 
-    def check(self, value):
+    def _check(self, value):
         if not isinstance(value, self.type_):
             self._failure("value is not %s" % self.type_.__name__)
 
     def __repr__(self):
-        return "<TypeC(%s)>" % self.type_.__name__
+        return "<Type(%s)>" % self.type_.__name__
 
 
-class AnyC(Contract):
+class Any(Contract):
 
     """
-    >>> AnyC()
-    <AnyC>
-    >>> AnyC().check(object())
+    >>> Any()
+    <Any>
+    >>> (Any() >> ignore).check(object())
     """
 
-    def check(self, value):
+    def _check(self, value):
         pass
 
     def __repr__(self):
-        return "<AnyC>"
+        return "<Any>"
 
 
-class OrCMeta(ContractMeta):
+class OrMeta(ContractMeta):
 
     """
-    Allows to use "<<" operator on OrC class
+    Allows to use "<<" operator on Or class
 
-    >>> OrC << IntC << StringC
-    <OrC(<IntC>, <StringC>)>
+    >>> Or << Int << String
+    <Or(<Int>, <String>)>
     """
 
     def __lshift__(cls, other):
         return cls() << other
 
 
-class OrC(Contract):
+class Or(Contract):
 
     """
-    >>> nullString = OrC(StringC, NullC)
+    >>> nullString = Or(String, Null)
     >>> nullString
-    <OrC(<StringC>, <NullC>)>
+    <Or(<String>, <Null>)>
     >>> nullString.check(None)
     >>> nullString.check("test")
+    'test'
     >>> nullString.check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: no one contract matches
     """
 
-    __metaclass__ = OrCMeta
+    __metaclass__ = OrMeta
 
     def __init__(self, *contracts):
         self.contracts = map(self._contract, contracts)
 
-    def check(self, value):
+    def _check_val(self, value):
         for contract in self.contracts:
             try:
-                contract.check(value)
+                return contract.check(value)
             except ContractValidationError:
                 pass
             else:
@@ -183,75 +200,79 @@ class OrC(Contract):
         return self
 
     def __repr__(self):
-        return "<OrC(%s)>" % (", ".join(map(repr, self.contracts)))
+        return "<Or(%s)>" % (", ".join(map(repr, self.contracts)))
 
 
-class NullC(Contract):
+class Null(Contract):
 
     """
-    >>> NullC()
-    <NullC>
-    >>> NullC().check(None)
-    >>> NullC().check(1)
+    >>> Null()
+    <Null>
+    >>> Null().check(None)
+    >>> Null().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value should be None
     """
 
-    def check(self, value):
+    def _check(self, value):
         if value is not None:
             self._failure("value should be None")
 
     def __repr__(self):
-        return "<NullC>"
+        return "<Null>"
 
 
-class BoolC(Contract):
+class Bool(Contract):
 
     """
-    >>> BoolC()
-    <BoolC>
-    >>> BoolC().check(True)
-    >>> BoolC().check(False)
-    >>> BoolC().check(1)
+    >>> Bool()
+    <Bool>
+    >>> Bool().check(True)
+    True
+    >>> Bool().check(False)
+    False
+    >>> Bool().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value should be True or False
     """
 
-    def check(self, value):
+    def _check(self, value):
         if not isinstance(value, bool):
             self._failure("value should be True or False")
 
     def __repr__(self):
-        return "<BoolC>"
+        return "<Bool>"
 
 
-class NumberCMeta(ContractMeta):
+class NumberMeta(ContractMeta):
 
     """
     Allows slicing syntax for min and max arguments for
     number contracts
 
-    >>> IntC[1:]
-    <IntC(gte=1)>
-    >>> IntC[1:10]
-    <IntC(gte=1, lte=10)>
-    >>> IntC[:10]
-    <IntC(lte=10)>
-    >>> FloatC[1:]
-    <FloatC(gte=1)>
-    >>> IntC > 3
-    <IntC(gt=3)>
-    >>> 1 < (FloatC < 10)
-    <FloatC(gt=1, lt=10)>
-    >>> (IntC > 5).check(10)
-    >>> (IntC > 5).check(1)
+    >>> Int[1:]
+    <Int(gte=1)>
+    >>> Int[1:10]
+    <Int(gte=1, lte=10)>
+    >>> Int[:10]
+    <Int(lte=10)>
+    >>> Float[1:]
+    <Float(gte=1)>
+    >>> Int > 3
+    <Int(gt=3)>
+    >>> 1 < (Float < 10)
+    <Float(gt=1, lt=10)>
+    >>> (Int > 5).check(10)
+    10
+    >>> (Int > 5).check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value should be greater than 5
-    >>> (IntC < 3).check(1)
-    >>> (IntC < 3).check(3)
+    >>> (Int < 3).check(1)
+    1
+    >>> (Int < 3).check(3)
     Traceback (most recent call last):
     ...
     ContractValidationError: value should be less than 3
@@ -267,35 +288,38 @@ class NumberCMeta(ContractMeta):
         return self(gt=gt)
 
 
-class FloatC(Contract):
+class Float(Contract):
 
     """
-    >>> FloatC()
-    <FloatC>
-    >>> FloatC(gte=1)
-    <FloatC(gte=1)>
-    >>> FloatC(lte=10)
-    <FloatC(lte=10)>
-    >>> FloatC(gte=1, lte=10)
-    <FloatC(gte=1, lte=10)>
-    >>> FloatC().check(1.0)
-    >>> FloatC().check(1)
+    >>> Float()
+    <Float>
+    >>> Float(gte=1)
+    <Float(gte=1)>
+    >>> Float(lte=10)
+    <Float(lte=10)>
+    >>> Float(gte=1, lte=10)
+    <Float(gte=1, lte=10)>
+    >>> Float().check(1.0)
+    1.0
+    >>> Float().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not float
-    >>> FloatC(gte=2).check(3.0)
-    >>> FloatC(gte=2).check(1.0)
+    >>> Float(gte=2).check(3.0)
+    3.0
+    >>> Float(gte=2).check(1.0)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is less than 2
-    >>> FloatC(lte=10).check(5.0)
-    >>> FloatC(lte=3).check(5.0)
+    >>> Float(lte=10).check(5.0)
+    5.0
+    >>> Float(lte=3).check(5.0)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is greater than 3
     """
 
-    __metaclass__ = NumberCMeta
+    __metaclass__ = NumberMeta
 
     value_type = float
 
@@ -305,7 +329,7 @@ class FloatC(Contract):
         self.gt = gt
         self.lt = lt
 
-    def check(self, value):
+    def _check(self, value):
         if not isinstance(value, self.value_type):
             self._failure("value is not %s" % self.value_type.__name__)
         if self.gte is not None and value < self.gte:
@@ -335,13 +359,14 @@ class FloatC(Contract):
         return r
 
 
-class IntC(FloatC):
+class Int(Float):
 
     """
-    >>> IntC()
-    <IntC>
-    >>> IntC().check(5)
-    >>> IntC().check(1.1)
+    >>> Int()
+    <Int>
+    >>> Int().check(5)
+    5
+    >>> Int().check(1.1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not int
@@ -350,20 +375,21 @@ class IntC(FloatC):
     value_type = int
 
 
-class StringC(Contract):
-
+class String(Contract):
     """
-    >>> StringC()
-    <StringC>
-    >>> StringC(allow_blank=True)
-    <StringC(blank)>
-    >>> StringC().check("foo")
-    >>> StringC().check("")
+    >>> String()
+    <String>
+    >>> String(allow_blank=True)
+    <String(blank)>
+    >>> String().check("foo")
+    'foo'
+    >>> String().check("")
     Traceback (most recent call last):
     ...
     ContractValidationError: blank value is not allowed
-    >>> StringC(allow_blank=True).check("")
-    >>> StringC().check(1)
+    >>> String(allow_blank=True).check("")
+    ''
+    >>> String().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not string
@@ -372,14 +398,14 @@ class StringC(Contract):
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
 
-    def check(self, value):
+    def _check(self, value):
         if not isinstance(value, basestring):
             self._failure("value is not string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
 
     def __repr__(self):
-        return "<StringC(blank)>" if self.allow_blank else "<StringC>"
+        return "<String(blank)>" if self.allow_blank else "<String>"
 
 
 class EmailC(Contract):
@@ -396,7 +422,7 @@ class EmailC(Contract):
     def __init__(self):
         pass
 
-    def check(self, value):
+    def _check(self, value):
         if self.email_re.search(value):
             return
         # Trivial case failed. Try for possible IDN domain-part
@@ -415,18 +441,18 @@ class EmailC(Contract):
 class SquareBracketsMeta(ContractMeta):
 
     """
-    Allows usage of square brackets for ListC initialization
+    Allows usage of square brackets for List initialization
 
-    >>> ListC[IntC]
-    <ListC(<IntC>)>
-    >>> ListC[IntC, 1:]
-    <ListC(min_length=1 | <IntC>)>
-    >>> ListC[:10, IntC]
-    <ListC(max_length=10 | <IntC>)>
-    >>> ListC[1:10]
+    >>> List[Int]
+    <List(<Int>)>
+    >>> List[Int, 1:]
+    <List(min_length=1 | <Int>)>
+    >>> List[:10, Int]
+    <List(max_length=10 | <Int>)>
+    >>> List[1:10]
     Traceback (most recent call last):
     ...
-    RuntimeError: Contract is required for ListC initialization
+    RuntimeError: Contract is required for List initialization
     """
 
     def __getitem__(self, args):
@@ -441,39 +467,43 @@ class SquareBracketsMeta(ContractMeta):
                  or isinstance(arg, type):
                 contract = arg
         if not contract:
-            raise RuntimeError("Contract is required for ListC initialization")
+            raise RuntimeError("Contract is required for List initialization")
         if slice_:
             return self(contract, min_length=slice_.start or 0,
                                   max_length=slice_.stop)
         return self(contract)
 
 
-class ListC(Contract):
+class List(Contract):
 
     """
-    >>> ListC(IntC)
-    <ListC(<IntC>)>
-    >>> ListC(IntC, min_length=1)
-    <ListC(min_length=1 | <IntC>)>
-    >>> ListC(IntC, min_length=1, max_length=10)
-    <ListC(min_length=1, max_length=10 | <IntC>)>
-    >>> ListC(IntC).check(1)
+    >>> List(Int)
+    <List(<Int>)>
+    >>> List(Int, min_length=1)
+    <List(min_length=1 | <Int>)>
+    >>> List(Int, min_length=1, max_length=10)
+    <List(min_length=1, max_length=10 | <Int>)>
+    >>> List(Int).check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not list
-    >>> ListC(IntC).check([1, 2, 3])
-    >>> ListC(StringC).check(["foo", "bar", "spam"])
-    >>> ListC(IntC).check([1, 2, 3.0])
+    >>> List(Int).check([1, 2, 3])
+    [1, 2, 3]
+    >>> List(String).check(["foo", "bar", "spam"])
+    ['foo', 'bar', 'spam']
+    >>> List(Int).check([1, 2, 3.0])
     Traceback (most recent call last):
     ...
     ContractValidationError: 2: value is not int
-    >>> ListC(IntC, min_length=1).check([1, 2, 3])
-    >>> ListC(IntC, min_length=1).check([])
+    >>> List(Int, min_length=1).check([1, 2, 3])
+    [1, 2, 3]
+    >>> List(Int, min_length=1).check([])
     Traceback (most recent call last):
     ...
     ContractValidationError: list length is less than 1
-    >>> ListC(IntC, max_length=2).check([1, 2])
-    >>> ListC(IntC, max_length=2).check([1, 2, 3])
+    >>> List(Int, max_length=2).check([1, 2])
+    [1, 2]
+    >>> List(Int, max_length=2).check([1, 2, 3])
     Traceback (most recent call last):
     ...
     ContractValidationError: list length is greater than 2
@@ -486,22 +516,24 @@ class ListC(Contract):
         self.min_length = min_length
         self.max_length = max_length
 
-    def check(self, value):
+    def _check_val(self, value):
         if not isinstance(value, list):
             self._failure("value is not list")
         if len(value) < self.min_length:
             self._failure("list length is less than %s" % self.min_length)
         if self.max_length is not None and len(value) > self.max_length:
             self._failure("list length is greater than %s" % self.max_length)
+        lst = []
         for index, item in enumerate(value):
             try:
-                self.contract.check(item)
+                lst.append(self.contract.check(item))
             except ContractValidationError as err:
                 name = "%i.%s" % (index, err.name) if err.name else str(index)
                 raise ContractValidationError(err.msg, name)
+        return lst
 
     def __repr__(self):
-        r = "<ListC("
+        r = "<List("
         options = []
         if self.min_length:
             options.append("min_length=%s" % self.min_length)
@@ -515,10 +547,10 @@ class ListC(Contract):
         return r
 
 
-class DictC(Contract):
+class Dict(Contract):
 
     """
-    >>> contract = DictC(foo=IntC, bar=StringC)
+    >>> contract = Dict(foo=Int, bar=String) >> ignore
     >>> contract.check({"foo": 1, "bar": "spam"})
     >>> contract.check({"foo": 1, "bar": 2})
     Traceback (most recent call last):
@@ -533,7 +565,7 @@ class DictC(Contract):
     ...
     ContractValidationError: eggs is not allowed key
     >>> contract.allow_extra("eggs")
-    <DictC(extras=(eggs) | bar=<StringC>, foo=<IntC>)>
+    <Dict(extras=(eggs) | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "bar": "spam", "eggs": None})
     >>> contract.check({"foo": 1, "bar": "spam"})
     >>> contract.check({"foo": 1, "bar": "spam", "ham": 100})
@@ -541,7 +573,7 @@ class DictC(Contract):
     ...
     ContractValidationError: ham is not allowed key
     >>> contract.allow_extra("*")
-    <DictC(any, extras=(eggs) | bar=<StringC>, foo=<IntC>)>
+    <Dict(any, extras=(eggs) | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "bar": "spam", "ham": 100})
     >>> contract.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
     >>> contract.check({"foo": 1, "ham": 100, "baz": None})
@@ -549,7 +581,7 @@ class DictC(Contract):
     ...
     ContractValidationError: bar is required
     >>> contract.allow_optionals("bar")
-    <DictC(any, extras=(eggs), optionals=(bar) | bar=<StringC>, foo=<IntC>)>
+    <Dict(any, extras=(eggs), optionals=(bar) | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "ham": 100, "baz": None})
     >>> contract.check({"bar": 1, "ham": 100, "baz": None})
     Traceback (most recent call last):
@@ -585,11 +617,11 @@ class DictC(Contract):
                 self.optionals.append(name)
         return self
 
-    def check(self, value):
+    def _check_val(self, value):
         if not isinstance(value, dict):
             self._failure("value is not dict")
         self.check_presence(value)
-        map(self.check_item, value.items())
+        return dict(self.check_item(item) for item in value.iteritems())
 
     def check_presence(self, value):
         for key in self.contracts:
@@ -600,15 +632,16 @@ class DictC(Contract):
         key, value = item
         if key in self.contracts:
             try:
-                self.contracts[key].check(value)
+                return key, self.contracts[key].check(value)
             except ContractValidationError as err:
                 name = "%s.%s" % (key, err.name) if err.name else key
                 raise ContractValidationError(err.msg, name)
         elif not self.allow_any and key not in self.extras:
             self._failure("%s is not allowed key" % key)
+        return key, value
 
     def __repr__(self):
-        r = "<DictC("
+        r = "<Dict("
         options = []
         if self.allow_any:
             options.append("any")
@@ -627,12 +660,12 @@ class DictC(Contract):
         return r
 
 
-class MappingC(Contract):
+class Mapping(Contract):
 
     """
-    >>> contract = MappingC(StringC, IntC)
+    >>> contract = Mapping(String, Int)
     >>> contract
-    <MappingC(<StringC> => <IntC>)>
+    <Mapping(<String> => <Int>)>
     >>> contract.check({"foo": 1, "bar": 2})
     >>> contract.check({"foo": 1, "bar": None})
     Traceback (most recent call last):
@@ -644,32 +677,34 @@ class MappingC(Contract):
     ContractValidationError: (key 2): value is not string
     """
 
-    def __init__(self, keyC, valueC):
-        self.keyC = self._contract(keyC)
-        self.valueC = self._contract(valueC)
+    def __init__(self, key, value):
+        self.key = self._contract(key)
+        self.value = self._contract(value)
 
-    def check(self, mapping):
+    def _check_val(self, mapping):
+        checked_mapping = {}
         for key in mapping:
             value = mapping[key]
             try:
-                self.keyC.check(key)
+                checked_key = self.key.check(key)
             except ContractValidationError as err:
                 raise ContractValidationError(err.msg, "(key %r)" % key)
             try:
-                self.valueC.check(value)
+                checked_value = self.value.check(value)
             except ContractValidationError as err:
                 raise ContractValidationError(err.msg, "(value for key %r)" % key)
+            checked_mapping[checked_key] = checked_value
 
     def __repr__(self):
-        return "<MappingC(%r => %r)>" % (self.keyC, self.valueC)
+        return "<Mapping(%r => %r)>" % (self.key, self.value)
 
 
-class EnumC(Contract):
+class Enum(Contract):
 
     """
-    >>> contract = EnumC("foo", "bar", 1)
+    >>> contract = Enum("foo", "bar", 1) >> ignore
     >>> contract
-    <EnumC('foo', 'bar', 1)>
+    <Enum('foo', 'bar', 1)>
     >>> contract.check("foo")
     >>> contract.check(1)
     >>> contract.check(2)
@@ -681,25 +716,25 @@ class EnumC(Contract):
     def __init__(self, *variants):
         self.variants = variants[:]
 
-    def check(self, value):
+    def _check(self, value):
         if value not in self.variants:
             self._failure("value doesn't match any variant")
 
     def __repr__(self):
-        return "<EnumC(%s)>" % (", ".join(map(repr, self.variants)))
+        return "<Enum(%s)>" % (", ".join(map(repr, self.variants)))
 
 
-class CallableC(Contract):
+class Callable(Contract):
 
     """
-    >>> CallableC().check(lambda: 1)
-    >>> CallableC().check(1)
+    >>> (Callable() >> ignore).check(lambda: 1)
+    >>> Callable().check(1)
     Traceback (most recent call last):
     ...
     ContractValidationError: value is not callable
     """
 
-    def check(self, value):
+    def _check(self, value):
         if not callable(value):
             self._failure("value is not callable")
 
@@ -707,17 +742,18 @@ class CallableC(Contract):
         return "<CallableC>"
 
 
-class CallC(Contract):
+class Call(Contract):
 
     """
     >>> def validator(value):
     ...     if value != "foo":
     ...         return "I want only foo!"
     ...
-    >>> contract = CallC(validator)
+    >>> contract = Call(validator)
     >>> contract
     <CallC(validator)>
     >>> contract.check("foo")
+    'foo'
     >>> contract.check("bar")
     Traceback (most recent call last):
     ...
@@ -733,7 +769,7 @@ class CallC(Contract):
                                " one argument function")
         self.fn = fn
 
-    def check(self, value):
+    def _check(self, value):
         error = self.fn(value)
         if error is not None:
             self._failure(error)
@@ -742,13 +778,13 @@ class CallC(Contract):
         return "<CallC(%s)>" % self.fn.__name__
 
 
-class ForwardC(Contract):
+class Forward(Contract):
 
     """
-    >>> nodeC = ForwardC()
-    >>> nodeC << DictC(name=StringC, children=ListC[nodeC])
+    >>> nodeC = Forward()
+    >>> nodeC << Dict(name=String, children=List[nodeC])
     >>> nodeC
-    <ForwardC(<DictC(children=<ListC(<recur>)>, name=<StringC>)>)>
+    <Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>
     >>> nodeC.check({"name": "foo", "children": []})
     >>> nodeC.check({"name": "foo", "children": [1]})
     Traceback (most recent call last):
@@ -765,7 +801,7 @@ class ForwardC(Contract):
 
     def __lshift__(self, contract):
         if self.contract:
-            raise RuntimeError("contract for ForwardC is already specified")
+            raise RuntimeError("contract for Forward is already specified")
         self.contract = self._contract(contract)
 
     def check(self, value):
@@ -776,7 +812,7 @@ class ForwardC(Contract):
         if self._recur_repr:
             return "<recur>"
         self._recur_repr = True
-        r = "<ForwardC(%r)>" % self.contract
+        r = "<Forward(%r)>" % self.contract
         self._recur_repr = False
         return r
 
@@ -795,7 +831,7 @@ def guard(contract=None, **kwargs):
     """
     Decorator for protecting function with contracts
 
-    >>> @guard(a=StringC, b=IntC, c=StringC)
+    >>> @guard(a=String, b=Int, c=String)
     ... def fn(a, b, c="default"):
     ...     '''docstring'''
     ...     return (a, b, c)
@@ -805,7 +841,7 @@ def guard(contract=None, **kwargs):
     Help on function fn:
     <BLANKLINE>
     fn(*args, **kwargs)
-        guarded with <DictC(a=<StringC>, b=<IntC>, c=<StringC>)>
+        guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
     <BLANKLINE>
         docstring
     <BLANKLINE>
@@ -819,23 +855,23 @@ def guard(contract=None, **kwargs):
     Traceback (most recent call last):
     ...
     GuardValidationError: b is required
-    >>> g = guard(DictC())
-    >>> c = ForwardC()
-    >>> c << DictC(name=basestring, children=ListC[c])
+    >>> g = guard(Dict())
+    >>> c = Forward()
+    >>> c << Dict(name=basestring, children=List[c])
     >>> g = guard(c)
-    >>> g = guard(IntC())
+    >>> g = guard(Int())
     Traceback (most recent call last):
     ...
-    RuntimeError: contract should be instance of DictC or ForwardC
+    RuntimeError: contract should be instance of Dict or Forward
     """
-    if contract and not isinstance(contract, DictC) and \
-                    not isinstance(contract, ForwardC):
-        raise RuntimeError("contract should be instance of DictC or ForwardC")
+    if contract and not isinstance(contract, Dict) and \
+                    not isinstance(contract, Forward):
+        raise RuntimeError("contract should be instance of Dict or Forward")
     elif contract and kwargs:
         raise RuntimeError("choose one way of initialization,"
                            " contract or kwargs")
     if not contract:
-        contract = DictC(**kwargs)
+        contract = Dict(**kwargs)
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
         @functools.wraps(fn)
@@ -860,6 +896,10 @@ def guard(contract=None, **kwargs):
         decor.__doc__ = "guarded with %r\n\n" % contract + (decor.__doc__ or "")
         return decor
     return wrapper
+
+
+def ignore(val):
+    pass
 
 
 if __name__ == "__main__":
