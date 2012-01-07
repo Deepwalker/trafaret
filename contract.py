@@ -4,6 +4,8 @@ import functools
 import inspect
 import re
 import urlparse
+import copy
+import itertools
 
 """
 Contract is tiny library for data validation
@@ -388,7 +390,27 @@ class Int(Float):
     value_type = int
 
 
+class Atom(Contract):
+
+    """
+    >>> Atom('atom').check('atom')
+    'atom'
+    >>> Atom('atom').check('molecule')
+    Traceback (most recent call last):
+    ...
+    ContractValidationError: value is not exactly 'atom'
+    """
+
+    def __init__(self, value):
+        self.value = value
+
+    def _check(self, value):
+        if self.value != value:
+            self._failure("value is not exactly '%s'" % self.value)
+
+
 class String(Contract):
+
     """
     >>> String()
     <String>
@@ -472,6 +494,9 @@ class Email(String):
                     return super(Email, self)._check_val(u'@'.join(parts))
         self._failure('value is not email')
 
+    def __repr__(self):
+        return '<Email>'
+
 
 class URL(String):
 
@@ -512,6 +537,9 @@ class URL(String):
                     url = urlparse.urlunsplit((scheme, netloc, path, query, fragment))
                     return super(URL, self)._check_val(url)
         self._failure('value is not URL')
+
+    def __repr__(self):
+        return '<URL>'
 
 
 class SquareBracketsMeta(ContractMeta):
@@ -623,6 +651,40 @@ class List(Contract):
         return r
 
 
+class Key(object):
+
+    """
+    Helper class for Dict.
+    """
+
+    def __init__(self, name, default=None, optional=False):
+        self.name = name
+        self.to_name = None
+        self.default = default
+        self.optional = optional
+        self.contract = Any()
+
+    def pop(self, data):
+        if self.name not in data:
+            if self.optional:
+                raise StopIteration
+            elif self.default is not None:
+                pass
+            else:
+                raise ContractValidationError('is required')
+        yield self.get_name(), data.pop(self.name, self.default)
+
+    def set_contract(self, contract):
+        self.contract = contract
+
+    def __rshift__(self, name):
+        self.to_name = name
+        return self
+
+    def get_name(self):
+        return self.to_name or self.name
+
+
 class Dict(Contract):
 
     """
@@ -635,7 +697,7 @@ class Dict(Contract):
     >>> contract.check({"foo": 1})
     Traceback (most recent call last):
     ...
-    ContractValidationError: bar is required
+    ContractValidationError: bar: is required
     >>> contract.check({"foo": 1, "bar": "spam", "eggs": None})
     Traceback (most recent call last):
     ...
@@ -655,27 +717,32 @@ class Dict(Contract):
     >>> contract.check({"foo": 1, "ham": 100, "baz": None})
     Traceback (most recent call last):
     ...
-    ContractValidationError: bar is required
-    >>> contract.allow_optionals("bar")
-    <Dict(any, extras=(eggs), optionals=(bar) | bar=<String>, foo=<Int>)>
+    ContractValidationError: bar: is required
+    >>> contract = Dict({Key('bar', optional=True): String}, foo=Int) >> ignore
+    >>> contract.allow_extra("*")
+    <Dict(any | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "ham": 100, "baz": None})
     >>> contract.check({"bar": 1, "ham": 100, "baz": None})
     Traceback (most recent call last):
     ...
-    ContractValidationError: foo is required
+    ContractValidationError: foo: is required
     >>> contract.check({"foo": 1, "bar": 1, "ham": 100, "baz": None})
     Traceback (most recent call last):
     ...
     ContractValidationError: bar: value is not string
+    >>> contract = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
+    >>> contract.check({'foo': 4})
+    {'foo': 4, 'baz': 'nyanya'}
     """
 
-    def __init__(self, **contracts):
-        self.optionals = []
+    def __init__(self, keys={}, **contracts):
         self.extras = []
         self.allow_any = False
-        self.contracts = {}
-        for key, contract in contracts.items():
-            self.contracts[key] = self._contract(contract)
+        self.keys = []
+        for key, contract in itertools.chain(contracts.items(), keys.items()):
+            key_ = key if isinstance(key, Key) else Key(key)
+            key_.set_contract(self._contract(contract))
+            self.keys.append(key_)
 
     def allow_extra(self, *names):
         for name in names:
@@ -685,36 +752,23 @@ class Dict(Contract):
                 self.extras.append(name)
         return self
 
-    def allow_optionals(self, *names):
-        for name in names:
-            if name == "*":
-                self.optionals = self.contracts.keys()
-            else:
-                self.optionals.append(name)
-        return self
-
     def _check_val(self, value):
         if not isinstance(value, dict):
             self._failure("value is not dict")
-        self.check_presence(value)
-        return dict(self.check_item(item) for item in value.iteritems())
-
-    def check_presence(self, value):
-        for key in self.contracts:
-            if key not in self.optionals and key not in value:
-                self._failure("%s is required" % key)
-
-    def check_item(self, item):
-        key, value = item
-        if key in self.contracts:
+        data = copy.copy(value)
+        collect = {}
+        for key in self.keys:
             try:
-                return key, self.contracts[key].check(value)
+                for k, v in key.pop(data):
+                    collect[k] = key.contract.check(v)
             except ContractValidationError as err:
-                name = "%s.%s" % (key, err.name) if err.name else key
+                name = "%s.%s" % (key.name, err.name) if err.name else key.name
                 raise ContractValidationError(err.msg, name)
-        elif not self.allow_any and key not in self.extras:
-            self._failure("%s is not allowed key" % key)
-        return key, value
+        for key in data:
+            if not self.allow_any and key not in self.extras:
+                self._failure("%s is not allowed key" % key)
+            collect[key] = data
+        return collect
 
     def __repr__(self):
         r = "<Dict("
@@ -723,14 +777,12 @@ class Dict(Contract):
             options.append("any")
         if self.extras:
             options.append("extras=(%s)" % (", ".join(self.extras)))
-        if self.optionals:
-            options.append("optionals=(%s)" % (", ".join(self.optionals)))
         r += ", ".join(options)
         if options:
             r += " | "
         options = []
-        for key in sorted(self.contracts.keys()):
-            options.append("%s=%r" % (key, self.contracts[key]))
+        for key in sorted(self.keys, key=lambda k: k.name):
+            options.append("%s=%r" % (key.name, key.contract))
         r += ", ".join(options)
         r += ")>"
         return r
@@ -930,7 +982,7 @@ def guard(contract=None, **kwargs):
     >>> fn("foo")
     Traceback (most recent call last):
     ...
-    GuardValidationError: b is required
+    GuardValidationError: b: is required
     >>> g = guard(Dict())
     >>> c = Forward()
     >>> c << Dict(name=basestring, children=List[c])
