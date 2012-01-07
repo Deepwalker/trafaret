@@ -46,6 +46,11 @@ class ContractMeta(type):
     def __or__(cls, other):
         return cls() | other
 
+    def __rshift__(cls, other):
+        instance = cls()
+        instance.converter = other
+        return instance
+
 
 class Contract(object):
 
