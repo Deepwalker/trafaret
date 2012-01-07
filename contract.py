@@ -3,6 +3,7 @@
 import functools
 import inspect
 import re
+import urlparse
 
 """
 Contract is tiny library for data validation
@@ -317,6 +318,8 @@ class Float(Contract):
     Traceback (most recent call last):
     ...
     ContractValidationError: value is greater than 3
+    >>> Float().check("5.0")
+    5.0
     """
 
     __metaclass__ = NumberMeta
@@ -329,9 +332,18 @@ class Float(Contract):
         self.gt = gt
         self.lt = lt
 
-    def _check(self, value):
-        if not isinstance(value, self.value_type):
-            self._failure("value is not %s" % self.value_type.__name__)
+    def _check_val(self, val):
+        if not isinstance(val, self.value_type):
+            if isinstance(val, basestring):
+                try:
+                    value = self.value_type(val)
+                except ValueError:
+                    self._failure("value cant be converted to %s" %
+                            self.value_type.__name__)
+            else:
+                self._failure("value is not %s" % self.value_type.__name__)
+        else:
+            value = val
         if self.gte is not None and value < self.gte:
             self._failure("value is less than %s" % self.gte)
         if self.lte is not None and value > self.lte:
@@ -340,6 +352,7 @@ class Float(Contract):
             self._failure("value should be less than %s" % self.lt)
         if self.gt is not None and value <= self.gt:
             self._failure("value should be greater than %s" % self.gt)
+        return value
 
     def __lt__(self, lt):
         return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
@@ -403,15 +416,15 @@ class String(Contract):
 
     def __init__(self, allow_blank=False, regex=None):
         self.allow_blank = allow_blank
-        self.re = re.compile(regex) if isinstance(regex, basestring) else regex
+        self.regex = re.compile(regex) if isinstance(regex, basestring) else regex
 
     def _check_val(self, value):
         if not isinstance(value, basestring):
             self._failure("value is not string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
-        if self.re is not None:
-            match = self.re.match(value)
+        if self.regex is not None:
+            match = self.regex.match(value)
             if not match:
                 self._failure("value does not match pattern")
             return match
@@ -426,7 +439,7 @@ class String(Contract):
         return "<String(blank)>" if self.allow_blank else "<String>"
 
 
-class Email(Contract):
+class Email(String):
 
     """
     >>> Email().check('someone@example.net')
@@ -435,34 +448,70 @@ class Email(Contract):
     'example.net'
     """
 
-    email_re = re.compile(
+    regex = re.compile(
         r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
 
-    def __init__(self):
-        pass
+    def __init__(self, allow_blank=False):
+        self.allow_blank = allow_blank
 
     def _check_val(self, value):
-        match = self.email_re.search(value)
-        if match:
-            return match
-        # Trivial case failed. Try for possible IDN domain-part
-        if value and u'@' in value:
-            parts = value.split(u'@')
-            try:
-                parts[-1] = parts[-1].encode('idna')
-            except UnicodeError:
-                pass
-            else:
-                match = self.email_re.search(u'@'.join(parts))
-                if match:
-                    return match
+        try:
+            return super(Email, self)._check_val(value)
+        except ContractValidationError:
+            # Trivial case failed. Try for possible IDN domain-part
+            if value and u'@' in value:
+                parts = value.split(u'@')
+                try:
+                    parts[-1] = parts[-1].encode('idna')
+                except UnicodeError:
+                    pass
+                else:
+                    return super(Email, self)._check_val(u'@'.join(parts))
         self._failure('value is not email')
 
-    def converter(self, value):
-        return value.group()
+
+class URL(String):
+
+    """
+    >>> URL().check('http://example.net/resource/?param=value#anchor')
+    'http://example.net/resource/?param=value#anchor'
+    >>> URL().check('http://пример.рф/resource/?param=value#anchor')
+    u'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
+    """
+
+    regex = re.compile(
+        r'^(?:http|ftp)s?://' # http:// or https://
+        r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|' #domain...
+        r'localhost|' #localhost...
+        r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
+        r'(?::\d+)?' # optional port
+        r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+
+    def __init__(self, allow_blank=False):
+        self.allow_blank = allow_blank
+
+    def _check_val(self, value):
+        try:
+            return super(URL, self)._check_val(value)
+        except ContractValidationError:
+            # Trivial case failed. Try for possible IDN domain-part
+            if value:
+                if isinstance(value, str):
+                    decoded = value.decode('utf-8')
+                else:
+                    decoded = value
+                scheme, netloc, path, query, fragment = urlparse.urlsplit(decoded)
+                try:
+                    netloc = netloc.encode('idna') # IDN -> ACE
+                except UnicodeError: # invalid domain part
+                    pass
+                else:
+                    url = urlparse.urlunsplit((scheme, netloc, path, query, fragment))
+                    return super(URL, self)._check_val(url)
+        self._failure('value is not URL')
 
 
 class SquareBracketsMeta(ContractMeta):
