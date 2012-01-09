@@ -689,6 +689,10 @@ class Key(object):
     def get_name(self):
         return self.to_name or self.name
 
+    def make_optional(self):
+        self.optional = True
+        self.default = None
+
 
 class Dict(Contract):
 
@@ -756,6 +760,11 @@ class Dict(Contract):
             else:
                 self.extras.append(name)
         return self
+
+    def make_optional(self, *args):
+        for key in self.keys:
+            if key.name in args or '*' in args:
+                key.make_optional()
 
     def _check_val(self, value):
         if not isinstance(value, dict):
