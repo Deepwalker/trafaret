@@ -181,7 +181,7 @@ class Or(Contract):
     >>> nullString.check(1)
     Traceback (most recent call last):
     ...
-    ContractValidationError: no one contract matches
+    ContractValidationError: no one contract matches: value is not string || value should be None
     """
 
     __metaclass__ = OrMeta
@@ -190,14 +190,15 @@ class Or(Contract):
         self.contracts = map(self._contract, contracts)
 
     def _check_val(self, value):
+        errors = []
         for contract in self.contracts:
             try:
                 return contract.check(value)
-            except ContractValidationError:
-                pass
-            else:
-                return
-        self._failure("no one contract matches")
+            except ContractValidationError as e:
+                errors.append(e)
+        message = ("no one contract matches: %s" %
+                   ' || '.join(e.message for e in errors))
+        raise ContractValidationError(message)
 
     def __lshift__(self, contract):
         self.contracts.append(self._contract(contract))
