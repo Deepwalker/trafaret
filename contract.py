@@ -41,15 +41,15 @@ class ContractMeta(type):
     <Or(<Int>, <String>)>
     >>> Int | String | Null
     <Or(<Int>, <String>, <Null>)>
+    >>> (Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
+    5
     """
 
     def __or__(cls, other):
         return cls() | other
 
     def __rshift__(cls, other):
-        instance = cls()
-        instance.converter = other
-        return instance
+        return cls() >> other
 
 
 class Contract(object):
@@ -67,9 +67,9 @@ class Contract(object):
         """
         if hasattr(self, '_check'):
             self._check(value)
-            return self.converter(value)
+            return self._convert(value)
         if hasattr(self, '_check_val'):
-            return self.converter(self._check_val(value))
+            return self._convert(self._check_val(value))
         cls = "%s.%s" % (type(self).__module__, type(self).__name__)
         raise NotImplementedError("method check is not implemented in"
                                   " '%s'" % cls)
@@ -79,6 +79,12 @@ class Contract(object):
         You can change converter with `>>` operator
         """
         return value
+
+    def _convert(self, value):
+        val = value
+        for converter in getattr(self, 'converters', [self.converter]):
+            val = converter(value)
+        return val
 
     def _failure(self, message):
         """
@@ -101,11 +107,21 @@ class Contract(object):
             raise RuntimeError("%r should be instance or subclass"
                                " of Contract" % contract)
 
+    def append(self, converter):
+        """
+        Appends new converter to list.
+        """
+        if hasattr(self, 'converters'):
+            self.checkers.append(converter)
+        else:
+            self.converters = [converter]
+        return self
+
     def __or__(self, other):
         return Or(self, other)
 
     def __rshift__(self, other):
-        self.converter = other
+        self.append(other)
         return self
 
 
