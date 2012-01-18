@@ -1058,6 +1058,13 @@ def guard(contract=None, **kwargs):
 
 
 def ignore(val):
+    '''
+    Stub to ignore value from checker
+    Use it like:
+
+    >>> a = Int >> ignore
+    >>> a.check(7)
+    '''
     pass
 
 
