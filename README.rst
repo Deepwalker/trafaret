@@ -13,7 +13,7 @@ Sample of usage::
 ``c.Dict`` creates new dict structure validator with three ``c.Int`` elements.
 ``>>`` operation adds lambda function to the converters of given checker.
 Obviously every checker have any default converter, but when you use ``>>`` or ``.append``,
-you will disable default converter.
+you disable default converter.
 
 ContractValidationError
 -----------------------
@@ -43,7 +43,9 @@ Will match any element.
 Or
 --
 
-Get other converters as args.
+Get other converters as args, and this samples are equivalent::
+    Or(c.Int, c.Null)
+    c.Int | c.Null
 
 Null
 ----
@@ -54,15 +56,18 @@ Simple checkers
 ---------------
 
 ``Bool``
+
 ``Float``
+
 ``Int``
-``Atom``
+
+``Atom`` - value must be exactly equal to Atom first arg - ``c.Atom('this_key_must_be_this')``.
 
 
 String
 ------
 
-``regex`` param - will be returned re.Match object. Default converter will return match.group().
+``regex`` param - will return ``re.Match`` object. Default converter will return ``match.group()``.
 
 ``Email`` and ``URL`` just provide regular expressions and a bit of logic for IDNA domains.
 
@@ -70,11 +75,31 @@ String
 List
 ----
 
+Just List of elements of one type. In converter you will get ``list`` instance of converted elements.
+
 Dict
 ----
 
+Dict include named params. You can use for keys plain strings and ``Key`` instances.
+
+Methods:
+
+``allow_extra(*names)`` : where ``names`` can be key names or ``*`` to allow any additional keys.
+
+``make_optional(*names)`` : where ``names`` can be key names or ``*`` to make all options optional.
+
 Key
 ...
+
+Special class to create dict keys. Parameters are:
+
+    * name - key name
+    * default - default if key is not present
+    * optional - if True allow to not provide arg
+    * to_name - instead of key name will be returned this key
+
+You can provide ``to_name`` with ``>>`` operation::
+    Key('javaStyleData') >> 'plain_cool_data'
 
 
 Mapping

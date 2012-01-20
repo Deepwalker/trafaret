@@ -679,9 +679,9 @@ class Key(object):
     Helper class for Dict.
     """
 
-    def __init__(self, name, default=None, optional=False):
+    def __init__(self, name, default=None, optional=False, to_name=None):
         self.name = name
-        self.to_name = None
+        self.to_name = to_name
         self.default = default
         self.optional = optional
         self.contract = Any()
