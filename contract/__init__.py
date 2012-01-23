@@ -3,7 +3,10 @@
 import functools
 import inspect
 import re
-import urlparse
+try:
+    import urlparse
+except ImportError:
+    import urllib.parse as urlparse
 import copy
 import itertools
 
@@ -506,14 +509,14 @@ class Email(String):
             return super(Email, self)._check_val(value)
         except ContractValidationError:
             # Trivial case failed. Try for possible IDN domain-part
-            if value and u'@' in value:
-                parts = value.split(u'@')
+            if value and '@' in value:
+                parts = value.split('@')
                 try:
                     parts[-1] = parts[-1].encode('idna')
                 except UnicodeError:
                     pass
                 else:
-                    return super(Email, self)._check_val(u'@'.join(parts))
+                    return super(Email, self)._check_val('@'.join(parts))
         self._failure('value is not email')
 
     def __repr__(self):
@@ -1066,8 +1069,3 @@ def ignore(val):
     >>> a.check(7)
     '''
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-    doctest.testmod()
