@@ -2,13 +2,13 @@
 There will be small helpers to render forms with exist contracts for DRY.
 """
 import collections
-
-
-def concat(prefix, value, delimeter):
-    return (prefix + delimeter if prefix else '') + value
+from itertools import groupby
 
 
 def recursive_unfold(data, prefix='', delimeter='__'):
+
+    def concat(prefix, value, delimeter):
+        return (prefix + delimeter if prefix else '') + value
 
     def unfold_list(data, prefix, delimeter):
         i = 0
@@ -58,30 +58,28 @@ def fold(data, prefix='', delimeter='__'):
     {'a': [1, 2, 3]}
     >>> fold({'form__a__b': 5, 'form__a__a': 4}, 'form')
     {'a': {'a': 4, 'b': 5}}
+    >>> fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form')
+    {'a': {'a': [4, 7], 'b': 5}}
+    >>> fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form')
+    [{'a': [4, 7]}, {'b': 5}]
     """
-    def pairdict_to_list(data):
-        return [i[1] for i in sorted(data.items())]
+    def deep(data):
+        if len(data) == 1:
+            if data[0][0]:
+                return {data[0][0][0]: data[0][1]}
+            return data[0][1]
 
-    def deep(keys, value, result, prefix):
-        result_ = result[prefix] if prefix is not None else result
-        if len(keys) > 1:
-            prefix_, key_ = keys[0], keys[1:]
-            if prefix_ not in result_:
-                result_[prefix_] = {}
-            return deep(key_, value, result_, prefix_)
+        collect = {}
+        for key, group in groupby(data, lambda kv: kv[0][0]):
+            nest_data = [(k[1:], v) for k, v in group]
+            collect[key] = deep(nest_data)
 
-        key = keys[0]
-        if key.isdigit():
-            if result_ == {}:
-                result[prefix] = [value]
-            elif isinstance(result_, list):
-                result_.append(value)
-            else:
-                raise ValueError('You cant mix digit only keys and usual')
-        else:
-            result_[keys[0]] = value
+        is_num = sum(k.isdigit() for k in collect.keys())
+        if is_num:
+            return [i[1] for i in sorted(collect.items())]
+        return collect
 
-    result = {}
-    for key, value in sorted(data.items()):
-        deep(key.split(delimeter), value, result, None)
+    data_ = [(key.split(delimeter), value)
+                 for key, value in sorted(data.items())]
+    result = deep(data_)
     return result[prefix] if prefix else result
