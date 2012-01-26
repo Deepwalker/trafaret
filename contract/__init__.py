@@ -1,14 +1,23 @@
 # -*- coding: utf-8 -*-
 
+import sys
 import functools
 import inspect
 import re
-try:
-    import urlparse
-except ImportError:
-    import urllib.parse as urlparse
 import copy
 import itertools
+
+
+# Python3 support
+py3 = sys.version_info.major == 3
+if py3:
+    import urllib.parse as urlparse
+    basestring = (str, bytes)
+    unicode = str
+else:
+    from future_builtins import map
+    import urlparse
+
 
 """
 Contract is tiny library for data validation
@@ -16,22 +25,36 @@ It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
 
-__all__ = ("ContractValidationError", "Contract", "Any", "Int", "String",
+__all__ = ("DataError", "Contract", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable"
            "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
 
 
-class ContractValidationError(TypeError):
+class DataError(ValueError):
 
     """
-    Basic contract validation error
+    Error with data preserve
+    error can be a message or None if error raised in childs
+    data can be anything
     """
 
-    def __init__(self, msg, name=None):
-        message = msg if not name else "%s: %s" % (name, msg)
-        super(ContractValidationError, self).__init__(message)
-        self.msg = msg
+    def __init__(self, error=None, name=None):
+        self.error = error
         self.name = name
+
+    def __str__(self):
+        return str(self.error)
+
+    def __repr__(self):
+        return 'DataError(%s)' % str(self)
+
+    def as_dict(self):
+        def as_dict(dataerror):
+            if not isinstance(dataerror.error, dict):
+                return self.error
+            return dict((k, v.as_dict() if isinstance(v, DataError) else v)
+                        for k, v in dataerror.error.items())
+        return as_dict(self)
 
 
 class ContractMeta(type):
@@ -89,11 +112,11 @@ class Contract(object):
             val = converter(value)
         return val
 
-    def _failure(self, message):
+    def _failure(self, error=None):
         """
         Shortcut method for raising validation error
         """
-        raise ContractValidationError(message)
+        raise DataError(error=error)
 
     def _contract(self, contract):
         """
@@ -127,6 +150,14 @@ class Contract(object):
         self.append(other)
         return self
 
+Contract = ContractMeta('Contract', (Contract,), {})
+
+
+class TypeMeta(ContractMeta):
+
+    def __getitem__(self, type_):
+        return self(type_)
+
 
 class Type(Contract):
 
@@ -138,16 +169,9 @@ class Type(Contract):
     >>> c = Type[int]
     >>> c.check(1)
     1
-    >>> c.check("foo")
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not int
+    >>> extract(c.check("foo")).error
+    value is not int
     """
-
-    class __metaclass__(ContractMeta):
-
-        def __getitem__(self, type_):
-            return self(type_)
 
     def __init__(self, type_):
         self.type_ = type_
@@ -158,6 +182,9 @@ class Type(Contract):
 
     def __repr__(self):
         return "<Type(%s)>" % self.type_.__name__
+
+
+Type = TypeMeta('Type', (Type,), {})
 
 
 class Any(Contract):
@@ -200,24 +227,24 @@ class Or(Contract):
     >>> nullString.check(1)
     Traceback (most recent call last):
     ...
-    ContractValidationError: no one contract matches: value is not string || value should be None
+    DataError: no one contract matches: value is not string || value should be None
     """
 
     __metaclass__ = OrMeta
 
     def __init__(self, *contracts):
-        self.contracts = map(self._contract, contracts)
+        self.contracts = list(map(self._contract, contracts))
 
     def _check_val(self, value):
         errors = []
         for contract in self.contracts:
             try:
                 return contract.check(value)
-            except ContractValidationError as e:
+            except DataError as e:
                 errors.append(e)
         message = ("no one contract matches: %s" %
                    ' || '.join(e.message for e in errors))
-        raise ContractValidationError(message)
+        raise DataError(message)
 
     def __lshift__(self, contract):
         self.contracts.append(self._contract(contract))
@@ -231,16 +258,17 @@ class Or(Contract):
         return "<Or(%s)>" % (", ".join(map(repr, self.contracts)))
 
 
+Or = OrMeta('Or', (Or,), {})
+
+
 class Null(Contract):
 
     """
     >>> Null()
     <Null>
     >>> Null().check(None)
-    >>> Null().check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value should be None
+    >>> extract_error(Null(), 1)
+    'value should be None'
     """
 
     def _check(self, value):
@@ -260,10 +288,8 @@ class Bool(Contract):
     True
     >>> Bool().check(False)
     False
-    >>> Bool().check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value should be True or False
+    >>> extract_error(Bool(), 1)
+    'value should be True or False'
     """
 
     def _check(self, value):
@@ -294,26 +320,22 @@ class NumberMeta(ContractMeta):
     <Float(gt=1, lt=10)>
     >>> (Int > 5).check(10)
     10
-    >>> (Int > 5).check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value should be greater than 5
+    >>> extract_error(Int > 5, 1)
+    'value should be greater than 5'
     >>> (Int < 3).check(1)
     1
-    >>> (Int < 3).check(3)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value should be less than 3
+    >>> extract_error(Int < 3, 3)
+    'value should be less than 3'
     """
 
-    def __getitem__(self, slice_):
-        return self(gte=slice_.start, lte=slice_.stop)
+    def __getitem__(cls, slice_):
+        return cls(gte=slice_.start, lte=slice_.stop)
 
-    def __lt__(self, lt):
-        return self(lt=lt)
+    def __lt__(cls, lt):
+        return cls(lt=lt)
 
-    def __gt__(self, gt):
-        return self(gt=gt)
+    def __gt__(cls, gt):
+        return cls(gt=gt)
 
 
 class Float(Contract):
@@ -332,19 +354,19 @@ class Float(Contract):
     >>> Float().check(1)
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is not float
+    DataError: value is not float
     >>> Float(gte=2).check(3.0)
     3.0
     >>> Float(gte=2).check(1.0)
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is less than 2
+    DataError: value is less than 2
     >>> Float(lte=10).check(5.0)
     5.0
     >>> Float(lte=3).check(5.0)
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is greater than 3
+    DataError: value is greater than 3
     >>> Float().check("5.0")
     5.0
     """
@@ -399,6 +421,9 @@ class Float(Contract):
         return r
 
 
+Float = NumberMeta('Float', (Float,), {})
+
+
 class Int(Float):
 
     """
@@ -406,10 +431,8 @@ class Int(Float):
     <Int>
     >>> Int().check(5)
     5
-    >>> Int().check(1.1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not int
+    >>> extract_error(Int(), 1.1)
+    'value is not int'
     """
 
     value_type = int
@@ -420,10 +443,8 @@ class Atom(Contract):
     """
     >>> Atom('atom').check('atom')
     'atom'
-    >>> Atom('atom').check('molecule')
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not exactly 'atom'
+    >>> extract_error(Atom('atom'), 'molecule')
+    "value is not exactly 'atom'"
     """
 
     def __init__(self, value):
@@ -443,22 +464,16 @@ class String(Contract):
     <String(blank)>
     >>> String().check("foo")
     'foo'
-    >>> String().check("")
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: blank value is not allowed
+    >>> extract_error(String(), "")
+    'blank value is not allowed'
     >>> String(allow_blank=True).check("")
     ''
-    >>> String().check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not string
+    >>> extract_error(String(), 1)
+    'value is not string'
     >>> String(regex='\w+').check('wqerwqer')
     'wqerwqer'
-    >>> String(regex='^\w+$').check('wqe rwqer')
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value does not match pattern
+    >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
+    'value does not match pattern'
     """
 
     def __init__(self, allow_blank=False, regex=None):
@@ -507,7 +522,7 @@ class Email(String):
     def _check_val(self, value):
         try:
             return super(Email, self)._check_val(value)
-        except ContractValidationError:
+        except DataError:
             # Trivial case failed. Try for possible IDN domain-part
             if value and '@' in value:
                 parts = value.split('@')
@@ -528,8 +543,8 @@ class URL(String):
     """
     >>> URL().check('http://example.net/resource/?param=value#anchor')
     'http://example.net/resource/?param=value#anchor'
-    >>> URL().check('http://пример.рф/resource/?param=value#anchor')
-    u'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
+    >>> str(URL().check('http://пример.рф/resource/?param=value#anchor'))
+    'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
     """
 
     regex = re.compile(
@@ -546,16 +561,16 @@ class URL(String):
     def _check_val(self, value):
         try:
             return super(URL, self)._check_val(value)
-        except ContractValidationError:
+        except DataError:
             # Trivial case failed. Try for possible IDN domain-part
             if value:
-                if isinstance(value, str):
+                if isinstance(value, bytes):
                     decoded = value.decode('utf-8')
                 else:
                     decoded = value
                 scheme, netloc, path, query, fragment = urlparse.urlsplit(decoded)
                 try:
-                    netloc = netloc.encode('idna') # IDN -> ACE
+                    netloc = netloc.encode('idna').decode('ascii') # IDN -> ACE
                 except UnicodeError: # invalid domain part
                     pass
                 else:
@@ -615,7 +630,7 @@ class List(Contract):
     >>> List(Int).check(1)
     Traceback (most recent call last):
     ...
-    ContractValidationError: value is not list
+    DataError: value is not list
     >>> List(Int).check([1, 2, 3])
     [1, 2, 3]
     >>> List(String).check(["foo", "bar", "spam"])
@@ -623,19 +638,20 @@ class List(Contract):
     >>> List(Int).check([1, 2, 3.0])
     Traceback (most recent call last):
     ...
-    ContractValidationError: 2: value is not int
+    DataError: 2: value is not int
     >>> List(Int, min_length=1).check([1, 2, 3])
     [1, 2, 3]
     >>> List(Int, min_length=1).check([])
     Traceback (most recent call last):
     ...
-    ContractValidationError: list length is less than 1
+    DataError: list length is less than 1
     >>> List(Int, max_length=2).check([1, 2])
     [1, 2]
     >>> List(Int, max_length=2).check([1, 2, 3])
     Traceback (most recent call last):
     ...
-    ContractValidationError: list length is greater than 2
+    DataError: list length is greater than 2
+    >>> List(Int).check(["a"])
     """
 
     __metaclass__ = SquareBracketsMeta
@@ -653,12 +669,14 @@ class List(Contract):
         if self.max_length is not None and len(value) > self.max_length:
             self._failure("list length is greater than %s" % self.max_length)
         lst = []
+        errors = {}
         for index, item in enumerate(value):
             try:
                 lst.append(self.contract.check(item))
-            except ContractValidationError as err:
-                name = "%i.%s" % (index, err.name) if err.name else str(index)
-                raise ContractValidationError(err.msg, name)
+            except DataError as err:
+                errors[index] = err
+        if errors:
+            raise DataError(error=errors)
         return lst
 
     def __repr__(self):
@@ -674,6 +692,9 @@ class List(Contract):
         r += repr(self.contract)
         r += ")>"
         return r
+
+
+List = SquareBracketsMeta('List', (List,), {})
 
 
 class Key(object):
@@ -696,7 +717,8 @@ class Key(object):
             elif self.default is not None:
                 pass
             else:
-                raise ContractValidationError('is required')
+                yield self.name, DataError(error='is required')
+                raise StopIteration
         yield self.get_name(), data.pop(self.name, self.default)
 
     def set_contract(self, contract):
@@ -719,46 +741,32 @@ class Dict(Contract):
     """
     >>> contract = Dict(foo=Int, bar=String) >> ignore
     >>> contract.check({"foo": 1, "bar": "spam"})
-    >>> contract.check({"foo": 1, "bar": 2})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: bar: value is not string
-    >>> contract.check({"foo": 1})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: bar: is required
-    >>> contract.check({"foo": 1, "bar": "spam", "eggs": None})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: eggs is not allowed key
+    >>> extract_error(contract, {"foo": 1, "bar": 2})
+    {'bar': 'value is not string'}
+    >>> extract_error(contract, {"foo": 1})
+    {'bar': 'is required'}
+    >>> extract_error(contract, {"foo": 1, "bar": "spam", "eggs": None})
+    {'eggs': 'eggs is not allowed key'}
     >>> contract.allow_extra("eggs")
     <Dict(extras=(eggs) | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "bar": "spam", "eggs": None})
     >>> contract.check({"foo": 1, "bar": "spam"})
-    >>> contract.check({"foo": 1, "bar": "spam", "ham": 100})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: ham is not allowed key
+    >>> extract_error(contract, {"foo": 1, "bar": "spam", "ham": 100})
+    {'ham': 'ham is not allowed key'}
     >>> contract.allow_extra("*")
     <Dict(any, extras=(eggs) | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "bar": "spam", "ham": 100})
     >>> contract.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
-    >>> contract.check({"foo": 1, "ham": 100, "baz": None})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: bar: is required
+    >>> extract_error(contract, {"foo": 1, "ham": 100, "baz": None})
+    {'bar': 'is required'}
     >>> contract = Dict({Key('bar', optional=True): String}, foo=Int) >> ignore
     >>> contract.allow_extra("*")
     <Dict(any | bar=<String>, foo=<Int>)>
     >>> contract.check({"foo": 1, "ham": 100, "baz": None})
-    >>> contract.check({"bar": 1, "ham": 100, "baz": None})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: foo: is required
-    >>> contract.check({"foo": 1, "bar": 1, "ham": 100, "baz": None})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: bar: value is not string
+    >>> extract_error(contract, {"bar": 1, "ham": 100, "baz": None})
+    {'foo': 'is required', 'bar': 'value is not string'}
+    >>> extract_error(contract, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
+    {'bar': 'value is not string'}
     >>> contract = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
     >>> contract.check({'foo': 4})
     {'foo': 4, 'baz': 'nyanya'}
@@ -791,17 +799,23 @@ class Dict(Contract):
             self._failure("value is not dict")
         data = copy.copy(value)
         collect = {}
+        errors = {}
         for key in self.keys:
-            try:
-                for k, v in key.pop(data):
-                    collect[k] = key.contract.check(v)
-            except ContractValidationError as err:
-                name = "%s.%s" % (key.name, err.name) if err.name else key.name
-                raise ContractValidationError(err.msg, name)
+            for k, v in key.pop(data):
+                if isinstance(v, DataError):
+                    errors[k] = v
+                else:
+                    try:
+                        collect[k] = key.contract.check(v)
+                    except DataError as err:
+                        errors[k] = err
         for key in data:
             if not self.allow_any and key not in self.extras:
-                self._failure("%s is not allowed key" % key)
-            collect[key] = data
+                errors[key] = DataError("%s is not allowed key" % key)
+            else:
+                collect[key] = data
+        if errors:
+            raise DataError(error=errors)
         return collect
 
     def __repr__(self):
@@ -829,14 +843,10 @@ class Mapping(Contract):
     >>> contract
     <Mapping(<String> => <Int>)>
     >>> contract.check({"foo": 1, "bar": 2})
-    >>> contract.check({"foo": 1, "bar": None})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: (value for key 'bar'): value is not int
-    >>> contract.check({"foo": 1, 2: "bar"})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: (key 2): value is not string
+    >>> extract_error(contract, {"foo": 1, "bar": None})
+    {'bar': {'value': 'value is not int'}}
+    >>> extract_error(contract, {"foo": 1, 2: "bar"})
+    {2: {'key': 'value is not string', 'value': 'value cant be converted to int'}}
     """
 
     def __init__(self, key, value):
@@ -845,17 +855,23 @@ class Mapping(Contract):
 
     def _check_val(self, mapping):
         checked_mapping = {}
-        for key in mapping:
-            value = mapping[key]
+        errors = {}
+        for key, value in mapping.items():
+            pair_errors = {}
             try:
                 checked_key = self.key.check(key)
-            except ContractValidationError as err:
-                raise ContractValidationError(err.msg, "(key %r)" % key)
+            except DataError as err:
+                pair_errors['key'] = err
             try:
                 checked_value = self.value.check(value)
-            except ContractValidationError as err:
-                raise ContractValidationError(err.msg, "(value for key %r)" % key)
-            checked_mapping[checked_key] = checked_value
+            except DataError as err:
+                pair_errors['value'] = err
+            if pair_errors:
+                errors[key] = DataError(error=pair_errors)
+            else:
+                checked_mapping[checked_key] = checked_value
+        if errors:
+            raise DataError(error=errors)
 
     def __repr__(self):
         return "<Mapping(%r => %r)>" % (self.key, self.value)
@@ -869,10 +885,8 @@ class Enum(Contract):
     <Enum('foo', 'bar', 1)>
     >>> contract.check("foo")
     >>> contract.check(1)
-    >>> contract.check(2)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value doesn't match any variant
+    >>> extract_error(contract, 2)
+    "value doesn't match any variant"
     """
 
     def __init__(self, *variants):
@@ -890,10 +904,8 @@ class Callable(Contract):
 
     """
     >>> (Callable() >> ignore).check(lambda: 1)
-    >>> Callable().check(1)
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: value is not callable
+    >>> extract_error(Callable(), 1)
+    'value is not callable'
     """
 
     def _check(self, value):
@@ -916,10 +928,8 @@ class Call(Contract):
     <CallC(validator)>
     >>> contract.check("foo")
     'foo'
-    >>> contract.check("bar")
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: I want only foo!
+    >>> extract_error(contract, "bar")
+    'I want only foo!'
     """
 
     def __init__(self, fn):
@@ -943,16 +953,14 @@ class Call(Contract):
 class Forward(Contract):
 
     """
-    >>> nodeC = Forward()
-    >>> nodeC << Dict(name=String, children=List[nodeC])
-    >>> nodeC
+    >>> node = Forward()
+    >>> node << Dict(name=String, children=List[node])
+    >>> node
     <Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>
-    >>> nodeC.check({"name": "foo", "children": []})
-    >>> nodeC.check({"name": "foo", "children": [1]})
-    Traceback (most recent call last):
-    ...
-    ContractValidationError: children.0: value is not dict
-    >>> nodeC.check({"name": "foo", "children": [ \
+    >>> node.check({"name": "foo", "children": []})
+    >>> extract_error(node, {"name": "foo", "children": [1]})
+    {'children': {0: 'value is not dict'}}
+    >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
                      ]})
     """
@@ -979,11 +987,11 @@ class Forward(Contract):
         return r
 
 
-class GuardValidationError(ContractValidationError):
+class GuardValidationError(DataError):
 
     """
     Raised when guarded function gets invalid arguments,
-    inherits error message from corresponding ContractValidationError
+    inherits error message from corresponding DataError
     """
 
     pass
@@ -1009,17 +1017,13 @@ def guard(contract=None, **kwargs):
     <BLANKLINE>
     >>> fn("foo", 1)
     ('foo', 1, 'default')
-    >>> fn("foo", 1, 2)
-    Traceback (most recent call last):
-    ...
-    GuardValidationError: c: value is not string
-    >>> fn("foo")
-    Traceback (most recent call last):
-    ...
-    GuardValidationError: b: is required
+    >>> extract_error(fn, "foo", 1, 2)
+    {'c': 'value is not string'}
+    >>> extract_error(fn, "foo")
+    {'b': 'is required'}
     >>> g = guard(Dict())
     >>> c = Forward()
-    >>> c << Dict(name=basestring, children=List[c])
+    >>> c << Dict(name=str, children=List[c])
     >>> g = guard(c)
     >>> g = guard(Int())
     Traceback (most recent call last):
@@ -1046,14 +1050,15 @@ def guard(contract=None, **kwargs):
                 checkargs = args
 
             try:
-                call_args = dict(zip(fnargs, checkargs) + kwargs.items())
+                call_args = dict(
+                        itertools.chain(zip(fnargs, checkargs), kwargs.items()))
                 for name, default in zip(reversed(fnargs),
                                          argspec.defaults or ()):
                     if name not in call_args:
                         call_args[name] = default
                 contract.check(call_args)
-            except ContractValidationError as err:
-                raise GuardValidationError(unicode(err))
+            except DataError as err:
+                raise GuardValidationError(error=err.error)
             return fn(*args, **kwargs)
         decor.__doc__ = "guarded with %r\n\n" % contract + (decor.__doc__ or "")
         return decor
@@ -1069,3 +1074,13 @@ def ignore(val):
     >>> a.check(7)
     '''
     pass
+
+
+def extract_error(checker, *a, **kw):
+    try:
+        if hasattr(checker, 'check'):
+            return checker.check(*a, **kw)
+        elif callable(checker):
+            return checker(*a, **kw)
+    except DataError as error:
+        return error.as_dict()

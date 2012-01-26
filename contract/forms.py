@@ -74,7 +74,7 @@ def fold(data, prefix='', delimeter='__'):
             nest_data = [(k[1:], v) for k, v in group]
             collect[key] = deep(nest_data)
 
-        is_num = sum(k.isdigit() for k in collect.keys())
+        is_num = all(k.isdigit() for k in collect.keys())
         if is_num:
             return [i[1] for i in sorted(collect.items())]
         return collect
