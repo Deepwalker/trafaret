@@ -10,5 +10,5 @@ task = c.Dict({
 
 try:
     print task.check({'key': 'foo', 'timestamp': {'year': 2012, 'month': 1, 'day': 12}})
-except c.ContractValidationError as e:
+except c.TrafaretValidationError as e:
     print e

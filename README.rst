@@ -1,16 +1,16 @@
-Contract
+Trafaret
 ========
 
-Contract is validation library with support to convert data structures.
+Trafaret is validation library with support to convert data structures.
 Sample of usage::
 
     import datetime
-    import contract as c
+    import trafaret as t
 
-    date = c.Dict(year=c.Int, month=c.Int, day=c.Int) >> (lambda d: datetime.datetime(**d))
+    date = t.Dict(year=t.Int, month=t.Int, day=t.Int) >> (lambda d: datetime.datetime(**d))
     assert task.check({'year': 2012, 'month': 1, 'day': 12}) == datetime.datetime(2012, 1, 12)
 
-``c.Dict`` creates new dict structure validator with three ``c.Int`` elements.
+``t.Dict`` creates new dict structure validator with three ``t.Int`` elements.
 ``>>`` operation adds lambda function to the converters of given checker.
 Obviously every checker have any default converter, but when you use ``>>`` or ``.append``,
 you disable default converter.
@@ -22,10 +22,10 @@ Exception class that used in library. Exception hold errors in ``error`` attribu
 For simple checkers it will be just a string. For nested structures it will be `dict`
 instance.
 
-Contract
+Trafaret
 --------
 
-Base class for contracts. Use it to make new contracts.
+Base class for trafarets. Use it to make new trafarets.
 In derrived classes you need to implement `_check` or `_check_val`
 methods. `_check_val` must return value, `_check` must return `None` on success.
 
@@ -48,9 +48,9 @@ Or
 --
 
 Get other converters as args, and this samples are equivalent::
-    >>> Or(c.Int, c.Null).check(None)
+    >>> Or(t.Int, t.Null).check(None)
     None
-    >>> (c.Int | c.Null).check(5)
+    >>> (t.Int | t.Null).check(5)
     5
 
 Null
@@ -67,7 +67,7 @@ Simple checkers
 
 ``Int``
 
-``Atom`` - value must be exactly equal to Atom first arg - ``c.Atom('this_key_must_be_this')``.
+``Atom`` - value must be exactly equal to Atom first arg - ``t.Atom('this_key_must_be_this')``.
 
 
 String

@@ -1,20 +1,20 @@
 (function() {
 
-   var ContractValidationError = function(message, original_message, name) {
+   var TrafaretValidationError = function(message, original_message, name) {
      this.message = message;
      this.original_message = original_message;
      this.name = name;
    };
 
-   var Contract = function() {
+   var Trafaret = function() {
 
    };
 
-   Contract.prototype.failure = function(message) {
-     throw new ContractValidationError(message, message, null);
+   Trafaret.prototype.failure = function(message) {
+     throw new TrafaretValidationError(message, message, null);
    };
 
-   Contract.prototype._select = function(value, default_val) {
+   Trafaret.prototype._select = function(value, default_val) {
      if (typeof value == "undefined") {
        return default_val;
      } else {
@@ -22,7 +22,7 @@
      }
    };
 
-   Contract.prototype.check = function() {
+   Trafaret.prototype.check = function() {
      throw "not implemented";
    };
 
@@ -30,7 +30,7 @@
 
    };
 
-   AnyC.prototype = new Contract();
+   AnyC.prototype = new Trafaret();
 
    AnyC.prototype.check = function() {
 
@@ -43,7 +43,7 @@
      }
    };
 
-   OrC.prototype = new Contract();
+   OrC.prototype = new Trafaret();
 
    OrC.prototype.check = function(value) {
      for (var i=0, length=this.contracts.length; i < length; i++) {
@@ -51,7 +51,7 @@
 	 this.contracts[i].check(value);
 	 return;
        } catch (e) {
-	 if (! (e instanceof ContractValidationError)) {
+	 if (! (e instanceof TrafaretValidationError)) {
 	   throw e;
 	 }
        }
@@ -63,7 +63,7 @@
 
    };
 
-   NullC.prototype = new Contract();
+   NullC.prototype = new Trafaret();
 
    NullC.prototype.check = function(value) {
      if (value !== null) {
@@ -75,7 +75,7 @@
 
    };
 
-   BoolC.prototype = new Contract();
+   BoolC.prototype = new Trafaret();
 
    BoolC.prototype.check = function(value) {
      if (typeof value != "boolean") {
@@ -88,7 +88,7 @@
      this.max = this._select(max, NaN);
    };
 
-   IntC.prototype = new Contract();
+   IntC.prototype = new Trafaret();
 
    IntC.prototype.check_min = function(value) {
      if (! isNaN(this.min) && value < this.min) {
@@ -129,7 +129,7 @@
      this.allow_blank = this._select(allow_blank, false);
    };
 
-   StringC.prototype = new Contract();
+   StringC.prototype = new Trafaret();
 
    StringC.prototype.check = function(value) {
      if (typeof value != "string") {
@@ -146,7 +146,7 @@
      this.max_length = this._select(max_length, NaN);
    };
 
-   ListC.prototype = new Contract();
+   ListC.prototype = new Trafaret();
 
    ListC.prototype.check = function(value) {
      if (! (value instanceof Array)) {
@@ -163,7 +163,7 @@
        try{
 	 this.contract.check(value[i]);
        } catch (e) {
-	 if (e instanceof ContractValidationError) {
+	 if (e instanceof TrafaretValidationError) {
 	   name = e.name;
 	   if (e.name) {
 	     name = i.toString() + "." + e.name;
@@ -171,7 +171,7 @@
 	     name = i.toString();
 	   }
 	   message = name + ": " + e.original_message;
-	   throw new ContractValidationError(message, e.original_message, name);
+	   throw new TrafaretValidationError(message, e.original_message, name);
 	 }
 	 throw e;
        }
@@ -179,7 +179,7 @@
      }
    };
 
-   window["ContractValidationError"] = ContractValidationError,
+   window["TrafaretValidationError"] = TrafaretValidationError,
    window["AnyC"] = AnyC,
    window["NullC"] = NullC,
    window["IntC"] = IntC,

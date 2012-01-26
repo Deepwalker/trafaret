@@ -20,12 +20,12 @@ else:
 
 
 """
-Contract is tiny library for data validation
+Trafaret is tiny library for data validation
 It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
 
-__all__ = ("DataError", "Contract", "Any", "Int", "String",
+__all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable"
            "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
 
@@ -57,7 +57,7 @@ class DataError(ValueError):
         return as_dict(self)
 
 
-class ContractMeta(type):
+class TrafaretMeta(type):
 
     """
     Metaclass for contracts to make using "|" operator possible not only
@@ -78,18 +78,18 @@ class ContractMeta(type):
         return cls() >> other
 
 
-class Contract(object):
+class Trafaret(object):
 
     """
     Base class for contracts, provides only one method for
     contract validation failure reporting
     """
 
-    __metaclass__ = ContractMeta
+    __metaclass__ = TrafaretMeta
 
     def check(self, value):
         """
-        Implement this method in Contract subclasses
+        Implement this method in Trafaret subclasses
         """
         if hasattr(self, '_check'):
             self._check(value)
@@ -123,15 +123,15 @@ class Contract(object):
         Helper for complex contracts, takes contract instance or class
         and returns contract instance
         """
-        if isinstance(contract, Contract):
+        if isinstance(contract, Trafaret):
             return contract
-        elif issubclass(contract, Contract):
+        elif issubclass(contract, Trafaret):
             return contract()
         elif isinstance(contract, type):
             return Type(contract)
         else:
             raise RuntimeError("%r should be instance or subclass"
-                               " of Contract" % contract)
+                               " of Trafaret" % contract)
 
     def append(self, converter):
         """
@@ -150,16 +150,16 @@ class Contract(object):
         self.append(other)
         return self
 
-Contract = ContractMeta('Contract', (Contract,), {})
+Trafaret = TrafaretMeta('Trafaret', (Trafaret,), {})
 
 
-class TypeMeta(ContractMeta):
+class TypeMeta(TrafaretMeta):
 
     def __getitem__(self, type_):
         return self(type_)
 
 
-class Type(Contract):
+class Type(Trafaret):
 
     """
     >>> Type(int)
@@ -187,7 +187,7 @@ class Type(Contract):
 Type = TypeMeta('Type', (Type,), {})
 
 
-class Any(Contract):
+class Any(Trafaret):
 
     """
     >>> Any()
@@ -202,7 +202,7 @@ class Any(Contract):
         return "<Any>"
 
 
-class OrMeta(ContractMeta):
+class OrMeta(TrafaretMeta):
 
     """
     Allows to use "<<" operator on Or class
@@ -215,7 +215,7 @@ class OrMeta(ContractMeta):
         return cls() << other
 
 
-class Or(Contract):
+class Or(Trafaret):
 
     """
     >>> nullString = Or(String, Null)
@@ -242,9 +242,7 @@ class Or(Contract):
                 return contract.check(value)
             except DataError as e:
                 errors.append(e)
-        message = ("no one contract matches: %s" %
-                   ' || '.join(e.message for e in errors))
-        raise DataError(message)
+        raise DataError(dict(enumerate(errors)))
 
     def __lshift__(self, contract):
         self.contracts.append(self._contract(contract))
@@ -261,7 +259,7 @@ class Or(Contract):
 Or = OrMeta('Or', (Or,), {})
 
 
-class Null(Contract):
+class Null(Trafaret):
 
     """
     >>> Null()
@@ -279,7 +277,7 @@ class Null(Contract):
         return "<Null>"
 
 
-class Bool(Contract):
+class Bool(Trafaret):
 
     """
     >>> Bool()
@@ -300,7 +298,7 @@ class Bool(Contract):
         return "<Bool>"
 
 
-class NumberMeta(ContractMeta):
+class NumberMeta(TrafaretMeta):
 
     """
     Allows slicing syntax for min and max arguments for
@@ -338,7 +336,7 @@ class NumberMeta(ContractMeta):
         return cls(gt=gt)
 
 
-class Float(Contract):
+class Float(Trafaret):
 
     """
     >>> Float()
@@ -438,7 +436,7 @@ class Int(Float):
     value_type = int
 
 
-class Atom(Contract):
+class Atom(Trafaret):
 
     """
     >>> Atom('atom').check('atom')
@@ -455,7 +453,7 @@ class Atom(Contract):
             self._failure("value is not exactly '%s'" % self.value)
 
 
-class String(Contract):
+class String(Trafaret):
 
     """
     >>> String()
@@ -582,7 +580,7 @@ class URL(String):
         return '<URL>'
 
 
-class SquareBracketsMeta(ContractMeta):
+class SquareBracketsMeta(TrafaretMeta):
 
     """
     Allows usage of square brackets for List initialization
@@ -596,7 +594,7 @@ class SquareBracketsMeta(ContractMeta):
     >>> List[1:10]
     Traceback (most recent call last):
     ...
-    RuntimeError: Contract is required for List initialization
+    RuntimeError: Trafaret is required for List initialization
     """
 
     def __getitem__(self, args):
@@ -607,18 +605,18 @@ class SquareBracketsMeta(ContractMeta):
         for arg in args:
             if isinstance(arg, slice):
                 slice_ = arg
-            elif isinstance(arg, Contract) or issubclass(arg, Contract) \
+            elif isinstance(arg, Trafaret) or issubclass(arg, Trafaret) \
                  or isinstance(arg, type):
                 contract = arg
         if not contract:
-            raise RuntimeError("Contract is required for List initialization")
+            raise RuntimeError("Trafaret is required for List initialization")
         if slice_:
             return self(contract, min_length=slice_.start or 0,
                                   max_length=slice_.stop)
         return self(contract)
 
 
-class List(Contract):
+class List(Trafaret):
 
     """
     >>> List(Int)
@@ -736,7 +734,7 @@ class Key(object):
         self.default = None
 
 
-class Dict(Contract):
+class Dict(Trafaret):
 
     """
     >>> contract = Dict(foo=Int, bar=String) >> ignore
@@ -836,7 +834,7 @@ class Dict(Contract):
         return r
 
 
-class Mapping(Contract):
+class Mapping(Trafaret):
 
     """
     >>> contract = Mapping(String, Int)
@@ -877,7 +875,7 @@ class Mapping(Contract):
         return "<Mapping(%r => %r)>" % (self.key, self.value)
 
 
-class Enum(Contract):
+class Enum(Trafaret):
 
     """
     >>> contract = Enum("foo", "bar", 1) >> ignore
@@ -900,7 +898,7 @@ class Enum(Contract):
         return "<Enum(%s)>" % (", ".join(map(repr, self.variants)))
 
 
-class Callable(Contract):
+class Callable(Trafaret):
 
     """
     >>> (Callable() >> ignore).check(lambda: 1)
@@ -916,7 +914,7 @@ class Callable(Contract):
         return "<CallableC>"
 
 
-class Call(Contract):
+class Call(Trafaret):
 
     """
     >>> def validator(value):
@@ -950,7 +948,7 @@ class Call(Contract):
         return "<CallC(%s)>" % self.fn.__name__
 
 
-class Forward(Contract):
+class Forward(Trafaret):
 
     """
     >>> node = Forward()
