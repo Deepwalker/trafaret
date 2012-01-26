@@ -4,10 +4,10 @@ from setuptools import setup, find_packages
 
 
 setupconf = dict(
-    name = 'contract',
-    version = '0.3',
+    name = 'trafaret',
+    version = '0.3.1',
     license = 'BSD',
-    url = 'https://github.com/Deepwalker/contract/',
+    url = 'https://github.com/Deepwalker/trafaret/',
     author = 'Barbuza, Deepwalker',
     author_email = 'krivushinme@gmail.com',
     description = ('Validation and parsing library'),

@@ -1,6 +1,6 @@
 import doctest
-import contract
-from contract import forms
+import trafaret
+from trafaret import utils
 
-doctest.testmod(m=contract)
-doctest.testmod(m=forms)
+doctest.testmod(m=trafaret)
+doctest.testmod(m=utils)

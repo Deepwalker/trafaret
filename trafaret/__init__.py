@@ -958,11 +958,13 @@ class Forward(Contract):
     >>> node
     <Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>
     >>> node.check({"name": "foo", "children": []})
+    {'children': [], 'name': 'foo'}
     >>> extract_error(node, {"name": "foo", "children": [1]})
     {'children': {0: 'value is not dict'}}
     >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
                      ]})
+    {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
     """
 
     def __init__(self):
@@ -970,12 +972,15 @@ class Forward(Contract):
         self._recur_repr = False
 
     def __lshift__(self, contract):
+        self.provide(contract)
+
+    def provide(self, contract):
         if self.contract:
             raise RuntimeError("contract for Forward is already specified")
         self.contract = self._contract(contract)
 
-    def check(self, value):
-        self.contract.check(value)
+    def _check_val(self, value):
+        return self.contract.check(value)
 
     def __repr__(self):
         # XXX not threadsafe

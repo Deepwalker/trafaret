@@ -15,10 +15,12 @@ Sample of usage::
 Obviously every checker have any default converter, but when you use ``>>`` or ``.append``,
 you disable default converter.
 
-ContractValidationError
+DataError
 -----------------------
 
-Exception class that used in library.
+Exception class that used in library. Exception hold errors in ``error`` attribute.
+For simple checkers it will be just a string. For nested structures it will be `dict`
+instance.
 
 Contract
 --------
@@ -33,7 +35,9 @@ want to make free for developer to apply his own converters to raw data.
 Type
 ----
 
-Just instantitate it with any class, like int, float, str.
+Just instantitate it with any class, like int, float, str::
+    >>> Type(int).check(4)
+    4
 
 Any
 ---
@@ -44,8 +48,10 @@ Or
 --
 
 Get other converters as args, and this samples are equivalent::
-    Or(c.Int, c.Null)
-    c.Int | c.Null
+    >>> Or(c.Int, c.Null).check(None)
+    None
+    >>> (c.Int | c.Null).check(5)
+    5
 
 Null
 ----
@@ -108,6 +114,10 @@ Mapping
 Enum
 ----
 
+This checker check that value one from provided. Like::
+    >>> Enum(1, 2, 'error').check('2')
+    2
+
 Callable
 --------
 
@@ -117,6 +127,17 @@ Call
 Forward
 -------
 
-GuardValidationError
---------------------
+This checker is container for any checker, that you can provide later.
+To provide container use ``provide`` method or ``<<`` operation::
+    >> node = Forward()
+    >> node << Dict(name=String, children=List[node])
 
+guard
+-----
+
+Decorator
+
+GuardValidationError
+....................
+
+Derived from DataError.
