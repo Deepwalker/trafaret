@@ -30,6 +30,15 @@ __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
 
 
+def py3metafix(cls):
+    if not py3:
+        return cls
+    else:
+        newcls = cls.__metaclass__(cls.__name__, (cls,), {})
+        newcls.__doc__ = cls.__doc__
+        return newcls
+
+
 class DataError(ValueError):
 
     """
@@ -60,7 +69,7 @@ class DataError(ValueError):
 class TrafaretMeta(type):
 
     """
-    Metaclass for contracts to make using "|" operator possible not only
+    Metaclass for trafarets to make using "|" operator possible not only
     on instances but on classes
 
     >>> Int | String
@@ -78,11 +87,12 @@ class TrafaretMeta(type):
         return cls() >> other
 
 
+@py3metafix
 class Trafaret(object):
 
     """
-    Base class for contracts, provides only one method for
-    contract validation failure reporting
+    Base class for trafarets, provides only one method for
+    trafaret validation failure reporting
     """
 
     __metaclass__ = TrafaretMeta
@@ -118,20 +128,20 @@ class Trafaret(object):
         """
         raise DataError(error=error)
 
-    def _contract(self, contract):
+    def _trafaret(self, trafaret):
         """
-        Helper for complex contracts, takes contract instance or class
-        and returns contract instance
+        Helper for complex trafarets, takes trafaret instance or class
+        and returns trafaret instance
         """
-        if isinstance(contract, Trafaret):
-            return contract
-        elif issubclass(contract, Trafaret):
-            return contract()
-        elif isinstance(contract, type):
-            return Type(contract)
+        if isinstance(trafaret, Trafaret):
+            return trafaret
+        elif issubclass(trafaret, Trafaret):
+            return trafaret()
+        elif isinstance(trafaret, type):
+            return Type(trafaret)
         else:
             raise RuntimeError("%r should be instance or subclass"
-                               " of Trafaret" % contract)
+                               " of Trafaret" % trafaret)
 
     def append(self, converter):
         """
@@ -150,8 +160,6 @@ class Trafaret(object):
         self.append(other)
         return self
 
-Trafaret = TrafaretMeta('Trafaret', (Trafaret,), {})
-
 
 class TypeMeta(TrafaretMeta):
 
@@ -159,6 +167,7 @@ class TypeMeta(TrafaretMeta):
         return self(type_)
 
 
+@py3metafix
 class Type(Trafaret):
 
     """
@@ -169,9 +178,10 @@ class Type(Trafaret):
     >>> c = Type[int]
     >>> c.check(1)
     1
-    >>> extract(c.check("foo")).error
-    value is not int
+    >>> extract_error(c, "foo")
+    'value is not int'
     """
+    __metaclass__ = TypeMeta
 
     def __init__(self, type_):
         self.type_ = type_
@@ -182,9 +192,6 @@ class Type(Trafaret):
 
     def __repr__(self):
         return "<Type(%s)>" % self.type_.__name__
-
-
-Type = TypeMeta('Type', (Type,), {})
 
 
 class Any(Trafaret):
@@ -215,6 +222,7 @@ class OrMeta(TrafaretMeta):
         return cls() << other
 
 
+@py3metafix
 class Or(Trafaret):
 
     """
@@ -224,39 +232,34 @@ class Or(Trafaret):
     >>> nullString.check(None)
     >>> nullString.check("test")
     'test'
-    >>> nullString.check(1)
-    Traceback (most recent call last):
-    ...
-    DataError: no one contract matches: value is not string || value should be None
+    >>> extract_error(nullString, 1)
+    {0: 'value is not string', 1: 'value should be None'}
     """
 
     __metaclass__ = OrMeta
 
-    def __init__(self, *contracts):
-        self.contracts = list(map(self._contract, contracts))
+    def __init__(self, *trafarets):
+        self.trafarets = list(map(self._trafaret, trafarets))
 
     def _check_val(self, value):
         errors = []
-        for contract in self.contracts:
+        for trafaret in self.trafarets:
             try:
-                return contract.check(value)
+                return trafaret.check(value)
             except DataError as e:
                 errors.append(e)
         raise DataError(dict(enumerate(errors)))
 
-    def __lshift__(self, contract):
-        self.contracts.append(self._contract(contract))
+    def __lshift__(self, trafaret):
+        self.trafarets.append(self._trafaret(trafaret))
         return self
 
-    def __or__(self, contract):
-        self << contract
+    def __or__(self, trafaret):
+        self << trafaret
         return self
 
     def __repr__(self):
-        return "<Or(%s)>" % (", ".join(map(repr, self.contracts)))
-
-
-Or = OrMeta('Or', (Or,), {})
+        return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))
 
 
 class Null(Trafaret):
@@ -302,7 +305,7 @@ class NumberMeta(TrafaretMeta):
 
     """
     Allows slicing syntax for min and max arguments for
-    number contracts
+    number trafarets
 
     >>> Int[1:]
     <Int(gte=1)>
@@ -336,6 +339,7 @@ class NumberMeta(TrafaretMeta):
         return cls(gt=gt)
 
 
+@py3metafix
 class Float(Trafaret):
 
     """
@@ -349,22 +353,16 @@ class Float(Trafaret):
     <Float(gte=1, lte=10)>
     >>> Float().check(1.0)
     1.0
-    >>> Float().check(1)
-    Traceback (most recent call last):
-    ...
-    DataError: value is not float
+    >>> extract_error(Float(), 1)
+    'value is not float'
     >>> Float(gte=2).check(3.0)
     3.0
-    >>> Float(gte=2).check(1.0)
-    Traceback (most recent call last):
-    ...
-    DataError: value is less than 2
+    >>> extract_error(Float(gte=2), 1.0)
+    'value is less than 2'
     >>> Float(lte=10).check(5.0)
     5.0
-    >>> Float(lte=3).check(5.0)
-    Traceback (most recent call last):
-    ...
-    DataError: value is greater than 3
+    >>> extract_error(Float(lte=3), 5.0)
+    'value is greater than 3'
     >>> Float().check("5.0")
     5.0
     """
@@ -417,9 +415,6 @@ class Float(Trafaret):
             r += "(%s)" % (", ".join(options))
         r += ">"
         return r
-
-
-Float = NumberMeta('Float', (Float,), {})
 
 
 class Int(Float):
@@ -599,7 +594,7 @@ class SquareBracketsMeta(TrafaretMeta):
 
     def __getitem__(self, args):
         slice_ = None
-        contract = None
+        trafaret = None
         if not isinstance(args, tuple):
             args = (args, )
         for arg in args:
@@ -607,15 +602,16 @@ class SquareBracketsMeta(TrafaretMeta):
                 slice_ = arg
             elif isinstance(arg, Trafaret) or issubclass(arg, Trafaret) \
                  or isinstance(arg, type):
-                contract = arg
-        if not contract:
+                trafaret = arg
+        if not trafaret:
             raise RuntimeError("Trafaret is required for List initialization")
         if slice_:
-            return self(contract, min_length=slice_.start or 0,
+            return self(trafaret, min_length=slice_.start or 0,
                                   max_length=slice_.stop)
-        return self(contract)
+        return self(trafaret)
 
 
+@py3metafix
 class List(Trafaret):
 
     """
@@ -625,37 +621,30 @@ class List(Trafaret):
     <List(min_length=1 | <Int>)>
     >>> List(Int, min_length=1, max_length=10)
     <List(min_length=1, max_length=10 | <Int>)>
-    >>> List(Int).check(1)
-    Traceback (most recent call last):
-    ...
-    DataError: value is not list
+    >>> extract_error(List(Int), 1)
+    'value is not list'
     >>> List(Int).check([1, 2, 3])
     [1, 2, 3]
     >>> List(String).check(["foo", "bar", "spam"])
     ['foo', 'bar', 'spam']
-    >>> List(Int).check([1, 2, 3.0])
-    Traceback (most recent call last):
-    ...
-    DataError: 2: value is not int
+    >>> extract_error(List(Int), [1, 2, 3.0])
+    {2: 'value is not int'}
     >>> List(Int, min_length=1).check([1, 2, 3])
     [1, 2, 3]
-    >>> List(Int, min_length=1).check([])
-    Traceback (most recent call last):
-    ...
-    DataError: list length is less than 1
+    >>> extract_error(List(Int, min_length=1), [])
+    'list length is less than 1'
     >>> List(Int, max_length=2).check([1, 2])
     [1, 2]
-    >>> List(Int, max_length=2).check([1, 2, 3])
-    Traceback (most recent call last):
-    ...
-    DataError: list length is greater than 2
-    >>> List(Int).check(["a"])
+    >>> extract_error(List(Int, max_length=2), [1, 2, 3])
+    'list length is greater than 2'
+    >>> extract_error(List(Int), ["a"])
+    {0: 'value cant be converted to int'}
     """
 
     __metaclass__ = SquareBracketsMeta
 
-    def __init__(self, contract, min_length=0, max_length=None):
-        self.contract = self._contract(contract)
+    def __init__(self, trafaret, min_length=0, max_length=None):
+        self.trafaret = self._trafaret(trafaret)
         self.min_length = min_length
         self.max_length = max_length
 
@@ -670,7 +659,7 @@ class List(Trafaret):
         errors = {}
         for index, item in enumerate(value):
             try:
-                lst.append(self.contract.check(item))
+                lst.append(self.trafaret.check(item))
             except DataError as err:
                 errors[index] = err
         if errors:
@@ -687,12 +676,9 @@ class List(Trafaret):
         r += ", ".join(options)
         if options:
             r += " | "
-        r += repr(self.contract)
+        r += repr(self.trafaret)
         r += ")>"
         return r
-
-
-List = SquareBracketsMeta('List', (List,), {})
 
 
 class Key(object):
@@ -706,7 +692,7 @@ class Key(object):
         self.to_name = to_name
         self.default = default
         self.optional = optional
-        self.contract = Any()
+        self.trafaret = Any()
 
     def pop(self, data):
         if self.name not in data:
@@ -719,8 +705,8 @@ class Key(object):
                 raise StopIteration
         yield self.get_name(), data.pop(self.name, self.default)
 
-    def set_contract(self, contract):
-        self.contract = contract
+    def set_trafaret(self, trafaret):
+        self.trafaret = trafaret
 
     def __rshift__(self, name):
         self.to_name = name
@@ -737,46 +723,46 @@ class Key(object):
 class Dict(Trafaret):
 
     """
-    >>> contract = Dict(foo=Int, bar=String) >> ignore
-    >>> contract.check({"foo": 1, "bar": "spam"})
-    >>> extract_error(contract, {"foo": 1, "bar": 2})
+    >>> trafaret = Dict(foo=Int, bar=String) >> ignore
+    >>> trafaret.check({"foo": 1, "bar": "spam"})
+    >>> extract_error(trafaret, {"foo": 1, "bar": 2})
     {'bar': 'value is not string'}
-    >>> extract_error(contract, {"foo": 1})
+    >>> extract_error(trafaret, {"foo": 1})
     {'bar': 'is required'}
-    >>> extract_error(contract, {"foo": 1, "bar": "spam", "eggs": None})
+    >>> extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
     {'eggs': 'eggs is not allowed key'}
-    >>> contract.allow_extra("eggs")
+    >>> trafaret.allow_extra("eggs")
     <Dict(extras=(eggs) | bar=<String>, foo=<Int>)>
-    >>> contract.check({"foo": 1, "bar": "spam", "eggs": None})
-    >>> contract.check({"foo": 1, "bar": "spam"})
-    >>> extract_error(contract, {"foo": 1, "bar": "spam", "ham": 100})
+    >>> trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
+    >>> trafaret.check({"foo": 1, "bar": "spam"})
+    >>> extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
     {'ham': 'ham is not allowed key'}
-    >>> contract.allow_extra("*")
+    >>> trafaret.allow_extra("*")
     <Dict(any, extras=(eggs) | bar=<String>, foo=<Int>)>
-    >>> contract.check({"foo": 1, "bar": "spam", "ham": 100})
-    >>> contract.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
-    >>> extract_error(contract, {"foo": 1, "ham": 100, "baz": None})
+    >>> trafaret.check({"foo": 1, "bar": "spam", "ham": 100})
+    >>> trafaret.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
+    >>> extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
     {'bar': 'is required'}
-    >>> contract = Dict({Key('bar', optional=True): String}, foo=Int) >> ignore
-    >>> contract.allow_extra("*")
+    >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int) >> ignore
+    >>> trafaret.allow_extra("*")
     <Dict(any | bar=<String>, foo=<Int>)>
-    >>> contract.check({"foo": 1, "ham": 100, "baz": None})
-    >>> extract_error(contract, {"bar": 1, "ham": 100, "baz": None})
+    >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
+    >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
     {'foo': 'is required', 'bar': 'value is not string'}
-    >>> extract_error(contract, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
+    >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
     {'bar': 'value is not string'}
-    >>> contract = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
-    >>> contract.check({'foo': 4})
+    >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
+    >>> trafaret.check({'foo': 4})
     {'foo': 4, 'baz': 'nyanya'}
     """
 
-    def __init__(self, keys={}, **contracts):
+    def __init__(self, keys={}, **trafarets):
         self.extras = []
         self.allow_any = False
         self.keys = []
-        for key, contract in itertools.chain(contracts.items(), keys.items()):
+        for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = key if isinstance(key, Key) else Key(key)
-            key_.set_contract(self._contract(contract))
+            key_.set_trafaret(self._trafaret(trafaret))
             self.keys.append(key_)
 
     def allow_extra(self, *names):
@@ -804,7 +790,7 @@ class Dict(Trafaret):
                     errors[k] = v
                 else:
                     try:
-                        collect[k] = key.contract.check(v)
+                        collect[k] = key.trafaret.check(v)
                     except DataError as err:
                         errors[k] = err
         for key in data:
@@ -828,7 +814,7 @@ class Dict(Trafaret):
             r += " | "
         options = []
         for key in sorted(self.keys, key=lambda k: k.name):
-            options.append("%s=%r" % (key.name, key.contract))
+            options.append("%s=%r" % (key.name, key.trafaret))
         r += ", ".join(options)
         r += ")>"
         return r
@@ -837,19 +823,19 @@ class Dict(Trafaret):
 class Mapping(Trafaret):
 
     """
-    >>> contract = Mapping(String, Int)
-    >>> contract
+    >>> trafaret = Mapping(String, Int)
+    >>> trafaret
     <Mapping(<String> => <Int>)>
-    >>> contract.check({"foo": 1, "bar": 2})
-    >>> extract_error(contract, {"foo": 1, "bar": None})
+    >>> trafaret.check({"foo": 1, "bar": 2})
+    >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value is not int'}}
-    >>> extract_error(contract, {"foo": 1, 2: "bar"})
+    >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
     {2: {'key': 'value is not string', 'value': 'value cant be converted to int'}}
     """
 
     def __init__(self, key, value):
-        self.key = self._contract(key)
-        self.value = self._contract(value)
+        self.key = self._trafaret(key)
+        self.value = self._trafaret(value)
 
     def _check_val(self, mapping):
         checked_mapping = {}
@@ -878,12 +864,12 @@ class Mapping(Trafaret):
 class Enum(Trafaret):
 
     """
-    >>> contract = Enum("foo", "bar", 1) >> ignore
-    >>> contract
+    >>> trafaret = Enum("foo", "bar", 1) >> ignore
+    >>> trafaret
     <Enum('foo', 'bar', 1)>
-    >>> contract.check("foo")
-    >>> contract.check(1)
-    >>> extract_error(contract, 2)
+    >>> trafaret.check("foo")
+    >>> trafaret.check(1)
+    >>> extract_error(trafaret, 2)
     "value doesn't match any variant"
     """
 
@@ -921,12 +907,12 @@ class Call(Trafaret):
     ...     if value != "foo":
     ...         return "I want only foo!"
     ...
-    >>> contract = Call(validator)
-    >>> contract
+    >>> trafaret = Call(validator)
+    >>> trafaret
     <CallC(validator)>
-    >>> contract.check("foo")
+    >>> trafaret.check("foo")
     'foo'
-    >>> extract_error(contract, "bar")
+    >>> extract_error(trafaret, "bar")
     'I want only foo!'
     """
 
@@ -966,31 +952,31 @@ class Forward(Trafaret):
     """
 
     def __init__(self):
-        self.contract = None
+        self.trafaret = None
         self._recur_repr = False
 
-    def __lshift__(self, contract):
-        self.provide(contract)
+    def __lshift__(self, trafaret):
+        self.provide(trafaret)
 
-    def provide(self, contract):
-        if self.contract:
-            raise RuntimeError("contract for Forward is already specified")
-        self.contract = self._contract(contract)
+    def provide(self, trafaret):
+        if self.trafaret:
+            raise RuntimeError("trafaret for Forward is already specified")
+        self.trafaret = self._trafaret(trafaret)
 
     def _check_val(self, value):
-        return self.contract.check(value)
+        return self.trafaret.check(value)
 
     def __repr__(self):
         # XXX not threadsafe
         if self._recur_repr:
             return "<recur>"
         self._recur_repr = True
-        r = "<Forward(%r)>" % self.contract
+        r = "<Forward(%r)>" % self.trafaret
         self._recur_repr = False
         return r
 
 
-class GuardValidationError(DataError):
+class GuardError(DataError):
 
     """
     Raised when guarded function gets invalid arguments,
@@ -1000,9 +986,9 @@ class GuardValidationError(DataError):
     pass
 
 
-def guard(contract=None, **kwargs):
+def guard(trafaret=None, **kwargs):
     """
-    Decorator for protecting function with contracts
+    Decorator for protecting function with trafarets
 
     >>> @guard(a=String, b=Int, c=String)
     ... def fn(a, b, c="default"):
@@ -1031,16 +1017,16 @@ def guard(contract=None, **kwargs):
     >>> g = guard(Int())
     Traceback (most recent call last):
     ...
-    RuntimeError: contract should be instance of Dict or Forward
+    RuntimeError: trafaret should be instance of Dict or Forward
     """
-    if contract and not isinstance(contract, Dict) and \
-                    not isinstance(contract, Forward):
-        raise RuntimeError("contract should be instance of Dict or Forward")
-    elif contract and kwargs:
+    if trafaret and not isinstance(trafaret, Dict) and \
+                    not isinstance(trafaret, Forward):
+        raise RuntimeError("trafaret should be instance of Dict or Forward")
+    elif trafaret and kwargs:
         raise RuntimeError("choose one way of initialization,"
-                           " contract or kwargs")
-    if not contract:
-        contract = Dict(**kwargs)
+                           " trafaret or kwargs")
+    if not trafaret:
+        trafaret = Dict(**kwargs)
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
         @functools.wraps(fn)
@@ -1059,27 +1045,34 @@ def guard(contract=None, **kwargs):
                                          argspec.defaults or ()):
                     if name not in call_args:
                         call_args[name] = default
-                contract.check(call_args)
+                trafaret.check(call_args)
             except DataError as err:
-                raise GuardValidationError(error=err.error)
+                raise GuardError(error=err.error)
             return fn(*args, **kwargs)
-        decor.__doc__ = "guarded with %r\n\n" % contract + (decor.__doc__ or "")
+        decor.__doc__ = "guarded with %r\n\n" % trafaret + (decor.__doc__ or "")
         return decor
     return wrapper
 
 
 def ignore(val):
-    '''
-    Stub to ignore value from checker
+
+    """
+    Stub to ignore value from trafaret
     Use it like:
 
     >>> a = Int >> ignore
     >>> a.check(7)
-    '''
+    """
+
     pass
 
 
 def extract_error(checker, *a, **kw):
+
+    """
+    Helper for tests - catch error and return it as dict
+    """
+
     try:
         if hasattr(checker, 'check'):
             return checker.check(*a, **kw)

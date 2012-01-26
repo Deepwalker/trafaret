@@ -1,5 +1,5 @@
 """
-There will be small helpers to render forms with exist contracts for DRY.
+There will be small helpers to render forms with exist trafarets for DRY.
 """
 import collections
 from itertools import groupby

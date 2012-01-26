@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
 from setuptools import setup, find_packages
+import os.path
+
+
+def read(fname):
+    return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
 
 setupconf = dict(
@@ -11,7 +16,7 @@ setupconf = dict(
     author = 'Barbuza, Deepwalker',
     author_email = 'krivushinme@gmail.com',
     description = ('Validation and parsing library'),
-    long_description = "Place README here",
+    long_description = read('README.rst'),
 
     packages = find_packages(),
 

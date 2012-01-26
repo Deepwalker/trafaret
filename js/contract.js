@@ -37,18 +37,18 @@
    };
 
    var OrC = function() {
-     this.contracts = [];
+     this.trafarets = [];
      for (var i=0, length = arguments.length; i < length; i++) {
-       this.contracts.push(arguments[i]);
+       this.trafarets.push(arguments[i]);
      }
    };
 
    OrC.prototype = new Trafaret();
 
    OrC.prototype.check = function(value) {
-     for (var i=0, length=this.contracts.length; i < length; i++) {
+     for (var i=0, length=this.trafarets.length; i < length; i++) {
        try {
-	 this.contracts[i].check(value);
+	 this.trafarets[i].check(value);
 	 return;
        } catch (e) {
 	 if (! (e instanceof TrafaretValidationError)) {
@@ -56,7 +56,7 @@
 	 }
        }
      }
-     this.failure("no one contract matches");
+     this.failure("no one trafaret matches");
    };
 
    var NullC = function() {
@@ -140,8 +140,8 @@
      }
    };
 
-   var ListC = function(contract, min_length, max_length) {
-     this.contract = contract;
+   var ListC = function(trafaret, min_length, max_length) {
+     this.trafaret = trafaret;
      this.min_length = this._select(min_length, NaN);
      this.max_length = this._select(max_length, NaN);
    };
@@ -161,7 +161,7 @@
      var name, message;
      for (var i=0, length=value.length; i < length; i++) {
        try{
-	 this.contract.check(value[i]);
+	 this.trafaret.check(value[i]);
        } catch (e) {
 	 if (e instanceof TrafaretValidationError) {
 	   name = e.name;

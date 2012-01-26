@@ -13,8 +13,8 @@ function assertRaises(callable, owner, args, exception_type, message) {
   fail("exception " + exception_type + " was not rised");
 }
 
-function assertTrafaretFailure(contract, value, message) {
-  assertRaises(contract.check, contract, [value], TrafaretValidationError, message);
+function assertTrafaretFailure(trafaret, value, message) {
+  assertRaises(trafaret.check, trafaret, [value], TrafaretValidationError, message);
 }
 
 function testAnyC() {
@@ -59,7 +59,7 @@ function testOrC() {
   var c = new OrC(new IntC(), new StringC());
   c.check(1);
   c.check("test");
-  assertTrafaretFailure(c, "", "no one contract matches");
+  assertTrafaretFailure(c, "", "no one trafaret matches");
 }
 
 function testListC() {
