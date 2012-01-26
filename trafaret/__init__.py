@@ -9,7 +9,7 @@ import itertools
 
 
 # Python3 support
-py3 = sys.version_info.major == 3
+py3 = sys.version_info[0] == 3
 if py3:
     import urllib.parse as urlparse
     basestring = (str, bytes)
