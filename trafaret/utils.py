@@ -8,7 +8,7 @@ from itertools import groupby
 def recursive_unfold(data, prefix='', delimeter='__'):
 
     def concat(prefix, value, delimeter):
-        return (prefix + delimeter if prefix else '') + value
+        return (prefix + delimeter if prefix else '') + str(value)
 
     def unfold_list(data, prefix, delimeter):
         i = 0
@@ -52,6 +52,8 @@ def unfold(data, prefix='', delimeter='__'):
 
 def fold(data, prefix='', delimeter='__'):
     """
+    >>> fold({'a__a': 4})
+    {'a': {'a': 4}}
     >>> fold({'a__a': 4, 'a__b': 5})
     {'a': {'a': 4, 'b': 5}}
     >>> fold({'a__1': 2, 'a__0': 1, 'a__2': 3})
@@ -64,7 +66,7 @@ def fold(data, prefix='', delimeter='__'):
     [{'a': [4, 7]}, {'b': 5}]
     """
     def deep(data):
-        if len(data) == 1:
+        if len(data) == 1 and len(data[0][0]) < 2:
             if data[0][0]:
                 return {data[0][0][0]: data[0][1]}
             return data[0][1]

@@ -29,8 +29,9 @@ Base class for trafarets. Use it to make new trafarets.
 In derrived classes you need to implement `_check` or `_check_val`
 methods. `_check_val` must return value, `_check` must return `None` on success.
 
-You can implement `converter` method, if you want to convert value somehow, but
-want to make free for developer to apply his own converters to raw data.
+You can implement `converter` method if you want to convert value somehow, but
+want to make free for developer to apply his own converters to raw data. This
+used to return strings instead of `Match` object in `String` trafaret.
 
 Type
 ----
@@ -61,11 +62,11 @@ Value must be `None`.
 Simple checkers
 ---------------
 
-``Bool``
+``Bool`` - ``t.Bool.check(True)``
 
-``Float``
+``Float`` - try convert from other types to float
 
-``Int``
+``Int`` - try convert from other types to int
 
 ``Atom`` - value must be exactly equal to Atom first arg - ``t.Atom('this_key_must_be_this')``.
 
@@ -73,15 +74,18 @@ Simple checkers
 String
 ------
 
-``regex`` param - will return ``re.Match`` object. Default converter will return ``match.group()``.
+If you will provide ``regex`` param - will return ``re.Match`` object.
+Default converter will return ``match.group()`` result. You will get ``re.Match`` object
+in converter.
 
 ``Email`` and ``URL`` just provide regular expressions and a bit of logic for IDNA domains.
+Default converters return email and domain, but you will get ``re.Match`` in converter.
 
 
 List
 ----
 
-Just List of elements of one type. In converter you will get ``list`` instance of converted elements.
+Just List of elements of one type. In converter you will get list of converted elements.
 
 Dict
 ----

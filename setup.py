@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+from setuptools import setup
 import os.path
 
 
@@ -10,7 +10,7 @@ def read(fname):
 
 setupconf = dict(
     name = 'trafaret',
-    version = '0.3.3',
+    version = '0.3.5',
     license = 'BSD',
     url = 'https://github.com/Deepwalker/trafaret/',
     author = 'Barbuza, Deepwalker',
@@ -18,7 +18,7 @@ setupconf = dict(
     description = ('Validation and parsing library'),
     long_description = read('README.rst'),
 
-    packages = find_packages(),
+    packages = ['trafaret'],
 
     classifiers = [
         'Intended Audience :: Developers',
