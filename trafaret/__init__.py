@@ -695,15 +695,13 @@ class Key(object):
         self.trafaret = Any()
 
     def pop(self, data):
-        if self.name not in data:
-            if self.optional:
-                raise StopIteration
-            elif self.default is not None:
-                pass
-            else:
-                yield self.name, DataError(error='is required')
-                raise StopIteration
-        yield self.get_name(), data.pop(self.name, self.default)
+        if self.name in data or self.default is not None:
+            yield self.get_name(), catch_error(self.trafaret,
+                    data.pop(self.name, self.default))
+            raise StopIteration
+        if not self.optional:
+            yield self.name, DataError(error='is required')
+        raise StopIteration
 
     def set_trafaret(self, trafaret):
         self.trafaret = trafaret
@@ -789,10 +787,7 @@ class Dict(Trafaret):
                 if isinstance(v, DataError):
                     errors[k] = v
                 else:
-                    try:
-                        collect[k] = key.trafaret.check(v)
-                    except DataError as err:
-                        errors[k] = err
+                    collect[k] = v
         for key in data:
             if not self.allow_any and key not in self.extras:
                 errors[key] = DataError("%s is not allowed key" % key)
@@ -827,6 +822,7 @@ class Mapping(Trafaret):
     >>> trafaret
     <Mapping(<String> => <Int>)>
     >>> trafaret.check({"foo": 1, "bar": 2})
+    {'foo': 1, 'bar': 2}
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value is not int'}}
     >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
@@ -856,6 +852,7 @@ class Mapping(Trafaret):
                 checked_mapping[checked_key] = checked_value
         if errors:
             raise DataError(error=errors)
+        return checked_mapping
 
     def __repr__(self):
         return "<Mapping(%r => %r)>" % (self.key, self.value)
@@ -1067,7 +1064,7 @@ def ignore(val):
     pass
 
 
-def extract_error(checker, *a, **kw):
+def catch_error(checker, *a, **kw):
 
     """
     Helper for tests - catch error and return it as dict
@@ -1079,4 +1076,15 @@ def extract_error(checker, *a, **kw):
         elif callable(checker):
             return checker(*a, **kw)
     except DataError as error:
-        return error.as_dict()
+        return error
+
+def extract_error(checker, *a, **kw):
+
+    """
+    Helper for tests - catch error and return it as dict
+    """
+
+    res = catch_error(checker, *a, **kw)
+    if isinstance(res, DataError):
+        return res.as_dict()
+    return res
