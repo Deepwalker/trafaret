@@ -6,17 +6,19 @@ import inspect
 import re
 import copy
 import itertools
+import numbers
 
 
 # Python3 support
 py3 = sys.version_info[0] == 3
 if py3:
     import urllib.parse as urlparse
-    basestring = (str, bytes)
+    str_types = (str, bytes)
     unicode = str
 else:
     from future_builtins import map
     import urlparse
+    str_types = (str, unicode)
 
 
 """
@@ -133,7 +135,7 @@ class Trafaret(object):
         Helper for complex trafarets, takes trafaret instance or class
         and returns trafaret instance
         """
-        if isinstance(trafaret, Trafaret):
+        if isinstance(trafaret, Trafaret) or inspect.isroutine(trafaret):
             return trafaret
         elif issubclass(trafaret, Trafaret):
             return trafaret()
@@ -353,8 +355,10 @@ class Float(Trafaret):
     <Float(gte=1, lte=10)>
     >>> Float().check(1.0)
     1.0
-    >>> extract_error(Float(), 1)
+    >>> extract_error(Float(), 1 + 3j)
     'value is not float'
+    >>> extract_error(Float(), 1)
+    1.0
     >>> Float(gte=2).check(3.0)
     3.0
     >>> extract_error(Float(gte=2), 1.0)
@@ -370,6 +374,7 @@ class Float(Trafaret):
     __metaclass__ = NumberMeta
 
     value_type = float
+    convertable = str_types + (numbers.Real,)
 
     def __init__(self, gte=None, lte=None, gt=None, lt=None):
         self.gte = gte
@@ -379,7 +384,7 @@ class Float(Trafaret):
 
     def _check_val(self, val):
         if not isinstance(val, self.value_type):
-            if isinstance(val, basestring):
+            if isinstance(val, self.convertable):
                 try:
                     value = self.value_type(val)
                 except ValueError:
@@ -425,6 +430,8 @@ class Int(Float):
     >>> Int().check(5)
     5
     >>> extract_error(Int(), 1.1)
+    1
+    >>> extract_error(Int(), 1 + 1j)
     'value is not int'
     """
 
@@ -471,10 +478,10 @@ class String(Trafaret):
 
     def __init__(self, allow_blank=False, regex=None):
         self.allow_blank = allow_blank
-        self.regex = re.compile(regex) if isinstance(regex, basestring) else regex
+        self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
 
     def _check_val(self, value):
-        if not isinstance(value, basestring):
+        if not isinstance(value, str_types):
             self._failure("value is not string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
@@ -486,7 +493,7 @@ class String(Trafaret):
         return value
 
     def converter(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, str_types):
             return value
         return value.group()
 
@@ -627,7 +634,7 @@ class List(Trafaret):
     [1, 2, 3]
     >>> List(String).check(["foo", "bar", "spam"])
     ['foo', 'bar', 'spam']
-    >>> extract_error(List(Int), [1, 2, 3.0])
+    >>> extract_error(List(Int), [1, 2, 1 + 3j])
     {2: 'value is not int'}
     >>> List(Int, min_length=1).check([1, 2, 3])
     [1, 2, 3]

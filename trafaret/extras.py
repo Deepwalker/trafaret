@@ -5,9 +5,8 @@ class KeysSubset(Key):
     """
     From checkers and converters dict must be returned. Some for errors.
 
-    >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x['pwd'] == x['pwd1'] else DataError('Not equal')}
-    >>> subd = Mapping(String, String) >> cmp_pwds
-    >>> d = Dict({KeysSubset(['pwd', 'pwd1']): subd, 'key1': String})
+    >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
+    >>> d = Dict({KeysSubset(['pwd', 'pwd1']): cmp_pwds, 'key1': String})
     >>> sorted(d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys())
     ['key1', 'pwd']
     >>> extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
