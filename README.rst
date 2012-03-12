@@ -48,6 +48,7 @@ pop only one key, but it then can yield it with different name::
 
 We have some example of enhanced ``Key`` in extras::
 
+    >>> from trafaret.extras import KeysSubset
     >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
     >>> d = Dict({KeysSubset(['pwd', 'pwd1']): cmp_pwds, 'key1': String})
     >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
