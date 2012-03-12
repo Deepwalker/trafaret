@@ -909,7 +909,8 @@ class Call(Trafaret):
     """
     >>> def validator(value):
     ...     if value != "foo":
-    ...         return "I want only foo!"
+    ...         return DataError("I want only foo!")
+    ...     return 'foo'
     ...
     >>> trafaret = Call(validator)
     >>> trafaret
@@ -929,10 +930,12 @@ class Call(Trafaret):
                                " one argument function")
         self.fn = fn
 
-    def _check(self, value):
-        error = self.fn(value)
-        if error is not None:
-            self._failure(error)
+    def _check_val(self, value):
+        res = self.fn(value)
+        if isinstance(res, DataError):
+            raise res
+        else:
+            return res
 
     def __repr__(self):
         return "<CallC(%s)>" % self.fn.__name__
@@ -945,14 +948,14 @@ class Forward(Trafaret):
     >>> node << Dict(name=String, children=List[node])
     >>> node
     <Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>
-    >>> node.check({"name": "foo", "children": []})
-    {'children': [], 'name': 'foo'}
+    >>> node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
+    True
     >>> extract_error(node, {"name": "foo", "children": [1]})
     {'children': {0: 'value is not dict'}}
     >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
-                     ]})
-    {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
+                     ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
+    True
     """
 
     def __init__(self):
@@ -1049,10 +1052,10 @@ def guard(trafaret=None, **kwargs):
                                          argspec.defaults or ()):
                     if name not in call_args:
                         call_args[name] = default
-                trafaret.check(call_args)
+                converted = trafaret.check(call_args)
             except DataError as err:
                 raise GuardError(error=err.error)
-            return fn(*args, **kwargs)
+            return fn(**converted)
         decor.__doc__ = "guarded with %r\n\n" % trafaret + (decor.__doc__ or "")
         return decor
     return wrapper
