@@ -118,10 +118,10 @@ comma_to_list = lambda d: [s.strip() for s in d.split(',')]
 converter = t.Dict({
     t.Key('userNameFirst') >> 'name': t.String,
     t.Key('userNameSecond') >> 'second_name': t.String,
-    t.Key('userPassword') >> 'password': t.String >> hash_md5,
+    t.Key('userPassword') >> 'password': hash_md5,
     t.Key('userEmail', optional=True, to_name='email'): t.String,
     t.Key('userTitle', default='Bachelor', to_name='title'): t.String,
-    t.Key('userRoles', to_name='roles'): t.String >> comma_to_list,
+    t.Key('userRoles', to_name='roles'): comma_to_list,
 })
 
 assert converter.check(sample_data) == desired_data

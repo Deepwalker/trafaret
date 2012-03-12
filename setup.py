@@ -10,13 +10,14 @@ def read(fname):
 
 setupconf = dict(
     name = 'trafaret',
-    version = '0.3.7',
+    version = '0.3.8',
     license = 'BSD',
     url = 'https://github.com/Deepwalker/trafaret/',
     author = 'Barbuza, Deepwalker',
     author_email = 'krivushinme@gmail.com',
     description = ('Validation and parsing library'),
     long_description = read('README.rst'),
+    keywords = 'validatation form forms data schema',
 
     packages = ['trafaret'],
 
@@ -25,6 +26,7 @@ setupconf = dict(
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
         ],
     )
 
