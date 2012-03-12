@@ -8,7 +8,7 @@ Sample of usage::
     import trafaret as t
 
     date = t.Dict(year=t.Int, month=t.Int, day=t.Int) >> (lambda d: datetime.datetime(**d))
-    assert task.check({'year': 2012, 'month': 1, 'day': 12}) == datetime.datetime(2012, 1, 12)
+    assert date.check({'year': 2012, 'month': 1, 'day': 12}) == datetime.datetime(2012, 1, 12)
 
 ``t.Dict`` creates new dict structure validator with three ``t.Int`` elements.
 ``>>`` operation adds lambda function to the converters of given checker.
