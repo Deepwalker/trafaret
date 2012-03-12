@@ -16,6 +16,9 @@ Obviously every checker has some default converter, but when you use ``>>`` or `
 you disable default converter with your own.
 Converters can be chained. You can raise DataError in converters.
 
+Features
+--------
+
 Trafaret has very handy features, read below some samples.
 
 Regex String
