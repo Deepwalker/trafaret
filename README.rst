@@ -2,7 +2,7 @@ Trafaret
 ========
 
 Trafaret is validation library with support to convert data structures.
-Sample of usage::
+Sample usage::
 
     import datetime
     import trafaret as t
@@ -24,7 +24,7 @@ Trafaret has very handy features, read below some samples.
 Regex String
 ............
 
-``String`` can work with regular expressions, and this give you real power::
+``String`` can work with regular expressions, and this givs you real power::
 
     >>> c = t.String(regex=r'name=(\w+)') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
@@ -36,10 +36,15 @@ Some way you can use all re.Match power to extract from strings dicts and so on.
 Dict and Key
 ............
 
-``Dict`` get dict with ``Key`` as keys (it can be strings but will be converted to ``Key``).
-And ``Key`` is powerfull conception - it pops from original dict needed keys. Basic ``Key``
-pop only one key, but it then can yield it with different name::
+``Dict`` get dict with keys and checkers, like  ``{'a': t.Int}``. But instead of string key
+you can use ``Key`` class. And ``Key`` instance can rename given key name to something
+else::
 
+    >>> c = t.Dict(t.Key('uNJ') >> 'user_name': t.String})
+    >>> c.check({'uNJ': 'Adam'})
+    {'user_name': 'Adam'}
+
+And we can do more with right converter::
 
     >>> from trafaret.utils import fold
     >>> c = t.Dict({t.Key('uNJ') >> 'user__name': t.String}) >> fold
@@ -64,7 +69,7 @@ instance.
 Trafaret
 --------
 
-Base class for trafarets. Use it to make new trafarets.
+Base class for checkers. Use it to make new checkers.
 In derrived classes you need to implement `_check` or `_check_val`
 methods. `_check_val` must return value, `_check` must return `None` on success.
 
@@ -75,6 +80,7 @@ used to return strings instead of `Match` object in `String` trafaret.
 Type
 ----
 
+Checks that data is instance of given class.
 Just instantitate it with any class, like int, float, str.
 Sample::
 
