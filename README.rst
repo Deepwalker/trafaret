@@ -26,7 +26,7 @@ Regex String
 
 ``String`` can work with regular expressions, and this givs you real power::
 
-    >>> c = t.String(regex=r'name=(\w+)') >> (lambda m: m.groups()[0])
+    >>> c = t.String(regex=r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
 
@@ -108,20 +108,40 @@ Null
 
 Value must be `None`.
 
-Simple checkers
----------------
+Bool
+----
+Check if value is boolean::
 
-``Bool`` - ``t.Bool.check(True)``
+    >>> t.Bool.check(True)
+    True
 
-``Float`` - try convert from other types to float
+Float
+-----
+Check if value is float or can be converted to.
+Supports ``lte``, ``gte``, ``lt``, ``gt`` parameters::
 
-``Int`` - try convert from other types to int
+    >>> t.Float(gt=3.5).check(4)
+    4
 
-``Atom`` - value must be exactly equal to Atom first arg - ``t.Atom('this_key_must_be_this')``.
+Int
+---
+Similar to ``Float``, but checking for int::
+
+    >>> t.Int(gt=3).check(4)
+    4
+
+Atom
+----
+Value must be exactly equal to Atom first arg::
+
+    >>> t.Atom('this_key_must_be_this').check('this_key_must_be_this')
+    'this_key_must_be_this'
+
+This may be useful in ``Dict`` in pair with ``Or`` statements.
 
 
-String
-------
+String, Email, URL
+------------------
 
 Basicaly just check that arg is string.
 Argument ``allow_blank`` indicates if string can be blank ot not.
@@ -132,6 +152,20 @@ in converter.
 ``Email`` and ``URL`` just provide regular expressions and a bit of logic for IDNA domains.
 Default converters return email and domain, but you will get ``re.Match`` in converter.
 
+So, some examples to make things clear::
+
+    >>> t.String().check('werwerwer')
+    'werwerwer'
+    >>> t.String(regex='^\s+$).check('   ')
+    '   '
+    >>> t.String(regex='^name=(\w+)$').check('name=Jeff')
+    'Jeff'
+
+And one wild sample::
+
+    >>> todt = lambda  m: datetime(*[int(i) for i in m.groups()])
+    >>> (t.String(regex='^year=(\d+),month=(\d+),day=(\d+)$') >> todt).check('year=2011,month=07,day=23')
+    datetime.datetime(2011, 7, 23, 0, 0)
 
 List
 ----
@@ -169,6 +203,23 @@ Special class to create dict keys. Parameters are:
 
 You can provide ``to_name`` with ``>>`` operation::
     Key('javaStyleData') >> 'plain_cool_data'
+
+KeysSubset
+..........
+
+Experimental feature, not stable API. Sometimes you need to make something with part of dict keys.
+So you can::
+
+    >>> join = (lambda d: {'name': ' '.join(d.values())})
+    >>> Dict({KeysSubset(['name', 'last']): join}).check({'name': 'Adam', 'last': 'Smith'})
+    {'name': 'Smith Adam'}
+
+As you can see you need return dict from checker.
+
+Error raise
+...........
+
+In ``Dict`` you can just return error from checkers or converters, there is need not to raise them.
 
 
 Mapping

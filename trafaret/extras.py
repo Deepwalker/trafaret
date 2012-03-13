@@ -13,12 +13,15 @@ class KeysSubset(Key):
     {'pwd': 'Not equal'}
     >>> extract_error(d.check, {'pwd': 'a', 'pwd1': None, 'key1': 'b'})
     {'pwd': 'Not equal'}
+    >>> get_values = (lambda d, keys: [d[k] for k in keys if k in d])
+    >>> join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
+    >>> Dict({KeysSubset(['name', 'last']): join}).check({'name': 'Adam', 'last': 'Smith'})
+    {'name': 'Adam Smith'}
     """
 
-    def __init__(self, keys, to_name=None):
+    def __init__(self, keys):
         self.keys = keys
         self.name = '[%s]' % ', '.join(self.keys)
-        self.to_name = to_name
         self.trafaret = Any()
 
     def pop(self, data):
