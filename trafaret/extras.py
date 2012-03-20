@@ -6,7 +6,7 @@ class KeysSubset(Key):
     From checkers and converters dict must be returned. Some for errors.
 
     >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
-    >>> d = Dict({KeysSubset(['pwd', 'pwd1']): cmp_pwds, 'key1': String})
+    >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
     >>> sorted(d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys())
     ['key1', 'pwd']
     >>> extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
@@ -15,11 +15,11 @@ class KeysSubset(Key):
     {'pwd': 'Not equal'}
     >>> get_values = (lambda d, keys: [d[k] for k in keys if k in d])
     >>> join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
-    >>> Dict({KeysSubset(['name', 'last']): join}).check({'name': 'Adam', 'last': 'Smith'})
+    >>> Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
     {'name': 'Adam Smith'}
     """
 
-    def __init__(self, keys):
+    def __init__(self, *keys):
         self.keys = keys
         self.name = '[%s]' % ', '.join(self.keys)
         self.trafaret = Any()
