@@ -708,7 +708,9 @@ class Key(object):
             raise StopIteration
         if not self.optional:
             yield self.name, DataError(error='is required')
-        raise StopIteration
+
+    def keys_names(self):
+        yield self.name
 
     def set_trafaret(self, trafaret):
         self.trafaret = trafaret
@@ -803,6 +805,11 @@ class Dict(Trafaret):
         if errors:
             raise DataError(error=errors)
         return collect
+
+    def keys_names(self):
+        for key in self.keys:
+            for k in key.keys_names():
+                yield k
 
     def __repr__(self):
         r = "<Dict("
