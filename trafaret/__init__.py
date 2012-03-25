@@ -150,7 +150,7 @@ class Trafaret(object):
         Appends new converter to list.
         """
         if hasattr(self, 'converters'):
-            self.checkers.append(converter)
+            self.converters.append(converter)
         else:
             self.converters = [converter]
         return self
