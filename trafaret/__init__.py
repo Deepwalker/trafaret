@@ -95,6 +95,14 @@ class Trafaret(object):
     """
     Base class for trafarets, provides only one method for
     trafaret validation failure reporting
+
+    Check that converters can be stacked
+    >>> (Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
+    6
+
+    Check order
+    >>> (Int() >> float >> str).check(4)
+    '4.0'
     """
 
     __metaclass__ = TrafaretMeta
@@ -121,7 +129,7 @@ class Trafaret(object):
     def _convert(self, value):
         val = value
         for converter in getattr(self, 'converters', [self.converter]):
-            val = converter(value)
+            val = converter(val)
         return val
 
     def _failure(self, error=None):
