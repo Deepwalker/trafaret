@@ -777,11 +777,19 @@ class Dict(Trafaret):
     >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
     >>> trafaret.check({'foo': 4})
     {'foo': 4, 'baz': 'nyanya'}
+    >>> _ = trafaret.ignore_extra('fooz')
+    >>> trafaret.check({'foo': 4, 'fooz': 5})
+    {'foo': 4, 'baz': 'nyanya'}
+    >>> _ = trafaret.ignore_extra('*')
+    >>> trafaret.check({'foo': 4, 'foor': 5})
+    {'foo': 4, 'baz': 'nyanya'}
     """
 
     def __init__(self, keys={}, **trafarets):
         self.extras = []
         self.allow_any = False
+        self.ignore = []
+        self.ignore_any = False
         self.keys = []
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = key if isinstance(key, Key) else Key(key)
@@ -794,6 +802,14 @@ class Dict(Trafaret):
                 self.allow_any = True
             else:
                 self.extras.append(name)
+        return self
+
+    def ignore_extra(self, *names):
+        for name in names:
+            if name == "*":
+                self.ignore_any = True
+            else:
+                self.ignore.append(name)
         return self
 
     def make_optional(self, *args):
@@ -813,11 +829,14 @@ class Dict(Trafaret):
                     errors[k] = v
                 else:
                     collect[k] = v
-        for key in data:
-            if not self.allow_any and key not in self.extras:
-                errors[key] = DataError("%s is not allowed key" % key)
-            else:
-                collect[key] = data
+        if not self.ignore_any:
+            for key in data:
+                if key in self.ignore:
+                    continue
+                if not self.allow_any and key not in self.extras:
+                    errors[key] = DataError("%s is not allowed key" % key)
+                else:
+                    collect[key] = data
         if errors:
             raise DataError(error=errors)
         return collect
@@ -832,6 +851,8 @@ class Dict(Trafaret):
         options = []
         if self.allow_any:
             options.append("any")
+        if self.ignore:
+            options.append("ignore=(%s)" % (", ".join(self.ignore)))
         if self.extras:
             options.append("extras=(%s)" % (", ".join(self.extras)))
         r += ", ".join(options)
