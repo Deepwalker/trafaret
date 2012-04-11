@@ -381,8 +381,8 @@ class Float(Trafaret):
 
     __metaclass__ = NumberMeta
 
-    value_type = float
     convertable = str_types + (numbers.Real,)
+    value_type = float
 
     def __init__(self, gte=None, lte=None, gt=None, lt=None):
         self.gte = gte
@@ -390,16 +390,18 @@ class Float(Trafaret):
         self.gt = gt
         self.lt = lt
 
+    def _converter(self, val):
+        if not isinstance(val, self.convertable):
+            self._failure('value is not %s' % self.value_type.__name__)
+        try:
+            return self.value_type(val)
+        except ValueError:
+            self._failure("value can't be converted to %s" %
+                          self.value_type.__name__)
+
     def _check_val(self, val):
         if not isinstance(val, self.value_type):
-            if isinstance(val, self.convertable):
-                try:
-                    value = self.value_type(val)
-                except ValueError:
-                    self._failure("value can't be converted to %s" %
-                            self.value_type.__name__)
-            else:
-                self._failure("value is not %s" % self.value_type.__name__)
+            value = self._converter(val)
         else:
             value = val
         if self.gte is not None and value < self.gte:
@@ -438,12 +440,18 @@ class Int(Float):
     >>> Int().check(5)
     5
     >>> extract_error(Int(), 1.1)
-    "value can't be converted to int"
+    'value is not int'
     >>> extract_error(Int(), 1 + 1j)
     'value is not int'
     """
 
     value_type = int
+
+    def _converter(self, val):
+        if isinstance(val, float):
+            if not val.is_integer():
+                self._failure('value is not int')
+        return super(Int, self)._converter(val)
 
 
 class Atom(Trafaret):
