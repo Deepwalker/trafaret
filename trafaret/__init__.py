@@ -396,7 +396,7 @@ class Float(Trafaret):
                 try:
                     value = self.value_type(val)
                 except ValueError:
-                    self._failure("value cant be converted to %s" %
+                    self._failure("value can't be converted to %s" %
                             self.value_type.__name__)
             else:
                 self._failure("value is not %s" % self.value_type.__name__)
@@ -438,7 +438,7 @@ class Int(Float):
     >>> Int().check(5)
     5
     >>> extract_error(Int(), 1.1)
-    1
+    "value can't be converted to int"
     >>> extract_error(Int(), 1 + 1j)
     'value is not int'
     """
@@ -653,7 +653,7 @@ class List(Trafaret):
     >>> extract_error(List(Int, max_length=2), [1, 2, 3])
     'list length is greater than 2'
     >>> extract_error(List(Int), ["a"])
-    {0: 'value cant be converted to int'}
+    {0: "value can't be converted to int"}
     """
 
     __metaclass__ = SquareBracketsMeta
@@ -848,7 +848,7 @@ class Mapping(Trafaret):
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value is not int'}}
     >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not string', 'value': 'value cant be converted to int'}}
+    {2: {'key': 'value is not string', 'value': "value can't be converted to int"}}
     """
 
     def __init__(self, key, value):

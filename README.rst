@@ -12,9 +12,14 @@ Sample usage::
 
 ``t.Dict`` creates new dict structure validator with three ``t.Int`` elements.
 ``>>`` operation adds lambda function to the converters of given checker.
-Obviously every checker has some default converter, but when you use ``>>`` or ``.append``,
+Some checkers have default converter, but when you use ``>>`` or ``.append``,
 you disable default converter with your own.
-Converters can be chained. You can raise DataError in converters.
+
+This does not mean that ``Int`` will not
+convert numbers to int, this mean that some checkers, like ``String`` with regular expression,
+have special converters applied to  that can be overriden by your own.
+
+Converters can be chained. You can raise ``DataError`` in converters.
 
 Features
 --------
