@@ -27,9 +27,11 @@ It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
 
-__all__ = ("DataError", "Trafaret", "Any", "Int", "String",
-           "List", "Dict", "Or", "Null", "Float", "Enum", "Callable"
-           "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
+__all__ = (
+    "DataError", "Trafaret", "Any", "Int", "String", "List", "Dict", "Or", 
+    "Null", "Float", "Enum", "Callable" "Call", "Forward", "Bool", "Type", 
+    "Mapping", "guard",
+)
 
 
 def py3metafix(cls):
@@ -332,11 +334,11 @@ class NumberMeta(TrafaretMeta):
     >>> (Int > 5).check(10)
     10
     >>> extract_error(Int > 5, 1)
-    'value should be greater than 5'
+    'value 1 should be greater than 5'
     >>> (Int < 3).check(1)
     1
     >>> extract_error(Int < 3, 3)
-    'value should be less than 3'
+    'value 3 should be less than 3'
     """
 
     def __getitem__(cls, slice_):
@@ -364,17 +366,17 @@ class Float(Trafaret):
     >>> Float().check(1.0)
     1.0
     >>> extract_error(Float(), 1 + 3j)
-    'value is not float'
+    'value (1+3j) is not float'
     >>> extract_error(Float(), 1)
     1.0
     >>> Float(gte=2).check(3.0)
     3.0
     >>> extract_error(Float(gte=2), 1.0)
-    'value is less than 2'
+    'value 1.0 is less than 2'
     >>> Float(lte=10).check(5.0)
     5.0
     >>> extract_error(Float(lte=3), 5.0)
-    'value is greater than 3'
+    'value 5.0 is greater than 3'
     >>> Float().check("5.0")
     5.0
     """
@@ -392,12 +394,15 @@ class Float(Trafaret):
 
     def _converter(self, val):
         if not isinstance(val, self.convertable):
-            self._failure('value is not %s' % self.value_type.__name__)
+            self._failure('value %s is not %s' % (val, self.value_type.__name__))
         try:
             return self.value_type(val)
         except ValueError:
-            self._failure("value can't be converted to %s" %
-                          self.value_type.__name__)
+            self._failure(
+                "value %s can't be converted to %s" % (
+                    val, self.value_type.__name__
+                )
+            )
 
     def _check_val(self, val):
         if not isinstance(val, self.value_type):
@@ -405,13 +410,13 @@ class Float(Trafaret):
         else:
             value = val
         if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte)
+            self._failure("value %s is less than %s" % (value, self.gte))
         if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte)
+            self._failure("value %s is greater than %s" % (value, self.lte))
         if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt)
+            self._failure("value %s should be less than %s" % (value, self.lt))
         if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt)
+            self._failure("value %s should be greater than %s" % (value, self.gt))
         return value
 
     def __lt__(self, lt):
@@ -440,9 +445,9 @@ class Int(Float):
     >>> Int().check(5)
     5
     >>> extract_error(Int(), 1.1)
-    'value is not int'
+    'value 1.1 is not int'
     >>> extract_error(Int(), 1 + 1j)
-    'value is not int'
+    'value (1+1j) is not int'
     """
 
     value_type = int
@@ -450,7 +455,7 @@ class Int(Float):
     def _converter(self, val):
         if isinstance(val, float):
             if not val.is_integer():
-                self._failure('value is not int')
+                self._failure('value %s is not int' % (val))
         return super(Int, self)._converter(val)
 
 
@@ -655,7 +660,7 @@ class List(Trafaret):
     >>> List(String).check(["foo", "bar", "spam"])
     ['foo', 'bar', 'spam']
     >>> extract_error(List(Int), [1, 2, 1 + 3j])
-    {2: 'value is not int'}
+    {2: 'value (1+3j) is not int'}
     >>> List(Int, min_length=1).check([1, 2, 3])
     [1, 2, 3]
     >>> extract_error(List(Int, min_length=1), [])
@@ -665,7 +670,7 @@ class List(Trafaret):
     >>> extract_error(List(Int, max_length=2), [1, 2, 3])
     'list length is greater than 2'
     >>> extract_error(List(Int), ["a"])
-    {0: "value can't be converted to int"}
+    {0: "value a can't be converted to int"}
     """
 
     __metaclass__ = SquareBracketsMeta
@@ -879,9 +884,9 @@ class Mapping(Trafaret):
     >>> trafaret.check({"foo": 1, "bar": 2})
     {'foo': 1, 'bar': 2}
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
-    {'bar': {'value': 'value is not int'}}
+    {'bar': {'value': 'value None is not int'}}
     >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not string', 'value': "value can't be converted to int"}}
+    {2: {'key': 'value is not string', 'value': "value bar can't be converted to int"}}
     """
 
     def __init__(self, key, value):
