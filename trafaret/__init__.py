@@ -118,13 +118,15 @@ class Trafaret(object):
             return self._convert(value)
         if hasattr(self, '_check_val'):
             return self._convert(self._check_val(value))
+
         cls = "%s.%s" % (type(self).__module__, type(self).__name__)
-        raise NotImplementedError("method check is not implemented in"
-                                  " '%s'" % cls)
+        raise NotImplementedError(
+            "method _check or _check_val is not implemented in '%s'" % cls
+        )
 
     def converter(self, value):
         """
-        You can change converter with `>>` operator
+        You can change converter with `>>` operator or append method
         """
         return value
 
@@ -302,15 +304,57 @@ class Bool(Trafaret):
     >>> Bool().check(False)
     False
     >>> extract_error(Bool(), 1)
-    'value should be True or False'
+    'value 1 should be True or False'
     """
 
     def _check(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False")
+            self._failure("value %s should be True or False" % value)
 
     def __repr__(self):
         return "<Bool>"
+
+
+class StrBool(Trafaret):
+
+    """
+    >>> extract_error(StrBool(), 'aloha')
+    "value aloha can't be converted to Bool"
+    >>> StrBool().check(1)
+    True
+    >>> StrBool().check(0)
+    False
+    >>> StrBool().check('y')
+    True
+    >>> StrBool().check('n')
+    False
+    >>> StrBool().check(None)
+    False
+    >>> StrBool().check('1')
+    True
+    >>> StrBool().check('0')
+    False
+    >>> StrBool().check('YeS')
+    True
+    >>> StrBool().check('No')
+    False
+    """
+    convertable = ('t', 'true', 'y', 'n', 'yes', 'no', 'on', '1', '0', 'none')
+
+    def _check(self, value):
+        _value = str(value).strip().lower()
+        if _value not in self.convertable:
+            self._failure("value %s can't be converted to Bool" % value)
+
+    def converter(self, value):
+        if value is None:
+            return False
+        _str = str(value).strip().lower()
+
+        return _str in ('t', 'true', 'y', 'yes', 'on', '1')
+
+    def __repr__(self):
+        return "<StrBool>"
 
 
 class NumberMeta(TrafaretMeta):
@@ -873,6 +917,20 @@ class Dict(Trafaret):
         r += ", ".join(options)
         r += ")>"
         return r
+
+
+def DictKeys(keys):
+    """
+    Checks if dict has all given keys
+
+    :param keys:
+    :type keys:
+    """
+    def MissingKey(val):
+        raise DataError('%s is not in Dict' % val)
+
+    req = [(Key(key), Any) for key in keys]
+    return Dict(dict(req))
 
 
 class Mapping(Trafaret):
