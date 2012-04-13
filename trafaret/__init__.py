@@ -524,13 +524,17 @@ class Email(String):
     'someone@example.net'
     >>> (Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
     'example.net'
+    >>> extract_error(Email(),'foo')
+    'foo value is not an email'
     """
 
     regex = re.compile(
         r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
-        r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
+        r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', 
+        re.IGNORECASE # literal form, ipv4 address (SMTP 4.1.3)
+    )
 
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
@@ -548,7 +552,7 @@ class Email(String):
                     pass
                 else:
                     return super(Email, self)._check_val('@'.join(parts))
-        self._failure('value is not email')
+        self._failure('%s value is not an email' % value)
 
     def __repr__(self):
         return '<Email>'
@@ -1078,12 +1082,14 @@ def guard(trafaret=None, **kwargs):
                            " trafaret or kwargs")
     if not trafaret:
         trafaret = Dict(**kwargs)
+
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
+
         @functools.wraps(fn)
         def decor(*args, **kwargs):
             fnargs = argspec.args
-            if fnargs[0] == 'self':
+            if fnargs[0] in ['self', 'cls']:
                 fnargs = fnargs[1:]
                 checkargs = args[1:]
             else:
@@ -1091,7 +1097,8 @@ def guard(trafaret=None, **kwargs):
 
             try:
                 call_args = dict(
-                        itertools.chain(zip(fnargs, checkargs), kwargs.items()))
+                    itertools.chain(zip(fnargs, checkargs), kwargs.items())
+                )
                 for name, default in zip(reversed(fnargs),
                                          argspec.defaults or ()):
                     if name not in call_args:
@@ -1131,6 +1138,7 @@ def catch_error(checker, *a, **kw):
             return checker(*a, **kw)
     except DataError as error:
         return error
+
 
 def extract_error(checker, *a, **kw):
 
