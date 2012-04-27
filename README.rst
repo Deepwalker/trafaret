@@ -60,7 +60,7 @@ We have some example of enhanced ``Key`` in extras::
 
     >>> from trafaret.extras import KeysSubset
     >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
-    >>> d = Dict({KeysSubset(['pwd', 'pwd1']): cmp_pwds, 'key1': String})
+    >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
     >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
     {'pwd': 'a', 'key1': 'b'}
 
@@ -195,6 +195,8 @@ Methods:
 ``allow_extra(*names)`` : where ``names`` can be key names or ``*`` to allow any additional keys.
 
 ``make_optional(*names)`` : where ``names`` can be key names or ``*`` to make all options optional.
+
+``ignore_extra(*names)``: where ``names`` are the names of the keys or ``*`` to exclude listed key names or all unspecified ones from the validation process and final result
 
 Key
 ...
