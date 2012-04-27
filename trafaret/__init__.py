@@ -945,7 +945,7 @@ class Callable(Trafaret):
             self._failure("value is not callable")
 
     def __repr__(self):
-        return "<CallableC>"
+        return "<Callable>"
 
 
 class Call(Trafaret):
@@ -958,7 +958,7 @@ class Call(Trafaret):
     ...
     >>> trafaret = Call(validator)
     >>> trafaret
-    <CallC(validator)>
+    <Call(validator)>
     >>> trafaret.check("foo")
     'foo'
     >>> extract_error(trafaret, "bar")
@@ -967,10 +967,10 @@ class Call(Trafaret):
 
     def __init__(self, fn):
         if not callable(fn):
-            raise RuntimeError("CallC argument should be callable")
+            raise RuntimeError("Call argument should be callable")
         argspec = inspect.getargspec(fn)
         if len(argspec.args) - len(argspec.defaults or []) > 1:
-            raise RuntimeError("CallC argument should be"
+            raise RuntimeError("Call argument should be"
                                " one argument function")
         self.fn = fn
 
@@ -982,7 +982,7 @@ class Call(Trafaret):
             return res
 
     def __repr__(self):
-        return "<CallC(%s)>" % self.fn.__name__
+        return "<Call(%s)>" % self.fn.__name__
 
 
 class Forward(Trafaret):

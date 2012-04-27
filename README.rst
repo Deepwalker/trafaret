@@ -218,10 +218,10 @@ Experimental feature, not stable API. Sometimes you need to make something with 
 So you can::
 
     >>> join = (lambda d: {'name': ' '.join(d.values())})
-    >>> Dict({KeysSubset(['name', 'last']): join}).check({'name': 'Adam', 'last': 'Smith'})
+    >>> Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
     {'name': 'Smith Adam'}
 
-As you can see you need return dict from checker.
+As you can see you need to return dict from checker.
 
 Error raise
 ...........
