@@ -28,8 +28,8 @@ Look at doctests for usage examples
 """
 
 __all__ = (
-    "DataError", "Trafaret", "Any", "Int", "String", "List", "Dict", "Or", 
-    "Null", "Float", "Enum", "Callable" "Call", "Forward", "Bool", "Type", 
+    "DataError", "Trafaret", "Any", "Int", "String", "List", "Dict", "Or",
+    "Null", "Float", "Enum", "Callable" "Call", "Forward", "Bool", "Type",
     "Mapping", "guard",
 )
 
@@ -338,8 +338,14 @@ class StrBool(Trafaret):
     True
     >>> StrBool().check('No')
     False
+    >>> StrBool().check(True)
+    True
+    >>> StrBool().check(False)
+    False
     """
-    convertable = ('t', 'true', 'y', 'n', 'yes', 'no', 'on', '1', '0', 'none')
+
+    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on',
+                   '1', '0', 'none')
 
     def _check(self, value):
         _value = str(value).strip().lower()
@@ -538,12 +544,13 @@ class String(Trafaret):
     >>> String(regex='\w+').check('wqerwqer')
     'wqerwqer'
     >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
-    'value does not match pattern'
+    "value 'wqe rwqer' does not match pattern: ^\\\w+$"
     """
 
     def __init__(self, allow_blank=False, regex=None):
         self.allow_blank = allow_blank
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
+        self._raw_regex = self.regex.pattern if self.regex else None
 
     def _check_val(self, value):
         if not isinstance(value, str_types):
@@ -553,7 +560,9 @@ class String(Trafaret):
         if self.regex is not None:
             match = self.regex.match(value)
             if not match:
-                self._failure("value does not match pattern")
+                self._failure("value '%s' does not match pattern: %s" % (
+                    value, self._raw_regex)
+                )
             return match
         return value
 
@@ -581,12 +590,12 @@ class Email(String):
         r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
-        r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', 
+        r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$',
         re.IGNORECASE # literal form, ipv4 address (SMTP 4.1.3)
     )
 
     def __init__(self, allow_blank=False):
-        self.allow_blank = allow_blank
+        super(Email, self).__init__(allow_blank=allow_blank, regex=self.regex)
 
     def _check_val(self, value):
         try:
@@ -625,7 +634,7 @@ class URL(String):
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
 
     def __init__(self, allow_blank=False):
-        self.allow_blank = allow_blank
+        super(URL, self).__init__(allow_blank=allow_blank, regex=self.regex)
 
     def _check_val(self, value):
         try:
@@ -872,7 +881,7 @@ class Dict(Trafaret):
 
     def _check_val(self, value):
         if not isinstance(value, dict):
-            self._failure("value is not dict")
+            self._failure("value '%s' is not dict" % value)
         data = copy.copy(value)
         collect = {}
         errors = {}
@@ -1062,7 +1071,7 @@ class Forward(Trafaret):
     >>> node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
     True
     >>> extract_error(node, {"name": "foo", "children": [1]})
-    {'children': {0: 'value is not dict'}}
+    {'children': {0: "value '1' is not dict"}}
     >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
                      ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
