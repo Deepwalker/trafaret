@@ -828,10 +828,11 @@ class Dict(Trafaret):
     >>> trafaret.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
     >>> extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
     {'bar': 'is required'}
-    >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int) >> ignore
+    >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int)
     >>> trafaret.allow_extra("*")
     <Dict(any | bar=<String>, foo=<Int>)>
     >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
+    {'foo': 1, 'baz': None, 'ham': 100}
     >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
     {'foo': 'is required', 'bar': 'value is not string'}
     >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
@@ -898,7 +899,7 @@ class Dict(Trafaret):
                 if not self.allow_any and key not in self.extras:
                     errors[key] = DataError("%s is not allowed key" % key)
                 else:
-                    collect[key] = data
+                    collect[key] = data[key]
         if errors:
             raise DataError(error=errors)
         return collect
