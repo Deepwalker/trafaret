@@ -935,6 +935,13 @@ def DictKeys(keys):
 
     :param keys:
     :type keys:
+
+    >>> DictKeys(['a','b']).check({'a':1,'b':2,})
+    {'a': 1, 'b': 2}
+    >>> extract_error(DictKeys(['a','b']), {'a':1,'b':2,'c':3,})
+    {'c': 'c is not allowed key'}
+    >>> extract_error(DictKeys(['key','key2']), {'key':'val'})
+    {'key2': 'is required'}
     """
     def MissingKey(val):
         raise DataError('%s is not in Dict' % val)
