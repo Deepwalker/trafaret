@@ -1,6 +1,11 @@
 Changes
 =======
 
+2012-05-10
+----------
+
+Fixed ``Dict.allow_extra`` behaviour.
+
 2012-04-12
 ----------
 
