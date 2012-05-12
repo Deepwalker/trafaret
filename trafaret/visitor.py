@@ -2,7 +2,7 @@
     Supposed to use with ``Request`` object or something like that.
 """
 from collections import Mapping
-from . import Trafaret, DataError, Key
+from . import Trafaret, DataError, Key, catch_error
 
 
 def get_deep_attr(obj, keys):
@@ -25,11 +25,25 @@ def get_deep_attr(obj, keys):
 class DeepKey(Key):
     """ Lookup for attributes and items
     Path in ``name`` must be delimited by ``.``.
+
+    >>> from trafaret import Int
+    >>> class A(object):
+    ...     class B(object):
+    ...         d = {'a': 'word'}
+    >>> dict((DeepKey('B.d.a') >> 'B_a').pop(A))
+    {'B_a': 'word'}
+    >>> dict((DeepKey('c.B.d.a') >> 'B_a').pop({'c': A}))
+    {'B_a': 'word'}
+    >>> dict((DeepKey('B.a') >> 'B_a').pop(A))
+    {'B.a': DataError(Unexistent key)}
+    >>> dict(DeepKey('c.B.d.a', to_name='B_a', trafaret=Int()).pop({'c': A}))
+    {'B_a': DataError(value can't be converted to int)}
     """
 
     def pop(self, data):
         try:
-            yield self.get_name(),  get_deep_attr(data, self.name.split('.'))
+            yield self.get_name(),  catch_error(self.trafaret,
+                    get_deep_attr(data, self.name.split('.')))
         except DataError as e:
             if self.default:
                 yield self.get_name(), self.default

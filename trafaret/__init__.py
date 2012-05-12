@@ -710,12 +710,12 @@ class Key(object):
     Helper class for Dict.
     """
 
-    def __init__(self, name, default=None, optional=False, to_name=None):
+    def __init__(self, name, default=None, optional=False, to_name=None, trafaret=None):
         self.name = name
         self.to_name = to_name
         self.default = default
         self.optional = optional
-        self.trafaret = Any()
+        self.trafaret = trafaret or Any()
 
     def pop(self, data):
         if self.name in data or self.default is not None:
