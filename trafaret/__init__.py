@@ -170,6 +170,9 @@ class Trafaret(object):
         self.append(other)
         return self
 
+    def __call__(self, val):
+        return self.check(val)
+
 
 class TypeMeta(TrafaretMeta):
 
