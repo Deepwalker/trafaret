@@ -501,7 +501,7 @@ class String(Trafaret):
 
     def _check_val(self, value):
         if not isinstance(value, str_types):
-            self._failure("value is not string")
+            self._failure("value is not a string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
         if self.regex is not None:
@@ -513,7 +513,7 @@ class String(Trafaret):
 
     def converter(self, value):
         if isinstance(value, str_types):
-            return value
+            return value.rstrip('\n\r ')
         return value.group()
 
     def __repr__(self):
@@ -551,7 +551,7 @@ class Email(String):
                     pass
                 else:
                     return super(Email, self)._check_val('@'.join(parts))
-        self._failure('value is not email')
+        self._failure('value is not a valid email address')
 
     def __repr__(self):
         return '<Email>'
