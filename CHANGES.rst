@@ -1,6 +1,12 @@
 Changes
 =======
 
+2012-05-21
+----------
+
+Updated ``KeysSubSet`` errors propagation - now you can return error either
+``{'a': DataError('message')}``, or ``DataError({'a': 'message'})``
+
 2012-05-16
 ----------
 

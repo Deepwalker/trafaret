@@ -1,10 +1,11 @@
-from . import Key, DataError, Any, catch_error, Dict, extract_error, Mapping, String
+from . import Key, DataError, Any, catch_error, Dict
 
 
 class KeysSubset(Key):
     """
     From checkers and converters dict must be returned. Some for errors.
 
+    >>> from . import extract_error, Mapping, String
     >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
     >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
     >>> sorted(d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys())
@@ -30,9 +31,11 @@ class KeysSubset(Key):
         subdict = dict((k, data.pop(k)) for k in self.keys_names() if k in data)
         res = catch_error(self.trafaret, subdict)
         if isinstance(res, DataError):
-            res = res.error
-        for k, v in res.items():
-            yield k, v
+            for k, e in res.error.items():
+                yield k, e if isinstance(e, DataError) else DataError(e)
+        else:
+            for k, v in res.items():
+                yield k, v
 
     def keys_names(self):
         if isinstance(self.trafaret, Dict):
