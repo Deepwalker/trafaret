@@ -2,9 +2,15 @@ Changes
 =======
 
 2012-05-28
-__________
+----------
 
 Fixed Dict(...).make_optional(...) method for a chaining support
+
+2012-05-21
+----------
+
+Updated ``KeysSubSet`` errors propagation - now you can return error either
+``{'a': DataError('message')}``, or ``DataError({'a': 'message'})``
 
 2012-05-16
 ----------
