@@ -1,6 +1,11 @@
 Changes
 =======
 
+2012-05-28
+__________
+
+Fixed Dict(...).make_optional(...) method for a chaining support
+
 2012-05-16
 ----------
 

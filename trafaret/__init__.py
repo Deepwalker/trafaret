@@ -513,7 +513,7 @@ class String(Trafaret):
 
     def converter(self, value):
         if isinstance(value, str_types):
-            return value.rstrip('\n\r ')
+            return value
         return value.group()
 
     def __repr__(self):
@@ -820,6 +820,7 @@ class Dict(Trafaret):
         for key in self.keys:
             if key.name in args or '*' in args:
                 key.make_optional()
+        return self
 
     def _check_val(self, value):
         if not isinstance(value, dict):
