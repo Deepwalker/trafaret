@@ -745,6 +745,10 @@ class Key(object):
         self.optional = True
         self.default = None
 
+    def __repr__(self):
+        return '<%s "%s"%s>' % (self.__class__.__name__, self.name,
+           ' to "%s"' % self.to_name if getattr(self, 'to_name', False) else '')
+
 
 class Dict(Trafaret):
 
@@ -820,6 +824,7 @@ class Dict(Trafaret):
         for key in self.keys:
             if key.name in args or '*' in args:
                 key.make_optional()
+        return self
 
     def _check_val(self, value):
         if not isinstance(value, dict):

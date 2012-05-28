@@ -10,10 +10,10 @@ def read(fname):
 
 setupconf = dict(
     name = 'trafaret',
-    version = '0.4.5',
+    version = '0.4.6',
     license = 'BSD',
     url = 'https://github.com/Deepwalker/trafaret/',
-    author = 'Barbuza, Deepwalker',
+    author = 'Barbuza, Deepwalker, Nimnull',
     author_email = 'krivushinme@gmail.com',
     description = ('Validation and parsing library'),
     long_description = read('README.rst'),
