@@ -10,7 +10,7 @@ def read(fname):
 
 setupconf = dict(
     name = 'trafaret',
-    version = '0.4.6',
+    version = '0.4.7',
     license = 'BSD',
     url = 'https://github.com/Deepwalker/trafaret/',
     author = 'Barbuza, Deepwalker, nimnull',

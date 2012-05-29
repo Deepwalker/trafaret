@@ -1,6 +1,12 @@
 Changes
 =======
 
+2012-05-30
+----------
+
+Renamed methods to ``check_value`` and ``check_and_return``.
+Added ``Tuple`` trafaret.
+
 2012-05-28
 ----------
 

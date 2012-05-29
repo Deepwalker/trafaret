@@ -708,6 +708,45 @@ class List(Trafaret):
         return r
 
 
+class Tuple(Trafaret):
+    """
+    Tuple checker can be used to check fixed tuples, like (Int, Int, String).
+
+    >>> t = Tuple(Int, Int, String)
+    >>> t.check([3, 4, '5'])
+    (3, 4, '5')
+    >>> extract_error(t, [3, 4, 5])
+    {2: 'value is not a string'}
+    >>> t
+    <Tuple(<Int>, <Int>, <String>)
+    """
+
+    def __init__(self, *args):
+        self.trafarets = list(map(self._trafaret, args))
+        self.length = len(self.trafarets)
+
+    def check_and_return(self, value):
+        try:
+            value = tuple(value)
+        except TypeError:
+            self._failure('value must be convertable to tuple')
+        if len(value) != self.length:
+            self._failure('value must contain exact %s items' % self.length)
+        result = []
+        errors = {}
+        for idx, (item, trafaret) in enumerate(zip(value, self.trafarets)):
+            try:
+                result.append(trafaret.check(item))
+            except DataError as err:
+                errors[idx] = err
+        if errors:
+            self._failure(errors)
+        return tuple(result)
+
+    def __repr__(self):
+        return '<Tuple(' + ', '.join(repr(t) for t in self.trafarets) + ')'
+
+
 class Key(object):
 
     """
