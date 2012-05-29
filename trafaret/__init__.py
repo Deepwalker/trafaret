@@ -109,16 +109,17 @@ class Trafaret(object):
 
     def check(self, value):
         """
-        Implement this method in Trafaret subclasses
+        Common logic. In subclasses you need to implement check_value or
+        check_and_return.
         """
-        if hasattr(self, '_check'):
-            self._check(value)
+        if hasattr(self, 'check_value'):
+            self.check_value(value)
             return self._convert(value)
-        if hasattr(self, '_check_val'):
-            return self._convert(self._check_val(value))
+        if hasattr(self, 'check_and_return'):
+            return self._convert(self.check_and_return(value))
         cls = "%s.%s" % (type(self).__module__, type(self).__name__)
-        raise NotImplementedError("method check is not implemented in"
-                                  " '%s'" % cls)
+        raise NotImplementedError("You must implement check_value or"
+                                  " check_and_return methods '%s'" % cls)
 
     def converter(self, value):
         """
@@ -199,7 +200,7 @@ class Type(Trafaret):
     def __init__(self, type_):
         self.type_ = type_
 
-    def _check(self, value):
+    def check_value(self, value):
         if not isinstance(value, self.type_):
             self._failure("value is not %s" % self.type_.__name__)
 
@@ -215,7 +216,7 @@ class Any(Trafaret):
     >>> (Any() >> ignore).check(object())
     """
 
-    def _check(self, value):
+    def check_value(self, value):
         pass
 
     def __repr__(self):
@@ -246,7 +247,7 @@ class Or(Trafaret):
     >>> nullString.check("test")
     'test'
     >>> extract_error(nullString, 1)
-    {0: 'value is not string', 1: 'value should be None'}
+    {0: 'value is not a string', 1: 'value should be None'}
     """
 
     __metaclass__ = OrMeta
@@ -254,7 +255,7 @@ class Or(Trafaret):
     def __init__(self, *trafarets):
         self.trafarets = list(map(self._trafaret, trafarets))
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         errors = []
         for trafaret in self.trafarets:
             try:
@@ -285,7 +286,7 @@ class Null(Trafaret):
     'value should be None'
     """
 
-    def _check(self, value):
+    def check_value(self, value):
         if value is not None:
             self._failure("value should be None")
 
@@ -306,7 +307,7 @@ class Bool(Trafaret):
     'value should be True or False'
     """
 
-    def _check(self, value):
+    def check_value(self, value):
         if not isinstance(value, bool):
             self._failure("value should be True or False")
 
@@ -402,7 +403,7 @@ class Float(Trafaret):
             self._failure("value can't be converted to %s" %
                           self.value_type.__name__)
 
-    def _check_val(self, val):
+    def check_and_return(self, val):
         if not isinstance(val, self.value_type):
             value = self._converter(val)
         else:
@@ -469,7 +470,7 @@ class Atom(Trafaret):
     def __init__(self, value):
         self.value = value
 
-    def _check(self, value):
+    def check_value(self, value):
         if self.value != value:
             self._failure("value is not exactly '%s'" % self.value)
 
@@ -488,7 +489,7 @@ class String(Trafaret):
     >>> String(allow_blank=True).check("")
     ''
     >>> extract_error(String(), 1)
-    'value is not string'
+    'value is not a string'
     >>> String(regex='\w+').check('wqerwqer')
     'wqerwqer'
     >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
@@ -499,7 +500,7 @@ class String(Trafaret):
         self.allow_blank = allow_blank
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         if not isinstance(value, str_types):
             self._failure("value is not a string")
         if not self.allow_blank and len(value) is 0:
@@ -538,9 +539,9 @@ class Email(String):
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         try:
-            return super(Email, self)._check_val(value)
+            return super(Email, self).check_and_return(value)
         except DataError:
             # Trivial case failed. Try for possible IDN domain-part
             if value and '@' in value:
@@ -550,7 +551,7 @@ class Email(String):
                 except UnicodeError:
                     pass
                 else:
-                    return super(Email, self)._check_val('@'.join(parts))
+                    return super(Email, self).check_and_return('@'.join(parts))
         self._failure('value is not a valid email address')
 
     def __repr__(self):
@@ -577,9 +578,9 @@ class URL(String):
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         try:
-            return super(URL, self)._check_val(value)
+            return super(URL, self).check_and_return(value)
         except DataError:
             # Trivial case failed. Try for possible IDN domain-part
             if value:
@@ -594,7 +595,7 @@ class URL(String):
                     pass
                 else:
                     url = urlparse.urlunsplit((scheme, netloc, path, query, fragment))
-                    return super(URL, self)._check_val(url)
+                    return super(URL, self).check_and_return(url)
         self._failure('value is not URL')
 
     def __repr__(self):
@@ -674,7 +675,7 @@ class List(Trafaret):
         self.min_length = min_length
         self.max_length = max_length
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         if not isinstance(value, list):
             self._failure("value is not list")
         if len(value) < self.min_length:
@@ -756,7 +757,7 @@ class Dict(Trafaret):
     >>> trafaret = Dict(foo=Int, bar=String) >> ignore
     >>> trafaret.check({"foo": 1, "bar": "spam"})
     >>> extract_error(trafaret, {"foo": 1, "bar": 2})
-    {'bar': 'value is not string'}
+    {'bar': 'value is not a string'}
     >>> extract_error(trafaret, {"foo": 1})
     {'bar': 'is required'}
     >>> extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
@@ -779,9 +780,9 @@ class Dict(Trafaret):
     >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
     {'foo': 1, 'baz': None, 'ham': 100}
     >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
-    {'foo': 'is required', 'bar': 'value is not string'}
+    {'foo': 'is required', 'bar': 'value is not a string'}
     >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
-    {'bar': 'value is not string'}
+    {'bar': 'value is not a string'}
     >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
     >>> trafaret.check({'foo': 4})
     {'foo': 4, 'baz': 'nyanya'}
@@ -826,7 +827,7 @@ class Dict(Trafaret):
                 key.make_optional()
         return self
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         if not isinstance(value, dict):
             self._failure("value is not dict")
         data = copy.copy(value)
@@ -886,14 +887,14 @@ class Mapping(Trafaret):
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value is not int'}}
     >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not string', 'value': "value can't be converted to int"}}
+    {2: {'key': 'value is not a string', 'value': "value can't be converted to int"}}
     """
 
     def __init__(self, key, value):
         self.key = self._trafaret(key)
         self.value = self._trafaret(value)
 
-    def _check_val(self, mapping):
+    def check_and_return(self, mapping):
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -933,7 +934,7 @@ class Enum(Trafaret):
     def __init__(self, *variants):
         self.variants = variants[:]
 
-    def _check(self, value):
+    def check_value(self, value):
         if value not in self.variants:
             self._failure("value doesn't match any variant")
 
@@ -949,7 +950,7 @@ class Callable(Trafaret):
     'value is not callable'
     """
 
-    def _check(self, value):
+    def check_value(self, value):
         if not callable(value):
             self._failure("value is not callable")
 
@@ -983,7 +984,7 @@ class Call(Trafaret):
                                " one argument function")
         self.fn = fn
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         res = self.fn(value)
         if isinstance(res, DataError):
             raise res
@@ -1023,7 +1024,7 @@ class Forward(Trafaret):
             raise RuntimeError("trafaret for Forward is already specified")
         self.trafaret = self._trafaret(trafaret)
 
-    def _check_val(self, value):
+    def check_and_return(self, value):
         return self.trafaret.check(value)
 
     def __repr__(self):
@@ -1067,7 +1068,7 @@ def guard(trafaret=None, **kwargs):
     >>> fn("foo", 1)
     ('foo', 1, 'default')
     >>> extract_error(fn, "foo", 1, 2)
-    {'c': 'value is not string'}
+    {'c': 'value is not a string'}
     >>> extract_error(fn, "foo")
     {'b': 'is required'}
     >>> g = guard(Dict())
