@@ -82,6 +82,15 @@ You can implement `converter` method if you want to convert value somehow, but
 want to make free for developer to apply his own converters to raw data. This
 used to return strings instead of `Match` object in `String` trafaret.
 
+Subclassing
+-----------
+
+For your own trafaret creation you need to subclass ``Trafaret`` class and
+implement ``check_value`` or ``check_and_return`` methods. ``check_value`` can return nothing
+on success, ``check_and_return`` must return value. In case of failure you need to raise ``DataError``.
+You can use ``self._failure`` shortcut function to do this.
+Check library code for samples.
+
 Type
 ----
 
