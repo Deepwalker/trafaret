@@ -268,6 +268,7 @@ Forward
 
 This checker is container for any checker, that you can provide later.
 To provide container use ``provide`` method or ``<<`` operation::
+
     >> node = Forward()
     >> node << Dict(name=String, children=List[node])
 
