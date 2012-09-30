@@ -16,7 +16,11 @@ if py3:
     str_types = (str, bytes)
     unicode = str
 else:
-    from future_builtins import map
+    try:
+        from future_builtins import map
+    except ImportError:
+        # Support for GAE runner
+        from itertools import imap as map
     import urlparse
     str_types = (str, unicode)
 
