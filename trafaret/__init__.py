@@ -33,7 +33,7 @@ Look at doctests for usage examples
 
 __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
-           "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
+           "Call", "Forward", "Bool", "Type", "Mapping", "guard", "Key")
 
 
 def py3metafix(cls):
