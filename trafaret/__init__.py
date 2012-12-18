@@ -32,7 +32,7 @@ Look at doctests for usage examples
 """
 
 __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
-           "List", "Dict", "Or", "Null", "Float", "Enum", "Callable"
+           "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
            "Call", "Forward", "Bool", "Type", "Mapping", "guard", )
 
 
