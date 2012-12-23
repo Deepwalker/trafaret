@@ -38,32 +38,34 @@ def recursive_unfold(data, prefix='', delimeter='__'):
 
 def unfold(data, prefix='', delimeter='__'):
     """
-    >>> unfold({'a': 4, 'b': 5})
-    {'a': 4, 'b': 5}
-    >>> unfold({'a': [1, 2, 3]})
-    {'a__1': 2, 'a__0': 1, 'a__2': 3}
-    >>> unfold({'a': {'a': 4, 'b': 5}})
-    {'a__a': 4, 'a__b': 5}
-    >>> unfold({'a': {'a': 4, 'b': 5}}, 'form')
-    {'form__a__b': 5, 'form__a__a': 4}
+    >>> from reprlib import repr
+    >>> repr(unfold({'a': 4, 'b': 5}))
+    "{'a': 4, 'b': 5}"
+    >>> repr(unfold({'a': [1, 2, 3]}))
+    "{'a__0': 1, 'a__1': 2, 'a__2': 3}"
+    >>> repr(unfold({'a': {'a': 4, 'b': 5}}))
+    "{'a__a': 4, 'a__b': 5}"
+    >>> repr(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
+    "{'form__a__a': 4, 'form__a__b': 5}"
     """
     return dict(recursive_unfold(data, prefix, delimeter))
 
 
 def fold(data, prefix='', delimeter='__'):
     """
-    >>> fold({'a__a': 4})
-    {'a': {'a': 4}}
-    >>> fold({'a__a': 4, 'a__b': 5})
-    {'a': {'a': 4, 'b': 5}}
-    >>> fold({'a__1': 2, 'a__0': 1, 'a__2': 3})
-    {'a': [1, 2, 3]}
-    >>> fold({'form__a__b': 5, 'form__a__a': 4}, 'form')
-    {'a': {'a': 4, 'b': 5}}
-    >>> fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form')
-    {'a': {'a': [4, 7], 'b': 5}}
-    >>> fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form')
-    [{'a': [4, 7]}, {'b': 5}]
+    >>> from reprlib import repr
+    >>> repr(fold({'a__a': 4}))
+    "{'a': {'a': 4}}"
+    >>> repr(fold({'a__a': 4, 'a__b': 5}))
+    "{'a': {'a': 4, 'b': 5}}"
+    >>> repr(fold({'a__1': 2, 'a__0': 1, 'a__2': 3}))
+    "{'a': [1, 2, 3]}"
+    >>> repr(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'))
+    "{'a': {'a': 4, 'b': 5}}"
+    >>> repr(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'))
+    "{'a': {'a': [4, 7], 'b': 5}}"
+    >>> repr(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'))
+    "[{'a': [4, 7]}, {'b': 5}]"
     """
     def deep(data):
         if len(data) == 1 and len(data[0][0]) < 2:

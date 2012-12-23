@@ -797,6 +797,7 @@ class Key(object):
 class Dict(Trafaret):
 
     """
+    >>> from reprlib import repr
     >>> trafaret = Dict(foo=Int, bar=String) >> ignore
     >>> trafaret.check({"foo": 1, "bar": "spam"})
     >>> extract_error(trafaret, {"foo": 1, "bar": 2})
@@ -820,21 +821,21 @@ class Dict(Trafaret):
     >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int)
     >>> trafaret.allow_extra("*")
     <Dict(any | bar=<String>, foo=<Int>)>
-    >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
-    {'foo': 1, 'baz': None, 'ham': 100}
-    >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
-    {'foo': 'is required', 'bar': 'value is not a string'}
+    >>> repr(trafaret.check({"foo": 1, "ham": 100, "baz": None}))
+    "{'baz': None, 'foo': 1, 'ham': 100}"
+    >>> repr(extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None}))
+    "{'bar': 'value is not a string', 'foo': 'is required'}"
     >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
     {'bar': 'value is not a string'}
     >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
-    >>> trafaret.check({'foo': 4})
-    {'foo': 4, 'baz': 'nyanya'}
+    >>> repr(trafaret.check({'foo': 4}))
+    "{'baz': 'nyanya', 'foo': 4}"
     >>> _ = trafaret.ignore_extra('fooz')
-    >>> trafaret.check({'foo': 4, 'fooz': 5})
-    {'foo': 4, 'baz': 'nyanya'}
+    >>> repr(trafaret.check({'foo': 4, 'fooz': 5}))
+    "{'baz': 'nyanya', 'foo': 4}"
     >>> _ = trafaret.ignore_extra('*')
-    >>> trafaret.check({'foo': 4, 'foor': 5})
-    {'foo': 4, 'baz': 'nyanya'}
+    >>> repr(trafaret.check({'foo': 4, 'foor': 5}))
+    "{'baz': 'nyanya', 'foo': 4}"
     """
 
     def __init__(self, keys={}, **trafarets):
@@ -921,16 +922,17 @@ class Dict(Trafaret):
 
 class Mapping(Trafaret):
 
-    """
+    r"""
+    >>> from reprlib import repr
     >>> trafaret = Mapping(String, Int)
     >>> trafaret
     <Mapping(<String> => <Int>)>
-    >>> trafaret.check({"foo": 1, "bar": 2})
-    {'foo': 1, 'bar': 2}
+    >>> repr(trafaret.check({"foo": 1, "bar": 2}))
+    "{'bar': 2, 'foo': 1}"
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value is not int'}}
-    >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not a string', 'value': "value can't be converted to int"}}
+    >>> repr(extract_error(trafaret, {"foo": 1, 2: "bar"}))
+    '{2: {\'key\': \'value is not a string\', \'value\': "value can\'t ...verted to int"}}'
     """
 
     def __init__(self, key, value):
