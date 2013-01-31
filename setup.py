@@ -21,13 +21,13 @@ setupconf = dict(
 
     packages=['trafaret', 'trafaret.contrib'],
     extras_require=dict(
-        ObjectId=['pymongo>=2.4.1'],
-        RFC3339=['python-dateutil>=1.5']
+        objectid=['pymongo>=2.4.1'],
+        rfc3339=['python-dateutil>=1.5']
     ),
     entry_points=dict(
         trafaret=[
-            '.MongoId = trafaret.contrib.object_id:MongoId [ObjectId]',
-            '.DateTime = trafaret.contrib.rfc_3339:DateTime [RFC3339]'
+            '.MongoId = trafaret.contrib.object_id:MongoId [objectid]',
+            '.DateTime = trafaret.contrib.rfc_3339:DateTime [rfc3339]'
         ]
     ),
     classifiers=[
