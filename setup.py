@@ -19,15 +19,7 @@ setupconf = dict(
     long_description=read('README.rst'),
     keywords='validatation form forms data schema',
 
-    packages=['trafaret'],
-
-    classifiers=[
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: BSD License',
-        'Operating System :: OS Independent',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-    ],
+    packages=['trafaret', 'trafaret.contrib'],
     extras_require=dict(
         ObjectId=['pymongo>=2.4.1'],
         RFC3339=['python-dateutil>=1.5']
@@ -37,7 +29,14 @@ setupconf = dict(
             '.MongoId = trafaret.contrib.object_id:MongoId [ObjectId]',
             '.DateTime = trafaret.contrib.rfc_3339:DateTime [RFC3339]'
         ]
-    )
+    ),
+    classifiers=[
+        'Intended Audience :: Developers',
+        'License :: OSI Approved :: BSD License',
+        'Operating System :: OS Independent',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+    ]
 )
 
 if __name__ == '__main__':
