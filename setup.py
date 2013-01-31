@@ -10,7 +10,7 @@ def read(fname):
 
 setupconf = dict(
     name='trafaret',
-    version='0.4.8',
+    version='0.4.9',
     license='BSD',
     url='https://github.com/Deepwalker/trafaret/',
     author='Barbuza, Deepwalker, nimnull',
@@ -31,6 +31,12 @@ setupconf = dict(
     extras_require=dict(
         ObjectId=['pymongo>=2.4.1'],
         RFC3339=['python-dateutil>=1.5']
+    ),
+    entry_points=dict(
+        trafaret=[
+            '.MongoId = trafaret.contrib.object_id:MongoId [ObjectId]',
+            '.DateTime = trafaret.contrib.rfc_3339:DateTime [RFC3339]'
+        ]
     )
 )
 

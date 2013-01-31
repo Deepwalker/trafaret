@@ -7,6 +7,7 @@ import re
 import copy
 import itertools
 import numbers
+import pkg_resources
 
 
 # Python3 support
@@ -22,8 +23,7 @@ else:
         # Support for GAE runner
         from itertools import imap as map
     import urlparse
-    str_types = (basestring)
-
+    str_types = (basestring,)
 
 """
 Trafaret is tiny library for data validation
@@ -34,6 +34,8 @@ Look at doctests for usage examples
 __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
            "Call", "Forward", "Bool", "Type", "Mapping", "guard", "Key")
+
+ENTRY_POINT = 'trafaret'
 
 
 def py3metafix(cls):
@@ -1133,8 +1135,10 @@ def guard(trafaret=None, **kwargs):
                            " trafaret or kwargs")
     if not trafaret:
         trafaret = Dict(**kwargs)
+
     def wrapper(fn):
         argspec = inspect.getargspec(fn)
+
         @functools.wraps(fn)
         def decor(*args, **kwargs):
             fnargs = argspec.args
@@ -1161,7 +1165,6 @@ def guard(trafaret=None, **kwargs):
 
 
 def ignore(val):
-
     """
     Stub to ignore value from trafaret
     Use it like:
@@ -1169,7 +1172,6 @@ def ignore(val):
     >>> a = Int >> ignore
     >>> a.check(7)
     """
-
     pass
 
 
@@ -1187,6 +1189,7 @@ def catch_error(checker, *a, **kw):
     except DataError as error:
         return error
 
+
 def extract_error(checker, *a, **kw):
 
     """
@@ -1197,3 +1200,15 @@ def extract_error(checker, *a, **kw):
     if isinstance(res, DataError):
         return res.as_dict()
     return res
+
+
+def load_contrib():
+    for entrypoint in pkg_resources.iter_entry_points(ENTRY_POINT):
+        try:
+            trafaret_class = entrypoint.load()
+            setattr(sys.modules[__name__], trafaret_class.__name__,
+                    trafaret_class)
+        except pkg_resources.DistributionNotFound as err:
+            # TODO: find a way to pass error message upper
+            pass
+load_contrib()
