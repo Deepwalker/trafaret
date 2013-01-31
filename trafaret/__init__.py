@@ -22,7 +22,7 @@ else:
         # Support for GAE runner
         from itertools import imap as map
     import urlparse
-    str_types = (str, unicode)
+    str_types = (basestring)
 
 
 """

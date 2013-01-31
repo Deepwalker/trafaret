@@ -9,26 +9,30 @@ def read(fname):
 
 
 setupconf = dict(
-    name = 'trafaret',
-    version = '0.4.8',
-    license = 'BSD',
-    url = 'https://github.com/Deepwalker/trafaret/',
-    author = 'Barbuza, Deepwalker, nimnull',
-    author_email = 'krivushinme@gmail.com',
-    description = ('Validation and parsing library'),
-    long_description = read('README.rst'),
-    keywords = 'validatation form forms data schema',
+    name='trafaret',
+    version='0.4.8',
+    license='BSD',
+    url='https://github.com/Deepwalker/trafaret/',
+    author='Barbuza, Deepwalker, nimnull',
+    author_email='krivushinme@gmail.com',
+    description=('Validation and parsing library'),
+    long_description=read('README.rst'),
+    keywords='validatation form forms data schema',
 
-    packages = ['trafaret'],
+    packages=['trafaret'],
 
-    classifiers = [
+    classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        ],
+    ],
+    extras_require=dict(
+        ObjectId=['pymongo>=2.4.1'],
+        RFC3339=['python-dateutil>=1.5']
     )
+)
 
 if __name__ == '__main__':
     setup(**setupconf)
