@@ -11,9 +11,6 @@ class MongoId(Trafaret):
     convertable = str_types + (ObjectId,)
     value_type = ObjectId
 
-    def __init__(self, allow_blank=False):
-        self.allow_blank = allow_blank
-
     def __repr__(self):
         return "<MongoId(blank)>" if self.allow_blank else "<MongoId>"
 
@@ -28,6 +25,4 @@ class MongoId(Trafaret):
         if isinstance(value, self.convertable):
             return value
 
-        if len(value) is 0 and self.allow_blank:
-            return value
         self._failure('value is not %s' % self.value_type.__name__)
