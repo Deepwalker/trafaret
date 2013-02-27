@@ -25,9 +25,11 @@ class MongoId(Trafaret):
 
     def check_and_return(self, value):
 
-        if isinstance(value, self.convertable):
+        if value is None:
+            self._failure('value not provided')
+        elif isinstance(value, self.convertable):
             return value
-
-        if len(value) is 0 and self.allow_blank:
+        elif len(value) is 0 and self.allow_blank:
             return value
-        self._failure('value is not %s' % self.value_type.__name__)
+        else:
+            self._failure('value is not %s' % self.value_type.__name__)
