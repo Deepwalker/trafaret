@@ -25,10 +25,12 @@ class DateTime(Trafaret):
             self._failure(e.message)
 
     def check_and_return(self, value):
-
-        if isinstance(value, self.convertable):
-            return value
-        if len(value) is 0 and self.allow_blank:
+        if isinstance(value, str_types):
+            if len(value) is 0 and not self.allow_blank:
+                self._failure('value is too short')
+            else:
+                return value
+        if isinstance(value, datetime):
             return value
 
         self._failure('value is not %s' % self.value_type.__name__)
