@@ -26,11 +26,9 @@ class DateTime(Trafaret):
 
     def check_and_return(self, value):
         if isinstance(value, str_types):
-            if len(value) is 0 and not self.allow_blank:
-                self._failure('value is too short')
-            else:
+            if len(value) > 0 or self.allow_blank:
                 return value
         if isinstance(value, datetime):
             return value
 
-        self._failure('value is not %s' % self.value_type.__name__)
+        self._failure('value is not valid')
