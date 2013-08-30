@@ -757,6 +757,14 @@ class Key(object):
 
     """
     Helper class for Dict.
+    
+    >>> default = lambda: 1
+    >>> Key(name='test', default=default)
+    <Key "test">
+    >>> Key(name='test', default=default).pop({}).__next__()
+    ('test', 1)
+    >>> Key(name='test', default=2).pop({}).__next__()
+    ('test', 2)
     """
 
     def __init__(self, name, default=None, optional=False, to_name=None, trafaret=None):
@@ -768,8 +776,9 @@ class Key(object):
 
     def pop(self, data):
         if self.name in data or self.default is not None:
+            default = callable(self.default) and self.default() or self.default
             yield self.get_name(), catch_error(self.trafaret,
-                    data.pop(self.name, self.default))
+                    data.pop(self.name, default))
             raise StopIteration
         if not self.optional:
             yield self.name, DataError(error='is required')
