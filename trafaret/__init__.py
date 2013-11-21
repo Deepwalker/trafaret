@@ -1067,6 +1067,11 @@ class Forward(Trafaret):
                         {"name": "bar", "children": []} \
                      ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
     True
+    >>> empty_node = Forward()
+    >>> empty_node
+    <Forward(None)>
+    >>> extract_error(empty_node, 'something')
+    'trafaret not set yet'
     """
 
     def __init__(self):
@@ -1082,6 +1087,8 @@ class Forward(Trafaret):
         self.trafaret = self._trafaret(trafaret)
 
     def check_and_return(self, value):
+        if self.trafaret is None:
+            self._failure('trafaret not set yet')
         return self.trafaret.check(value)
 
     def __repr__(self):
