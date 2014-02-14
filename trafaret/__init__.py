@@ -33,9 +33,11 @@ Look at doctests for usage examples
 
 __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
-           "Call", "Forward", "Bool", "Type", "Mapping", "guard", "Key")
+           "Call", "Forward", "Bool", "Type", "Mapping", "guard", "Key",
+           "Tuple", "Atom", "Email", "URL")
 
 ENTRY_POINT = 'trafaret'
+_empty = object()
 
 
 def py3metafix(cls):
@@ -765,9 +767,18 @@ class Key(object):
     ('test', 1)
     >>> Key(name='test', default=2).pop({}).__next__()
     ('test', 2)
+    >>> default = lambda: None
+    >>> Key(name='test', default=default).pop({}).__next__()
+    ('test', None)
+    >>> Key(name='test', default=None).pop({}).__next__()
+    ('test', None)
+    >>> Key(name='test').pop({}).__next__()
+    ('test', DataError(is required))
+    >>> list(Key(name='test', optional=True).pop({}))
+    []
     """
 
-    def __init__(self, name, default=None, optional=False, to_name=None, trafaret=None):
+    def __init__(self, name, default=_empty, optional=False, to_name=None, trafaret=None):
         self.name = name
         self.to_name = to_name
         self.default = default
@@ -775,8 +786,12 @@ class Key(object):
         self.trafaret = trafaret or Any()
 
     def pop(self, data):
-        if self.name in data or self.default is not None:
-            default = callable(self.default) and self.default() or self.default
+        if self.name in data or self.default is not _empty:
+            if callable(self.default):
+                default = self.default()
+            else:
+                default = self.default
+            # default = callable(self.default) and self.default() or self.default
             yield self.get_name(), catch_error(self.trafaret,
                     data.pop(self.name, default))
             raise StopIteration
@@ -1066,6 +1081,11 @@ class Forward(Trafaret):
                         {"name": "bar", "children": []} \
                      ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
     True
+    >>> empty_node = Forward()
+    >>> empty_node
+    <Forward(None)>
+    >>> extract_error(empty_node, 'something')
+    'trafaret not set yet'
     """
 
     def __init__(self):
@@ -1081,6 +1101,8 @@ class Forward(Trafaret):
         self.trafaret = self._trafaret(trafaret)
 
     def check_and_return(self, value):
+        if self.trafaret is None:
+            self._failure('trafaret not set yet')
         return self.trafaret.check(value)
 
     def __repr__(self):
