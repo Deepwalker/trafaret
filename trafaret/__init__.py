@@ -502,15 +502,21 @@ class String(Trafaret):
     'value does not match pattern'
     """
 
-    def __init__(self, allow_blank=False, regex=None):
+    def __init__(self, allow_blank=False, regex=None, min_length=None, max_length=None):
         self.allow_blank = allow_blank
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
+        self.min_length = min_length
+        self.max_length = max_length
 
     def check_and_return(self, value):
         if not isinstance(value, str_types):
             self._failure("value is not a string")
         if not self.allow_blank and len(value) is 0:
             self._failure("blank value is not allowed")
+        if self.min_length is not None and len(value) < self.min_length:
+            self._failure('String is shorter than %s characters' % self.min_length)
+        if self.max_length is not None and len(value) > self.max_length:
+            self._failure('String is longer than %s characters' % self.max_length)
         if self.regex is not None:
             match = self.regex.match(value)
             if not match:
