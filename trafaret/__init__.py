@@ -500,9 +500,23 @@ class String(Trafaret):
     'wqerwqer'
     >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
     'value does not match pattern'
+    >>> String(min_length=2, max_length=3).check('123')
+    '123
+    >>> extract_error(String(min_length=2, max_length=6), '1')'
+    'String is shorter than 2 characters'
+    >>> extract_error(String(min_length=2, max_length=6), '1234567')
+    'String is longer than 6 characters'
+    >>> String(min_length=2, max_length=6, allow_blank=True)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Either allow_blank or min_length should be specified, not both
+    >>> String(min_length=0, max_length=6, allow_blank=True).check('123')
+    '123'
     """
 
     def __init__(self, allow_blank=False, regex=None, min_length=None, max_length=None):
+        assert not (allow_blank and min_length), \
+            "Either allow_blank or min_length should be specified, not both"
         self.allow_blank = allow_blank
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
         self.min_length = min_length
@@ -547,6 +561,8 @@ class Email(String):
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
+    min_length = None
+    max_length = None
 
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
@@ -586,6 +602,8 @@ class URL(String):
         r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})' # ...or ip
         r'(?::\d+)?' # optional port
         r'(?:/?|[/?]\S+)$', re.IGNORECASE)
+    min_length = None
+    max_length = None
 
     def __init__(self, allow_blank=False):
         self.allow_blank = allow_blank
