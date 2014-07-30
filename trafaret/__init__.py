@@ -39,7 +39,6 @@ __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
 ENTRY_POINT = 'trafaret'
 _empty = object()
 
-
 def py3metafix(cls):
     if not py3:
         return cls
@@ -131,7 +130,7 @@ class Trafaret(object):
 
     def converter(self, value):
         """
-        You can change converter with `>>` operator
+        You can change converter with `>>` operator or append method
         """
         return value
 
@@ -312,15 +311,63 @@ class Bool(Trafaret):
     >>> Bool().check(False)
     False
     >>> extract_error(Bool(), 1)
-    'value should be True or False'
+    'value 1 should be True or False'
     """
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False")
+            self._failure("value %s should be True or False" % value)
 
     def __repr__(self):
         return "<Bool>"
+
+
+class StrBool(Trafaret):
+
+    """
+    >>> extract_error(StrBool(), 'aloha')
+    "value aloha can't be converted to Bool"
+    >>> StrBool().check(1)
+    True
+    >>> StrBool().check(0)
+    False
+    >>> StrBool().check('y')
+    True
+    >>> StrBool().check('n')
+    False
+    >>> StrBool().check(None)
+    False
+    >>> StrBool().check('1')
+    True
+    >>> StrBool().check('0')
+    False
+    >>> StrBool().check('YeS')
+    True
+    >>> StrBool().check('No')
+    False
+    >>> StrBool().check(True)
+    True
+    >>> StrBool().check(False)
+    False
+    """
+
+    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on',
+                   '1', '0', 'none')
+
+    def _check(self, value):
+        _value = str(value).strip().lower()
+        if _value not in self.convertable:
+            self._failure("value %s can't be converted to Bool" % value)
+
+    def converter(self, value):
+        if value is None:
+            return False
+        _str = str(value).strip().lower()
+
+        return _str in ('t', 'true', 'y', 'yes', 'on', '1')
+
+    def __repr__(self):
+        return "<StrBool>"
 
 
 class NumberMeta(TrafaretMeta):
@@ -344,11 +391,11 @@ class NumberMeta(TrafaretMeta):
     >>> (Int > 5).check(10)
     10
     >>> extract_error(Int > 5, 1)
-    'value should be greater than 5'
+    'value 1 should be greater than 5'
     >>> (Int < 3).check(1)
     1
     >>> extract_error(Int < 3, 3)
-    'value should be less than 3'
+    'value 3 should be less than 3'
     """
 
     def __getitem__(cls, slice_):
@@ -376,17 +423,17 @@ class Float(Trafaret):
     >>> Float().check(1.0)
     1.0
     >>> extract_error(Float(), 1 + 3j)
-    'value is not float'
+    'value (1+3j) is not float'
     >>> extract_error(Float(), 1)
     1.0
     >>> Float(gte=2).check(3.0)
     3.0
     >>> extract_error(Float(gte=2), 1.0)
-    'value is less than 2'
+    'value 1.0 is less than 2'
     >>> Float(lte=10).check(5.0)
     5.0
     >>> extract_error(Float(lte=3), 5.0)
-    'value is greater than 3'
+    'value 5.0 is greater than 3'
     >>> Float().check("5.0")
     5.0
     """
@@ -404,12 +451,15 @@ class Float(Trafaret):
 
     def _converter(self, val):
         if not isinstance(val, self.convertable):
-            self._failure('value is not %s' % self.value_type.__name__)
+            self._failure('value %s is not %s' % (val, self.value_type.__name__))
         try:
             return self.value_type(val)
         except ValueError:
-            self._failure("value can't be converted to %s" %
-                          self.value_type.__name__)
+            self._failure(
+                "value %s can't be converted to %s" % (
+                    val, self.value_type.__name__
+                )
+            )
 
     def check_and_return(self, val):
         if not isinstance(val, self.value_type):
@@ -417,13 +467,13 @@ class Float(Trafaret):
         else:
             value = val
         if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte)
+            self._failure("value %s is less than %s" % (value, self.gte))
         if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte)
+            self._failure("value %s is greater than %s" % (value, self.lte))
         if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt)
+            self._failure("value %s should be less than %s" % (value, self.lt))
         if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt)
+            self._failure("value %s should be greater than %s" % (value, self.gt))
         return value
 
     def __lt__(self, lt):
@@ -452,9 +502,9 @@ class Int(Float):
     >>> Int().check(5)
     5
     >>> extract_error(Int(), 1.1)
-    'value is not int'
+    'value 1.1 is not int'
     >>> extract_error(Int(), 1 + 1j)
-    'value is not int'
+    'value (1+1j) is not int'
     """
 
     value_type = int
@@ -462,7 +512,7 @@ class Int(Float):
     def _converter(self, val):
         if isinstance(val, float):
             if not val.is_integer():
-                self._failure('value is not int')
+                self._failure('value %s is not int' % (val))
         return super(Int, self)._converter(val)
 
 
@@ -501,7 +551,7 @@ class String(Trafaret):
     >>> String(regex='\w+').check('wqerwqer')
     'wqerwqer'
     >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
-    'value does not match pattern'
+    "value 'wqe rwqer' does not match pattern: ^\\\w+$"
     >>> String(min_length=2, max_length=3).check('123')
     '123
     >>> extract_error(String(min_length=2, max_length=6), '1')'
@@ -523,6 +573,7 @@ class String(Trafaret):
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
         self.min_length = min_length
         self.max_length = max_length
+        self._raw_regex = self.regex.pattern if self.regex else None
 
     def check_and_return(self, value):
         if not isinstance(value, str_types):
@@ -536,7 +587,9 @@ class String(Trafaret):
         if self.regex is not None:
             match = self.regex.match(value)
             if not match:
-                self._failure("value does not match pattern")
+                self._failure("value '%s' does not match pattern: %s" % (
+                    value, self._raw_regex)
+                )
             return match
         return value
 
@@ -556,6 +609,8 @@ class Email(String):
     'someone@example.net'
     >>> (Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
     'example.net'
+    >>> extract_error(Email(),'foo')
+    'foo value is not an email'
     """
 
     regex = re.compile(
@@ -567,7 +622,7 @@ class Email(String):
     max_length = None
 
     def __init__(self, allow_blank=False):
-        self.allow_blank = allow_blank
+        super(Email, self).__init__(allow_blank=allow_blank, regex=self.regex)
 
     def check_and_return(self, value):
         try:
@@ -608,7 +663,7 @@ class URL(String):
     max_length = None
 
     def __init__(self, allow_blank=False):
-        self.allow_blank = allow_blank
+        super(URL, self).__init__(allow_blank=allow_blank, regex=self.regex)
 
     def check_and_return(self, value):
         try:
@@ -687,7 +742,7 @@ class List(Trafaret):
     >>> List(String).check(["foo", "bar", "spam"])
     ['foo', 'bar', 'spam']
     >>> extract_error(List(Int), [1, 2, 1 + 3j])
-    {2: 'value is not int'}
+    {2: 'value (1+3j) is not int'}
     >>> List(Int, min_length=1).check([1, 2, 3])
     [1, 2, 3]
     >>> extract_error(List(Int, min_length=1), [])
@@ -697,7 +752,7 @@ class List(Trafaret):
     >>> extract_error(List(Int, max_length=2), [1, 2, 3])
     'list length is greater than 2'
     >>> extract_error(List(Int), ["a"])
-    {0: "value can't be converted to int"}
+    {0: "value a can't be converted to int"}
     """
 
     __metaclass__ = SquareBracketsMeta
@@ -871,10 +926,10 @@ class Dict(Trafaret):
     >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int)
     >>> trafaret.allow_extra("*")
     <Dict(any | bar=<String>, foo=<Int>)>
-    >>> repr(trafaret.check({"foo": 1, "ham": 100, "baz": None}))
-    "{'baz': None, 'foo': 1, 'ham': 100}"
-    >>> repr(extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None}))
-    "{'bar': 'value is not a string', 'foo': 'is required'}"
+    >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
+    {'foo': 1, 'baz': None, 'ham': 100}
+    >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
+    {'foo': 'is required', 'bar': 'value is not string'}
     >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
     {'bar': 'value is not a string'}
     >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
@@ -923,7 +978,7 @@ class Dict(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, dict):
-            self._failure("value is not dict")
+            self._failure("value '%s' is not dict" % value)
         data = copy.copy(value)
         collect = {}
         errors = {}
@@ -970,6 +1025,27 @@ class Dict(Trafaret):
         return r
 
 
+def DictKeys(keys):
+    """
+    Checks if dict has all given keys
+
+    :param keys:
+    :type keys:
+
+    >>> DictKeys(['a','b']).check({'a':1,'b':2,})
+    {'a': 1, 'b': 2}
+    >>> extract_error(DictKeys(['a','b']), {'a':1,'b':2,'c':3,})
+    {'c': 'c is not allowed key'}
+    >>> extract_error(DictKeys(['key','key2']), {'key':'val'})
+    {'key2': 'is required'}
+    """
+    def MissingKey(val):
+        raise DataError('%s is not in Dict' % val)
+
+    req = [(Key(key), Any) for key in keys]
+    return Dict(dict(req))
+
+
 class Mapping(Trafaret):
 
     r"""
@@ -980,9 +1056,9 @@ class Mapping(Trafaret):
     >>> repr(trafaret.check({"foo": 1, "bar": 2}))
     "{'bar': 2, 'foo': 1}"
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
-    {'bar': {'value': 'value is not int'}}
-    >>> repr(extract_error(trafaret, {"foo": 1, 2: "bar"}))
-    '{2: {\'key\': \'value is not a string\', \'value\': "value can\'t ...verted to int"}}'
+    {'bar': {'value': 'value None is not int'}}
+    >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
+    {2: {'key': 'value is not string', 'value': "value bar can't be converted to int"}}
     """
 
     def __init__(self, key, value):
@@ -1100,7 +1176,7 @@ class Forward(Trafaret):
     >>> node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
     True
     >>> extract_error(node, {"name": "foo", "children": [1]})
-    {'children': {0: 'value is not dict'}}
+    {'children': {0: "value '1' is not dict"}}
     >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
                      ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
@@ -1197,7 +1273,7 @@ def guard(trafaret=None, **kwargs):
         @functools.wraps(fn)
         def decor(*args, **kwargs):
             fnargs = argspec.args
-            if fnargs[0] == 'self':
+            if fnargs[0] in ['self', 'cls']:
                 fnargs = fnargs[1:]
                 checkargs = args[1:]
             else:
@@ -1205,7 +1281,8 @@ def guard(trafaret=None, **kwargs):
 
             try:
                 call_args = dict(
-                        itertools.chain(zip(fnargs, checkargs), kwargs.items()))
+                    itertools.chain(zip(fnargs, checkargs), kwargs.items())
+                )
                 for name, default in zip(reversed(fnargs),
                                          argspec.defaults or ()):
                     if name not in call_args:

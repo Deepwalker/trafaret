@@ -9,6 +9,7 @@ def read(fname):
 
 
 setupconf = dict(
+<<<<<<< HEAD
     name='trafaret',
     version='0.5.0',
     license='BSD',
@@ -31,6 +32,21 @@ setupconf = dict(
         ]
     ),
     classifiers=[
+=======
+    name = 'trafaret',
+    version = '0.4.1',
+    license = 'BSD',
+    url = 'https://github.com/Deepwalker/trafaret/',
+    author = 'Barbuza, Deepwalker',
+    author_email = 'krivushinme@gmail.com',
+    description = ('Validation and parsing library'),
+    long_description = read('README.rst'),
+    keywords = 'validatation form forms data schema',
+
+    packages = ['trafaret'],
+
+    classifiers = [
+>>>>>>> bcd86e61d84d38ee1b5ebd3f18cc408604256d61
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Operating System :: OS Independent',
