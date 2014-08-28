@@ -838,7 +838,7 @@ class Key(object):
 
     """
     Helper class for Dict.
-    
+
     >>> default = lambda: 1
     >>> Key(name='test', default=default)
     <Key "test">
@@ -874,7 +874,8 @@ class Key(object):
             yield self.get_name(), catch_error(self.trafaret,
                     data.pop(self.name, default))
             raise StopIteration
-        if not self.optional:
+
+        if not self.optional and self.name not in data:
             yield self.name, DataError(error='is required')
 
     def keys_names(self):
@@ -892,7 +893,6 @@ class Key(object):
 
     def make_optional(self):
         self.optional = True
-        self.default = None
 
     def __repr__(self):
         return '<%s "%s"%s>' % (self.__class__.__name__, self.name,
