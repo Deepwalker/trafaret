@@ -875,7 +875,7 @@ class Key(object):
                     data.pop(self.name, default))
             raise StopIteration
 
-        if not self.optional and self.name not in data:
+        if not self.optional:
             yield self.name, DataError(error='is required')
 
     def keys_names(self):
