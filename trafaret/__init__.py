@@ -607,16 +607,20 @@ class Email(String):
     """
     >>> Email().check('someone@example.net')
     'someone@example.net'
+    >>> extract_error(Email(),'someone@example') # try without domain-part
+    'value is not a valid email address'
+    >>> str(Email().check('someone@пример.рф')) # try with `idna` encoding
+    'someone@xn--e1afmkfd.xn--p1ai'
     >>> (Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
     'example.net'
     >>> extract_error(Email(),'foo')
-    'foo value is not an email'
+    'value is not a valid email address'
     """
 
     regex = re.compile(
         r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
-        r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?$)'  # domain
+        r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
     min_length = None
     max_length = None
@@ -628,15 +632,23 @@ class Email(String):
         try:
             return super(Email, self).check_and_return(value)
         except DataError:
+            if value and isinstance(value, bytes):
+                decoded = value.decode('utf-8')
+            else:
+                decoded = value
             # Trivial case failed. Try for possible IDN domain-part
-            if value and '@' in value:
-                parts = value.split('@')
+            if decoded and '@' in decoded:
+                parts = decoded.split('@')
                 try:
-                    parts[-1] = parts[-1].encode('idna')
+                    parts[-1] = parts[-1].encode('idna').decode('ascii')
                 except UnicodeError:
                     pass
                 else:
-                    return super(Email, self).check_and_return('@'.join(parts))
+                    try:
+                        return super(Email, self).check_and_return('@'.join(parts))
+                    except DataError:
+                        # Will fail with main error
+                        pass
         self._failure('value is not a valid email address')
 
     def __repr__(self):
