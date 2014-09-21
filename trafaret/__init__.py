@@ -588,7 +588,7 @@ class String(Trafaret):
             match = self.regex.match(value)
             if not match:
                 self._failure("value '%s' does not match pattern: %s" % (
-                    value, self._raw_regex)
+                    value, repr(self._raw_regex))
                 )
             return match
         return value
