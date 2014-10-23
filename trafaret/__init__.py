@@ -941,7 +941,7 @@ class Dict(Trafaret):
     >>> trafaret.check({"foo": 1, "ham": 100, "baz": None})
     {'foo': 1, 'baz': None, 'ham': 100}
     >>> extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
-    {'foo': 'is required', 'bar': 'value is not string'}
+    {'foo': 'is required', 'bar': 'value is not a string'}
     >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
     {'bar': 'value is not a string'}
     >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
@@ -1070,7 +1070,7 @@ class Mapping(Trafaret):
     >>> extract_error(trafaret, {"foo": 1, "bar": None})
     {'bar': {'value': 'value None is not int'}}
     >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not string', 'value': "value bar can't be converted to int"}}
+    {2: {'key': 'value is not a string', 'value': "value bar can't be converted to int"}}
     """
 
     def __init__(self, key, value):
