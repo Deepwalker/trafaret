@@ -619,8 +619,12 @@ class Email(String):
     'someone@xn--e1afmkfd.xn--p1ai'
     >>> (Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
     'example.net'
-    >>> extract_error(Email(),'foo')
+    >>> extract_error(Email(), 'foo')
     'value is not a valid email address'
+    >>> extract_error(Email(), 'f' * 10000 + '@correct.domain.edu')
+    'value is not a valid email address'
+    >>> extract_error(Email(), 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
+    True
     """
 
     regex = re.compile(
@@ -628,13 +632,11 @@ class Email(String):
         r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
-    min_length = None
-    max_length = MAX_EMAIL_LEN
 
     def __init__(self, allow_blank=False):
         super(Email, self).__init__(allow_blank=allow_blank,
                                     regex=self.regex,
-                                    max_length=self.max_length)
+                                    max_length=MAX_EMAIL_LEN)
 
     def check_and_return(self, value):
         try:
