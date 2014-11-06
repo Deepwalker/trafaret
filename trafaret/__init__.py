@@ -46,6 +46,8 @@ __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
 
 ENTRY_POINT = 'trafaret'
 _empty = object()
+MAX_EMAIL_LEN = 254
+
 
 def py3metafix(cls):
     if not py3:
@@ -627,10 +629,12 @@ class Email(String):
         r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'  # domain
         r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$', re.IGNORECASE)  # literal form, ipv4 address (SMTP 4.1.3)
     min_length = None
-    max_length = None
+    max_length = MAX_EMAIL_LEN
 
     def __init__(self, allow_blank=False):
-        super(Email, self).__init__(allow_blank=allow_blank, regex=self.regex)
+        super(Email, self).__init__(allow_blank=allow_blank,
+                                    regex=self.regex,
+                                    max_length=self.max_length)
 
     def check_and_return(self, value):
         try:
