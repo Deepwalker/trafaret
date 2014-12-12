@@ -704,7 +704,11 @@ class URL(String):
                     pass
                 else:
                     url = urlparse.urlunsplit((scheme, netloc, path, query, fragment))
-                    return super(URL, self).check_and_return(url)
+                    try:
+                        return super(URL, self).check_and_return(url)
+                    except DataError:
+                        # Will fail with main error
+                        pass
         self._failure('value is not URL')
 
     def __repr__(self):
