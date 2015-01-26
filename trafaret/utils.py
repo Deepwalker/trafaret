@@ -3,6 +3,7 @@ There will be small helpers to render forms with exist trafarets for DRY.
 """
 import collections
 from itertools import groupby
+from . import _dd
 
 
 def recursive_unfold(data, prefix='', delimeter='__'):
@@ -38,14 +39,13 @@ def recursive_unfold(data, prefix='', delimeter='__'):
 
 def unfold(data, prefix='', delimeter='__'):
     """
-    >>> from reprlib import repr
-    >>> repr(unfold({'a': 4, 'b': 5}))
+    >>> _dd(unfold({'a': 4, 'b': 5}))
     "{'a': 4, 'b': 5}"
-    >>> repr(unfold({'a': [1, 2, 3]}))
+    >>> _dd(unfold({'a': [1, 2, 3]}))
     "{'a__0': 1, 'a__1': 2, 'a__2': 3}"
-    >>> repr(unfold({'a': {'a': 4, 'b': 5}}))
+    >>> _dd(unfold({'a': {'a': 4, 'b': 5}}))
     "{'a__a': 4, 'a__b': 5}"
-    >>> repr(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
+    >>> _dd(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
     "{'form__a__a': 4, 'form__a__b': 5}"
     """
     return dict(recursive_unfold(data, prefix, delimeter))
@@ -53,16 +53,15 @@ def unfold(data, prefix='', delimeter='__'):
 
 def fold(data, prefix='', delimeter='__'):
     """
-    >>> from reprlib import repr
-    >>> repr(fold({'a__a': 4}))
+    >>> _dd(fold({'a__a': 4}))
     "{'a': {'a': 4}}"
-    >>> repr(fold({'a__a': 4, 'a__b': 5}))
+    >>> _dd(fold({'a__a': 4, 'a__b': 5}))
     "{'a': {'a': 4, 'b': 5}}"
-    >>> repr(fold({'a__1': 2, 'a__0': 1, 'a__2': 3}))
+    >>> _dd(fold({'a__1': 2, 'a__0': 1, 'a__2': 3}))
     "{'a': [1, 2, 3]}"
-    >>> repr(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'))
+    >>> _dd(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'))
     "{'a': {'a': 4, 'b': 5}}"
-    >>> repr(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'))
+    >>> _dd(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'))
     "{'a': {'a': [4, 7], 'b': 5}}"
     >>> repr(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'))
     "[{'a': [4, 7]}, {'b': 5}]"

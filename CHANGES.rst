@@ -1,7 +1,11 @@
 Changes
 =======
 
-<<<<<<< HEAD
+2014-09-17
+----------
+
+Fixed Email validator
+
 2012-05-30
 ----------
 
@@ -29,8 +33,6 @@ Added ``__call__`` alias to ``check``.
 
 Added ``visitor`` module.
 
-=======
->>>>>>> bcd86e61d84d38ee1b5ebd3f18cc408604256d61
 2012-05-10
 ----------
 
