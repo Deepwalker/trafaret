@@ -857,7 +857,7 @@ class Tuple(Trafaret):
         return tuple(result)
 
     def __repr__(self):
-        return '<Tuple(' + ', '.join(repr(t) for t in self.trafarets) + ')'
+        return '<Tuple(' + ', '.join(repr(t) for t in self.trafarets) + ')>'
 
 
 class Key(object):

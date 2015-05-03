@@ -17,7 +17,7 @@ setupconf = dict(
     author_email='krivushinme@gmail.com',
     description=('Validation and parsing library'),
     long_description=read('README.rst'),
-    keywords='validatation form forms data schema',
+    keywords='validation form forms data schema',
 
     packages=['trafaret', 'trafaret.contrib'],
     extras_require=dict(

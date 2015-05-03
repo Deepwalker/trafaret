@@ -1,0 +1,557 @@
+import unittest
+import trafaret as t
+from trafaret import extract_error, ignore
+
+
+class TestAnyTrafaret(unittest.TestCase):
+    def test_any(self):
+        self.assertEqual(
+            (t.Any() >> ignore).check(object()),
+            None
+        )
+
+
+class TestAtomTrafaret(unittest.TestCase):
+    def test_atom(self):
+        res = t.Atom('atom').check('atom')
+        self.assertEqual(res, 'atom')
+
+        err = extract_error(t.Atom('atom'), 'molecule')
+        self.assertEqual(err, "value is not exactly 'atom'")
+
+
+class TestBoolTrafaret(unittest.TestCase):
+    def test_bool(self):
+        res = t.Bool().check(True)
+        self.assertEqual(res, True)
+
+        res = t.Bool().check(False)
+        self.assertEqual(res, False)
+
+        err = extract_error(t.Bool(), 1)
+        self.assertEqual(err, 'value should be True or False')
+
+
+class TestCallTrafaret(unittest.TestCase):
+    def test_call(self):
+        def validator(value):
+            if value != "foo":
+                return t.DataError("I want only foo!")
+            return 'foo'
+        trafaret = t.Call(validator)
+        res = trafaret.check("foo")
+        self.assertEqual(res, 'foo')
+        err = extract_error(trafaret, "bar")
+        self.assertEqual(err, 'I want only foo!')
+
+
+class TestCallableTrafaret(unittest.TestCase):
+    def test_callable(self):
+        (t.Callable() >> t.ignore).check(lambda: 1)
+        res = extract_error(t.Callable(), 1)
+        self.assertEqual(res, 'value is not callable')
+
+
+class TestDictTrafaret(unittest.TestCase):
+    def test_base(self):
+        trafaret = t.Dict(foo=t.Int, bar=t.String) >> t.ignore
+        trafaret.check({"foo": 1, "bar": "spam"})
+        res = t.extract_error(trafaret, {"foo": 1, "bar": 2})
+        self.assertEqual(res, {'bar': 'value is not a string'})
+        res = extract_error(trafaret, {"foo": 1})
+        self.assertEqual(res, {'bar': 'is required'})
+        res = extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
+        self.assertEqual(res, {'eggs': 'eggs is not allowed key'})
+        res = trafaret.allow_extra("eggs")
+        self.assertEqual(repr(res), '<Dict(extras=(eggs) | bar=<String>, foo=<Int>)>')
+        trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
+        trafaret.check({"foo": 1, "bar": "spam"})
+        res = extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
+        self.assertEqual(res, {'ham': 'ham is not allowed key'})
+        trafaret.allow_extra("*")
+        trafaret.check({"foo": 1, "bar": "spam", "ham": 100})
+        trafaret.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
+        res = extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
+        self.assertEqual(res, {'bar': 'is required'})
+
+    def test_base2(self):
+        trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.Int)
+        trafaret.allow_extra('*')
+        res = trafaret.check({"foo": 1, "ham": 100, "baz": None})
+        self.assertEqual(res, {'baz': None, 'foo': 1, 'ham': 100})
+        res = extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
+        self.assertEqual(res, {'bar': 'value is not a string', 'foo': 'is required'})
+        res = extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
+        self.assertEqual(res, {'bar': 'value is not a string'})
+
+    def test_base3(self):
+        trafaret = t.Dict({t.Key('bar', default='nyanya') >> 'baz': t.String}, foo=t.Int)
+        res = trafaret.check({'foo': 4})
+        self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+        trafaret.ignore_extra('fooz')
+        res = trafaret.check({'foo': 4, 'fooz': 5})
+        self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+        trafaret.ignore_extra('*')
+        res = trafaret.check({'foo': 4, 'foor': 5})
+        self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+
+
+
+class TestDictKeys(unittest.TestCase):
+
+    def test_dict_keys(self):
+        res = t.DictKeys(['a', 'b']).check({'a': 1, 'b': 2})
+        self.assertEqual(res, {'a': 1, 'b': 2})
+        res = extract_error(t.DictKeys(['a', 'b']), {'a': 1, 'b': 2, 'c': 3})
+        self.assertEqual(res, {'c': 'c is not allowed key'})
+        res = extract_error(t.DictKeys(['key', 'key2']), {'key': 'val'})
+        self.assertEqual(res, {'key2': 'is required'})
+
+
+class TestEmailTrafaret(unittest.TestCase):
+    def test_email(self):
+        res = t.Email().check('someone@example.net')
+        self.assertEqual(res, 'someone@example.net')
+        res = extract_error(t.Email(),'someone@example') # try without domain-part
+        self.assertEqual(res, 'value is not a valid email address')
+        res = str(t.Email().check('someone@пример.рф')) # try with `idna` encoding
+        self.assertEqual(res, 'someone@xn--e1afmkfd.xn--p1ai')
+        res = (t.Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
+        self.assertEqual(res, 'example.net')
+        res = extract_error(t.Email(), 'foo')
+        self.assertEqual(res, 'value is not a valid email address')
+        res = extract_error(t.Email(), 'f' * 10000 + '@correct.domain.edu')
+        self.assertEqual(res, 'value is not a valid email address')
+        res = extract_error(t.Email(), 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
+        self.assertEqual(res, True)
+
+
+
+class TestEnumTrafaret(unittest.TestCase):
+    def test_enum(self):
+        trafaret = t.Enum("foo", "bar", 1) >> ignore
+        self.assertEqual(repr(trafaret), "<Enum('foo', 'bar', 1)>")
+        res = trafaret.check("foo")
+        res = trafaret.check(1)
+        res = extract_error(trafaret, 2)
+        self.assertEqual(res, "value doesn't match any variant")
+
+
+
+class TestFloat(unittest.TestCase):
+    def test_float_repr(self):
+        res = t.Float()
+        self.assertEqual(repr(res), '<Float>')
+        res = t.Float(gte=1)
+        self.assertEqual(repr(res), '<Float(gte=1)>')
+        res = t.Float(lte=10)
+        self.assertEqual(repr(res), '<Float(lte=10)>')
+        res = t.Float(gte=1, lte=10)
+        self.assertEqual(repr(res), '<Float(gte=1, lte=10)>')
+
+    def test_float(self):
+        res = t.Float().check(1.0)
+        self.assertEqual(res, 1.0)
+        res = extract_error(t.Float(), 1 + 3j)
+        self.assertEqual(res, 'value is not float')
+        res = extract_error(t.Float(), 1)
+        self.assertEqual(res, 1.0)
+        res = t.Float(gte=2).check(3.0)
+        self.assertEqual(res, 3.0)
+        res = extract_error(t.Float(gte=2), 1.0)
+        self.assertEqual(res, 'value is less than 2')
+        res = t.Float(lte=10).check(5.0)
+        self.assertEqual(res, 5.0)
+        res = extract_error(t.Float(lte=3), 5.0)
+        self.assertEqual(res, 'value is greater than 3')
+        res = t.Float().check("5.0")
+        self.assertEqual(res, 5.0)
+
+
+
+class TestForwardTrafaret(unittest.TestCase):
+
+    def test_forward(self):
+        node = t.Forward()
+        node << t.Dict(name=t.String, children=t.List[node])
+        self.assertEqual(repr(node), '<Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>')
+        res = node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
+        self.assertEqual(res, True)
+        res = extract_error(node, {"name": "foo", "children": [1]})
+        self.assertEqual(res, {'children': {0: 'value is not dict'}})
+        res = node.check({"name": "foo", "children": [{"name": "bar", "children": []}]})
+        self.assertEqual(res, {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'})
+        empty_node = t.Forward()
+        self.assertEqual(repr(empty_node), '<Forward(None)>')
+        res = extract_error(empty_node, 'something')
+        self.assertEqual(res, 'trafaret not set yet')
+
+
+
+class TestIntTrafaret(unittest.TestCase):
+
+    def test_int(self):
+        res = repr(t.Int())
+        self.assertEqual(res, '<Int>')
+        res = t.Int().check(5)
+        self.assertEqual(res, 5)
+        res = extract_error(t.Int(), 1.1)
+        self.assertEqual(res, 'value is not int')
+        res = extract_error(t.Int(), 1 + 1j)
+        self.assertEqual(res, 'value is not int')
+
+
+class TestKey(unittest.TestCase):
+    def test_key(self):
+        default = lambda: 1
+        res = t.Key(name='test', default=default)
+        self.assertEqual(repr(res), '<Key "test">')
+        res = next(t.Key(name='test', default=default).pop({}))
+        self.assertEqual(res, ('test', 1))
+        res = next(t.Key(name='test', default=2).pop({}))
+        self.assertEqual(res, ('test', 2))
+        default = lambda: None
+        res = next(t.Key(name='test', default=default).pop({}))
+        self.assertEqual(res, ('test', None))
+        res = next(t.Key(name='test', default=None).pop({}))
+        self.assertEqual(res, ('test', None))
+        # res = next(t.Key(name='test').pop({}))
+        # self.assertEqual(res, ('test', DataError(is required)))
+        res = list(t.Key(name='test', optional=True).pop({}))
+        self.assertEqual(res, [])
+
+
+
+class TestList(unittest.TestCase):
+
+    def test_list_repr(self):
+        res = t.List(t.Int)
+        self.assertEqual(repr(res), '<List(<Int>)>')
+        res = t.List(t.Int, min_length=1)
+        self.assertEqual(repr(res), '<List(min_length=1 | <Int>)>')
+        res = t.List(t.Int, min_length=1, max_length=10)
+        self.assertEqual(repr(res), '<List(min_length=1, max_length=10 | <Int>)>')
+
+    def test_list(self):
+        res = extract_error(t.List(t.Int), 1)
+        self.assertEqual(res, 'value is not list')
+        res = t.List(t.Int).check([1, 2, 3])
+        self.assertEqual(res, [1, 2, 3])
+        res = t.List(t.String).check(["foo", "bar", "spam"])
+        self.assertEqual(res, ['foo', 'bar', 'spam'])
+        res = extract_error(t.List(t.Int), [1, 2, 1 + 3j])
+        self.assertEqual(res, {2: 'value is not int'})
+        res = t.List(t.Int, min_length=1).check([1, 2, 3])
+        self.assertEqual(res, [1, 2, 3])
+        res = extract_error(t.List(t.Int, min_length=1), [])
+        self.assertEqual(res, 'list length is less than 1')
+        res = t.List(t.Int, max_length=2).check([1, 2])
+        self.assertEqual(res, [1, 2])
+        res = extract_error(t.List(t.Int, max_length=2), [1, 2, 3])
+        self.assertEqual(res, 'list length is greater than 2')
+        res = extract_error(t.List(t.Int), ["a"])
+        self.assertEqual(res, {0: "value can't be converted to int"})
+
+    def test_list_meta(self):
+        res = t.List[t.Int]
+        self.assertEqual(repr(res), '<List(<Int>)>')
+        res = t.List[t.Int, 1:]
+        self.assertEqual(repr(res), '<List(min_length=1 | <Int>)>')
+        res = t.List[:10, t.Int]
+        self.assertEqual(repr(res), '<List(max_length=10 | <Int>)>')
+        # TODO
+        # res = t.List[1:10]
+        # self.assertEqual(res, Traceback (most recent call last):
+        #     ...
+        #     RuntimeError: Trafaret is required for List initialization
+
+
+class TestMappingTrafaret(unittest.TestCase):
+
+    def test_mapping(self):
+        trafaret = t.Mapping(t.String, t.Int)
+        self.assertEqual(repr(trafaret), '<Mapping(<String> => <Int>)>')
+        res = trafaret.check({"foo": 1, "bar": 2})
+        self.assertEqual(res, {'bar': 2, 'foo': 1})
+        res = extract_error(trafaret, {"foo": 1, "bar": None})
+        self.assertEqual(res, {'bar': {'value': 'value is not int'}})
+        res = extract_error(trafaret, {"foo": 1, 2: "bar"})
+        self.assertEqual(res, {2: {'key': 'value is not a string', 'value': "value can't be converted to int"}})
+
+
+class TestNullTrafaret(unittest.TestCase):
+
+    def test_null(self):
+        res = t.Null()
+        self.assertEqual(repr(res), '<Null>')
+        res = t.Null().check(None)
+        res = extract_error(t.Null(), 1)
+        self.assertEqual(res, 'value should be None')
+
+
+class TestNumMeta(unittest.TestCase):
+
+    def test_num_meta_repr(self):
+        res = t.Int[1:]
+        self.assertEqual(repr(res), '<Int(gte=1)>')
+        res = t.Int[1:10]
+        self.assertEqual(repr(res), '<Int(gte=1, lte=10)>')
+        res = t.Int[:10]
+        self.assertEqual(repr(res), '<Int(lte=10)>')
+        res = t.Float[1:]
+        self.assertEqual(repr(res), '<Float(gte=1)>')
+        res = t.Int > 3
+        self.assertEqual(repr(res), '<Int(gt=3)>')
+        res = 1 < (t.Float < 10)
+        self.assertEqual(repr(res), '<Float(gt=1, lt=10)>')
+
+    def test_meta_res(self):
+        res = (t.Int > 5).check(10)
+        self.assertEqual(res, 10)
+        res = extract_error(t.Int > 5, 1)
+        self.assertEqual(res, 'value should be greater than 5')
+        res = (t.Int < 3).check(1)
+        self.assertEqual(res, 1)
+        res = extract_error(t.Int < 3, 3)
+        self.assertEqual(res, 'value should be less than 3')
+
+
+class TestOrNotToTest(unittest.TestCase):
+    def test_or(self):
+        nullString = t.Or(t.String, t.Null)
+        self.assertEqual(repr(nullString), '<Or(<String>, <Null>)>')
+        res = nullString.check(None)
+        res = nullString.check("test")
+        self.assertEqual(res, 'test')
+        res = extract_error(nullString, 1)
+        self.assertEqual(res, {0: 'value is not a string', 1: 'value should be None'})
+        res = t.Or << t.Int << t.String
+        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')    
+
+
+
+class TestStrBoolTrafaret(unittest.TestCase):
+
+    def test_str_bool(self):
+        res = extract_error(t.StrBool(), 'aloha')
+        self.assertEqual(res, "value can't be converted to Bool")
+        res = t.StrBool().check(1)
+        self.assertEqual(res, True)
+        res = t.StrBool().check(0)
+        self.assertEqual(res, False)
+        res = t.StrBool().check('y')
+        self.assertEqual(res, True)
+        res = t.StrBool().check('n')
+        self.assertEqual(res, False)
+        res = t.StrBool().check(None)
+        self.assertEqual(res, False)
+        res = t.StrBool().check('1')
+        self.assertEqual(res, True)
+        res = t.StrBool().check('0')
+        self.assertEqual(res, False)
+        res = t.StrBool().check('YeS')
+        self.assertEqual(res, True)
+        res = t.StrBool().check('No')
+        self.assertEqual(res, False)
+        res = t.StrBool().check(True)
+        self.assertEqual(res, True)
+        res = t.StrBool().check(False)
+        self.assertEqual(res, False)
+
+
+
+class TestStringTrafaret(unittest.TestCase):
+
+    def test_string(self):
+        res = t.String()
+        self.assertEqual(repr(res), '<String>')
+        res = t.String(allow_blank=True)
+        self.assertEqual(repr(res), '<String(blank)>')
+        res = t.String().check("foo")
+        self.assertEqual(res, 'foo')
+        res = extract_error(t.String(), "")
+        self.assertEqual(res, 'blank value is not allowed')
+        res = t.String(allow_blank=True).check("")
+        self.assertEqual(res, '')
+        res = extract_error(t.String(), 1)
+        self.assertEqual(res, 'value is not a string')
+        res = t.String(regex='\w+').check('wqerwqer')
+        self.assertEqual(res, 'wqerwqer')
+        res = extract_error(t.String(regex='^\w+$'), 'wqe rwqer')
+        self.assertEqual(res, "value does not match pattern: '^\\\\w+$'")
+        res = t.String(min_length=2, max_length=3).check('123')
+        self.assertEqual(res, '123')
+        res = extract_error(t.String(min_length=2, max_length=6), '1')
+        self.assertEqual(res, 'String is shorter than 2 characters')
+        res = extract_error(t.String(min_length=2, max_length=6), '1234567')
+        self.assertEqual(res, 'String is longer than 6 characters')
+        # TODO
+        # res = String(min_length=2, max_length=6, allow_blank=True)
+        # self.assertEqual(res, Traceback (most recent call last):
+        #     ...
+        #     AssertionError: Either allow_blank or min_length should be specified, not both
+        res = t.String(min_length=0, max_length=6, allow_blank=True).check('123')
+        self.assertEqual(res, '123')
+
+
+
+# res = (Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
+# self.assertEqual(res, 6
+# res = (Int() >> float >> str).check(4)
+# self.assertEqual(res, '4.0'
+# res = Int | String
+# self.assertEqual(res, <Or(<Int>, <String>)>
+# res = Int | String | Null
+# self.assertEqual(res, <Or(<Int>, <String>, <Null>)>
+# res = (Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
+# self.assertEqual(res, 5
+
+
+
+class TestTupleTrafaret(unittest.TestCase):
+    def test_tuple(self):
+        tup = t.Tuple(t.Int, t.Int, t.String)
+        self.assertEqual(repr(tup), '<Tuple(<Int>, <Int>, <String>)>')
+        res = tup.check([3, 4, '5'])
+        self.assertEqual(res, (3, 4, '5'))
+        res = extract_error(tup, [3, 4, 5])
+        self.assertEqual(res, {2: 'value is not a string'})
+
+
+
+class TestTypeTrafaret(unittest.TestCase):
+
+    def test_type(self):
+        res = t.Type(int)
+        self.assertEqual(repr(res), '<Type(int)>')
+        c = t.Type[int]
+        res = c.check(1)
+        self.assertEqual(res, 1)
+        res = extract_error(c, "foo")
+        self.assertEqual(res, 'value is not int')
+
+
+
+# res = URL().check('http://example.net/resource/?param=value#anchor')
+# self.assertEqual(res, 'http://example.net/resource/?param=value#anchor'
+# res = str(URL().check('http://пример.рф/resource/?param=value#anchor'))
+# self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
+
+
+
+# res = @guard(a=String, b=Int, c=String)
+#     def fn(a, b, c="default"):
+#         '''docstring'''
+#         return (a, b, c)
+# res = fn.__module__ = None
+# res = help(fn)
+# self.assertEqual(res, Help on function fn:
+#     <BLANKLINE>
+#     fn(*args, **kwargs)
+#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
+#     <BLANKLINE>
+#         docstring
+#     <BLANKLINE>
+# **********************************************************************
+# File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 1260, in trafaret.guard
+# Failed example:
+#     help(fn)
+# Expected:
+#     Help on function fn:
+#     <BLANKLINE>
+#     fn(*args, **kwargs)
+#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
+#     <BLANKLINE>
+#         docstring
+#     <BLANKLINE>
+# Got:
+#     Help on function fn:
+#     <BLANKLINE>
+#     fn(a, b, c='default')
+#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
+#     <BLANKLINE>
+#         docstring
+#     <BLANKLINE>
+# res = fn("foo", 1)
+# self.assertEqual(res, ('foo', 1, 'default')
+# res = extract_error(fn, "foo", 1, 2)
+# self.assertEqual(res, {'c': 'value is not a string'}
+# res = extract_error(fn, "foo")
+# self.assertEqual(res, {'b': 'is required'}
+# res = g = guard(Dict())
+# res = c = Forward()
+# res = c << Dict(name=str, children=List[c])
+# res = g = guard(c)
+# res = g = guard(Int())
+# self.assertEqual(res, Traceback (most recent call last):
+#     ...
+#     RuntimeError: trafaret should be instance of Dict or Forward
+# res = a = Int >> ignore
+# res = a.check(7)
+# ***Test Failed*** 2 failures.
+# res = from . import extract_error, Mapping, String
+# res = cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
+# res = d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
+# res = sorted(d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys())
+# self.assertEqual(res, ['key1', 'pwd']
+# res = extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
+# self.assertEqual(res, {'pwd': 'Not equal'}
+# res = extract_error(d.check, {'pwd': 'a', 'pwd1': None, 'key1': 'b'})
+# self.assertEqual(res, {'pwd': 'Not equal'}
+# res = get_values = (lambda d, keys: [d[k] for k in keys if k in d])
+# res = join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
+# res = Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
+# self.assertEqual(res, {'name': 'Adam Smith'}
+# res = Dict({KeysSubset(): Dict({'a': Any})}).check({'a': 3})
+# self.assertEqual(res, {'a': 3}
+# 4 items had no tests:
+#     trafaret.extras
+#     trafaret.extras.KeysSubset.__init__
+#     trafaret.extras.KeysSubset.keys_names
+#     trafaret.extras.KeysSubset.pop
+# 1 items passed all tests:
+#   10 tests in trafaret.extras.KeysSubset
+# 10 tests in 5 items.
+# 10 passed and 0 failed.
+# Test passed.
+# res = _dd(fold({'a__a': 4}))
+# self.assertEqual(res, "{'a': {'a': 4}}"
+# res = _dd(fold({'a__a': 4, 'a__b': 5}))
+# self.assertEqual(res, "{'a': {'a': 4, 'b': 5}}"
+# res = _dd(fold({'a__1': 2, 'a__0': 1, 'a__2': 3}))
+# self.assertEqual(res, "{'a': [1, 2, 3]}"
+# res = _dd(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'))
+# self.assertEqual(res, "{'a': {'a': 4, 'b': 5}}"
+# res = _dd(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'))
+# self.assertEqual(res, "{'a': {'a': [4, 7], 'b': 5}}"
+# res = repr(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'))
+# self.assertEqual(res, "[{'a': [4, 7]}, {'b': 5}]"
+# res = _dd(unfold({'a': 4, 'b': 5}))
+# self.assertEqual(res, "{'a': 4, 'b': 5}"
+# res = _dd(unfold({'a': [1, 2, 3]}))
+# self.assertEqual(res, "{'a__0': 1, 'a__1': 2, 'a__2': 3}"
+# res = _dd(unfold({'a': {'a': 4, 'b': 5}}))
+# self.assertEqual(res, "{'a__a': 4, 'a__b': 5}"
+# res = _dd(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
+# self.assertEqual(res, "{'form__a__a': 4, 'form__a__b': 5}"
+# 2 items had no tests:
+#     trafaret.utils
+#     trafaret.utils.recursive_unfold
+# 2 items passed all tests:
+#    6 tests in trafaret.utils.fold
+#    4 tests in trafaret.utils.unfold
+# 10 tests in 4 items.
+# 10 passed and 0 failed.
+# Test passed.
+# res = from trafaret import Int
+# res = class A(object):
+#         class B(object):
+#             d = {'a': 'word'}
+# res = dict((DeepKey('B.d.a') >> 'B_a').pop(A))
+# self.assertEqual(res, {'B_a': 'word'}
+# res = dict((DeepKey('c.B.d.a') >> 'B_a').pop({'c': A}))
+# self.assertEqual(res, {'B_a': 'word'}
+# res = dict((DeepKey('B.a') >> 'B_a').pop(A))
+# self.assertEqual(res, {'B.a': DataError(Unexistent key)}
+# res = dict(DeepKey('c.B.d.a', to_name='B_a', trafaret=Int()).pop({'c': A}))
+# self.assertEqual(res, {'B_a': DataError(value can't be converted to int)}
