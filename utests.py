@@ -394,17 +394,18 @@ class TestStringTrafaret(unittest.TestCase):
         self.assertEqual(res, '123')
 
 
-
-# res = (Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
-# self.assertEqual(res, 6
-# res = (Int() >> float >> str).check(4)
-# self.assertEqual(res, '4.0'
-# res = Int | String
-# self.assertEqual(res, <Or(<Int>, <String>)>
-# res = Int | String | Null
-# self.assertEqual(res, <Or(<Int>, <String>, <Null>)>
-# res = (Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
-# self.assertEqual(res, 5
+class TestTrafaretMeta(unittest.TestCase):
+    def test_meta(self):
+        res = (t.Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
+        self.assertEqual(res, 6)
+        res = (t.Int() >> float >> str).check(4)
+        self.assertEqual(res, '4.0')
+        res = t.Int | t.String
+        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
+        res = t.Int | t.String | t.Null
+        self.assertEqual(repr(res), '<Or(<Int>, <String>, <Null>)>')
+        res = (t.Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
+        self.assertEqual(res, 5)
 
 
 
@@ -416,7 +417,6 @@ class TestTupleTrafaret(unittest.TestCase):
         self.assertEqual(res, (3, 4, '5'))
         res = extract_error(tup, [3, 4, 5])
         self.assertEqual(res, {2: 'value is not a string'})
-
 
 
 class TestTypeTrafaret(unittest.TestCase):
@@ -431,11 +431,13 @@ class TestTypeTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value is not int')
 
 
+class TestURLTrafaret(unittest.TestCase):
 
-# res = URL().check('http://example.net/resource/?param=value#anchor')
-# self.assertEqual(res, 'http://example.net/resource/?param=value#anchor'
-# res = str(URL().check('http://пример.рф/resource/?param=value#anchor'))
-# self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
+    def test_url(self):
+        res = t.URL().check('http://example.net/resource/?param=value#anchor')
+        self.assertEqual(res, 'http://example.net/resource/?param=value#anchor')
+        res = str(t.URL().check('http://пример.рф/resource/?param=value#anchor'))
+        self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor')
 
 
 
@@ -489,6 +491,9 @@ class TestTypeTrafaret(unittest.TestCase):
 # res = a = Int >> ignore
 # res = a.check(7)
 # ***Test Failed*** 2 failures.
+
+
+
 # res = from . import extract_error, Mapping, String
 # res = cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
 # res = d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
@@ -504,16 +509,8 @@ class TestTypeTrafaret(unittest.TestCase):
 # self.assertEqual(res, {'name': 'Adam Smith'}
 # res = Dict({KeysSubset(): Dict({'a': Any})}).check({'a': 3})
 # self.assertEqual(res, {'a': 3}
-# 4 items had no tests:
-#     trafaret.extras
-#     trafaret.extras.KeysSubset.__init__
-#     trafaret.extras.KeysSubset.keys_names
-#     trafaret.extras.KeysSubset.pop
-# 1 items passed all tests:
-#   10 tests in trafaret.extras.KeysSubset
-# 10 tests in 5 items.
-# 10 passed and 0 failed.
-# Test passed.
+
+
 # res = _dd(fold({'a__a': 4}))
 # self.assertEqual(res, "{'a': {'a': 4}}"
 # res = _dd(fold({'a__a': 4, 'a__b': 5}))
@@ -534,15 +531,10 @@ class TestTypeTrafaret(unittest.TestCase):
 # self.assertEqual(res, "{'a__a': 4, 'a__b': 5}"
 # res = _dd(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
 # self.assertEqual(res, "{'form__a__a': 4, 'form__a__b': 5}"
-# 2 items had no tests:
-#     trafaret.utils
-#     trafaret.utils.recursive_unfold
-# 2 items passed all tests:
-#    6 tests in trafaret.utils.fold
-#    4 tests in trafaret.utils.unfold
-# 10 tests in 4 items.
-# 10 passed and 0 failed.
-# Test passed.
+
+
+
+
 # res = from trafaret import Int
 # res = class A(object):
 #         class B(object):
