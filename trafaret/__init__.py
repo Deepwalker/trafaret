@@ -8,7 +8,6 @@ import copy
 import itertools
 import numbers
 import pkg_resources
-from collections import Mapping
 
 
 # Python3 support
@@ -27,8 +26,6 @@ else:
     str_types = (basestring,)
 
 def _dd(value):
-    # if not isinstance(value, Mapping):
-    #     return value
     if not hasattr(value, 'items'):
         return repr(value)
     return r"{%s}" % ', '.join("%r: %s" % (x[0], _dd(x[1])) for x in sorted(value.items(), key=lambda x: x[0]))
