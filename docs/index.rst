@@ -11,15 +11,17 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-.. automodule:: trafaret
-   :members:
-
-
+   trafaret
+   trafaret.extras
+   trafaret.utils
+   trafaret.visitor
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-* :ref:`search`
 
+  * :doc:`trafaret`
+
+* :ref:`search`
