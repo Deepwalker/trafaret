@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import unittest
 import trafaret as t
-from trafaret import extract_error, ignore
+from trafaret import extract_error, ignore, DataError
 
 
 class TestAnyTrafaret(unittest.TestCase):
@@ -96,6 +96,36 @@ class TestDictTrafaret(unittest.TestCase):
         res = trafaret.check({'foo': 4, 'foor': 5})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
 
+    def test_add(self):
+        first = t.Dict({
+            t.Key('bar', default='nyanya') >> 'baz': t.String},
+            foo=t.Int)
+        second = t.Dict({
+            t.Key('bar1', default='nyanya') >> 'baz1': t.String},
+            foo1=t.Int)
+        third = first & second
+        res = third.check({'foo': 4, 'foo1': 41})
+        self.assertEqual(res, {'baz': 'nyanya', 'baz1': 'nyanya', 'foo': 4, 'foo1': 41})
+
+    def test_bad_add_names(self):
+        first = t.Dict({
+            t.Key('bar', default='nyanya') >> 'baz': t.String},
+            foo=t.Int)
+        second = t.Dict({
+            t.Key('bar1', default='nyanya') >> 'baz1': t.String},
+            foo=t.Int)
+        with self.assertRaises(DataError):
+            first & second
+
+    def test_bad_add_to_names(self):
+        first = t.Dict({
+            t.Key('bar', default='nyanya') >> 'baz': t.String},
+            foo=t.Int)
+        second = t.Dict({
+            t.Key('bar1', default='nyanya') >> 'baz': t.String},
+            foo1=t.Int)
+        with self.assertRaises(DataError):
+            first & second
 
 
 class TestDictKeys(unittest.TestCase):
