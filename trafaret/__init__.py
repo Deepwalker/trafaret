@@ -976,11 +976,6 @@ class Dict(Trafaret):
             key_.set_trafaret(self._trafaret(trafaret))
             self.keys.append(key_)
 
-    def _to_names(self):
-        for key in self.keys:
-            if key.to_name:
-                yield key.to_name
-
     def allow_extra(self, *names):
         for name in names:
             if name == "*":
@@ -1032,7 +1027,6 @@ class Dict(Trafaret):
             for k in key.keys_names():
                 yield k
 
-
     def __repr__(self):
         r = "<Dict("
         options = []
@@ -1058,7 +1052,9 @@ class Dict(Trafaret):
         if set(self.keys_names()) & set(other.keys_names()):
             raise DataError('Merged dicts should have '
                             'no interlapping keys')
-        if set(self._to_names()) & set(other._to_names()):
+        if set(
+            key.get_name() for key in self.keys) & set(
+                key.get_name() for key in other.keys):
             raise DataError('Merged dicts should have '
                             'no interlapping keys to names')
         new_trafaret = self.__class__()
