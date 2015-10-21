@@ -9,19 +9,19 @@ Welcome to Trafaret's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+  :maxdepth: 2
+  :caption: Table of Contents
+  :glob:
 
-   trafaret
-   trafaret.extras
-   trafaret.utils
-   trafaret.visitor
+  intro
+  api/index
 
 Indices and tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
-
-  * :doc:`trafaret`
+  * :doc:`intro`
+  * :doc:`api/index`
 
 * :ref:`search`
