@@ -1,6 +1,8 @@
 Trafaret
 ========
 
+Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
+
 Trafaret is validation library with support to convert data structures.
 Sample usage::
 
