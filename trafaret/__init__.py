@@ -1053,13 +1053,14 @@ class Dict(Trafaret):
         return r
 
     def __and__(self, other):
-
+        if not isinstance(other, Dict):
+            raise DataError('You must merge Dict only with Dict')
         if set(self.keys_names()) & set(other.keys_names()):
-            raise DataError('Dicts that merging should '
-                            'have different keys_names')
+            raise DataError('Merged dicts should have '
+                            'no interlapping keys')
         if set(self._to_names()) & set(other._to_names()):
-            raise DataError('Dicts that merging should '
-                            'have different to names')
+            raise DataError('Merged dicts should have '
+                            'no interlapping keys to names')
         new_trafaret = self.__class__()
         new_trafaret.keys = self.keys + other.keys
         return new_trafaret
