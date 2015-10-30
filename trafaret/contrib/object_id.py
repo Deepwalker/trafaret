@@ -34,7 +34,7 @@ class MongoId(Trafaret):
         try:
             return self.value_type(value)
         except InvalidId as e:
-            self._failure(e.message)
+            self._failure(str(e))
 
     def check_and_return(self, value):
         if not self.allow_blank and value is None:
