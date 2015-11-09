@@ -103,7 +103,7 @@ class TestDictTrafaret(unittest.TestCase):
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz1': t.String},
             foo1=t.Int)
-        third = first & second
+        third = first + second
         res = third.check({'foo': 4, 'foo1': 41})
         self.assertEqual(res, {'baz': 'nyanya', 'baz1': 'nyanya', 'foo': 4, 'foo1': 41})
 
@@ -114,8 +114,8 @@ class TestDictTrafaret(unittest.TestCase):
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz1': t.String},
             foo=t.Int)
-        with self.assertRaises(DataError):
-            first & second
+        with self.assertRaises(ValueError):
+            first + second
 
     def test_bad_add_to_names(self):
         first = t.Dict({
@@ -124,8 +124,13 @@ class TestDictTrafaret(unittest.TestCase):
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz': t.String},
             foo1=t.Int)
-        with self.assertRaises(DataError):
-            first & second
+        with self.assertRaises(ValueError):
+            first + second
+
+    def test_add_to_names_list_of_keys(self):
+        dct = t.Dict(key1=t.String)
+        dct + [t.Key('a', trafaret=t.String())]
+
 
 
 class TestDictKeys(unittest.TestCase):

@@ -153,7 +153,8 @@ class Trafaret(object):
         """
         raise DataError(error=error)
 
-    def _trafaret(self, trafaret):
+    @staticmethod
+    def _trafaret(trafaret):
         """
         Helper for complex trafarets, takes trafaret instance or class
         and returns trafaret instance
@@ -905,7 +906,8 @@ class Key(object):
         yield self.name
 
     def set_trafaret(self, trafaret):
-        self.trafaret = trafaret
+        self.trafaret = Trafaret._trafaret(trafaret)
+        return self
 
     def __rshift__(self, name):
         self.to_name = name
@@ -1046,20 +1048,40 @@ class Dict(Trafaret):
         r += ")>"
         return r
 
-    def __and__(self, other):
-        if not isinstance(other, Dict):
-            raise TypeError('You must merge Dict only with Dict')
-        if set(self.keys_names()) & set(other.keys_names()):
+    def extend(self, other):
+        """
+        Extends one Dict with other Dict Key`s or Key`s list,
+        or dict instance supposed for Dict
+        """
+        if not isinstance(other, (Dict, list, dict)):
+            raise TypeError('You must merge Dict only with Dict'
+                            ' or list of Keys')
+        if isinstance(other, dict):
+            other = Dict(other)
+        if isinstance(other, Dict):
+            other_keys_names = other.keys_names()
+            other_keys = other.keys
+        else:
+            other_keys_names = [
+                key_name
+                for key in other
+                for key_name in key.keys_names()
+            ]
+            other_keys = other
+        if set(self.keys_names()) & set(other_keys_names):
             raise ValueError('Merged dicts should have '
                             'no interlapping keys')
-        if set(
-            key.get_name() for key in self.keys) & set(
-                key.get_name() for key in other.keys):
+        if (
+            set(key.get_name() for key in self.keys)
+            & set(key.get_name() for key in other_keys)
+        ):
             raise ValueError('Merged dicts should have '
                             'no interlapping keys to names')
         new_trafaret = self.__class__()
-        new_trafaret.keys = self.keys + other.keys
+        new_trafaret.keys = self.keys + other_keys
         return new_trafaret
+
+    __add__ = extend
 
 
 def DictKeys(keys):
