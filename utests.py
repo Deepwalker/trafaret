@@ -131,6 +131,10 @@ class TestDictTrafaret(unittest.TestCase):
         dct = t.Dict(key1=t.String)
         dct + [t.Key('a', trafaret=t.String())]
 
+    def test_add_to_names_dict_of_keys(self):
+        dct = t.Dict(key1=t.String)
+        dct + {'a': t.String}
+
 
 
 class TestDictKeys(unittest.TestCase):

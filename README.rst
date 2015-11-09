@@ -209,6 +209,8 @@ Methods:
 
 ``ignore_extra(*names)``: where ``names`` are the names of the keys or ``*`` to exclude listed key names or all unspecified ones from the validation process and final result
 
+``extend(Dict|dict|[t.Key...])`` : where argument can be other ``Dict``, ``dict`` like provided to ``Dict``, or list of ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s, like ``dict1 + dict2``.
+
 Key
 ...
 
