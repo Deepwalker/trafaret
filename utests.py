@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
 import trafaret as t
+from collections import Mapping as AbcMapping
 from trafaret import extract_error, ignore, DataError
+from trafaret.extras import KeysSubset
 
 
 class TestAnyTrafaret(unittest.TestCase):
@@ -75,6 +77,29 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
         self.assertEqual(res, {'bar': 'is required'})
 
+    def test_old_keys(self):
+        class OldKey(object):
+            def pop(self, value):
+                data = value.pop('testkey')
+                yield 'testkey', data
+
+            def set_trafaret(self, trafaret):
+                pass
+        trafaret = t.Dict({
+            OldKey(): t.Any
+        })
+        res = trafaret.check({'testkey': 123})
+        self.assertEqual(res, {'testkey': 123})
+
+    def test_callable_key(self):
+        def simple_key(value):
+            yield 'simple', 'simple data', []
+
+        trafaret = t.Dict(simple_key)
+        res = trafaret.check({})
+        self.assertEqual(res, {'simple': 'simple data'})
+
+
     def test_base2(self):
         trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.Int)
         trafaret.allow_extra('*')
@@ -134,6 +159,38 @@ class TestDictTrafaret(unittest.TestCase):
     def test_add_to_names_dict_of_keys(self):
         dct = t.Dict(key1=t.String)
         dct + {'a': t.String}
+
+    def test_mapping_interface(self):
+        trafaret = t.Dict({t.Key("foo"): t.String, t.Key("bar"): t.Float})
+
+        # class with mapping interface but not subclass of dict
+        class Map(AbcMapping):
+
+            def __init__(self, data, *a, **kw):
+                super(Map, self).__init__(*a, **kw)
+                self._data = data
+
+            def __getitem__(self, key):
+                return self._data[key]
+
+            def __iter__(self):
+                for x in self._data:
+                    yield x
+
+            def __len__(self):
+                return len(self._data)
+
+        trafaret.check(Map({"foo": "xxx", "bar": 0.1}))
+
+        res = extract_error(trafaret, object())
+        self.assertEqual(res, "value is not dict")
+
+        res = extract_error(trafaret, Map({"foo": "xxx"}))
+        self.assertEqual(res, {'bar': 'is required'})
+
+        res = extract_error(trafaret, Map({"foo": "xxx", "bar": 'str'}))
+        self.assertEqual(res, {'bar': "value can't be converted to float"})
+
 
 
 
@@ -246,18 +303,18 @@ class TestKey(unittest.TestCase):
         default = lambda: 1
         res = t.Key(name='test', default=default)
         self.assertEqual(repr(res), '<Key "test">')
-        res = next(t.Key(name='test', default=default).pop({}))
-        self.assertEqual(res, ('test', 1))
-        res = next(t.Key(name='test', default=2).pop({}))
-        self.assertEqual(res, ('test', 2))
+        res = next(t.Key(name='test', default=default)({}))
+        self.assertEqual(res, ('test', 1, ('test',)))
+        res = next(t.Key(name='test', default=2)({}))
+        self.assertEqual(res, ('test', 2, ('test',)))
         default = lambda: None
-        res = next(t.Key(name='test', default=default).pop({}))
-        self.assertEqual(res, ('test', None))
-        res = next(t.Key(name='test', default=None).pop({}))
-        self.assertEqual(res, ('test', None))
+        res = next(t.Key(name='test', default=default)({}))
+        self.assertEqual(res, ('test', None, ('test',)))
+        res = next(t.Key(name='test', default=None)({}))
+        self.assertEqual(res, ('test', None, ('test',)))
         # res = next(t.Key(name='test').pop({}))
         # self.assertEqual(res, ('test', DataError(is required)))
-        res = list(t.Key(name='test', optional=True).pop({}))
+        res = list(t.Key(name='test', optional=True)({}))
         self.assertEqual(res, [])
 
 
@@ -506,6 +563,30 @@ class TestMongoIdTrafaret(unittest.TestCase):
 
         self.assertIsInstance(c.check(None), ObjectId)
 
+
+class TestKeysSubset(unittest.TestCase):
+    def test_keys_subset(self):
+        cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal')}
+        d = t.Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': t.String})
+
+        res = d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
+        self.assertEqual(list(sorted(res)), ['key1', 'pwd'])
+
+        res = extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
+        self.assertEqual(res, {'pwd': 'Not equal'})
+
+        res = extract_error(d.check, {'pwd': 'a', 'pwd1': None, 'key1': 'b'})
+        self.assertEqual(res, {'pwd': 'Not equal'})
+
+        get_values = (lambda d, keys: [d[k] for k in keys if k in d])
+        join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
+        res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
+        self.assertEqual(res, {'name': 'Adam Smith'})
+
+        res = t.Dict({KeysSubset(): t.Dict({'a': t.Any})}).check({'a': 3})
+        self.assertEqual(res, {'a': 3})
+
+
 # res = @guard(a=String, b=Int, c=String)
 #     def fn(a, b, c="default"):
 #         '''docstring'''
@@ -557,23 +638,6 @@ class TestMongoIdTrafaret(unittest.TestCase):
 # res = a.check(7)
 # ***Test Failed*** 2 failures.
 
-
-
-# res = from . import extract_error, Mapping, String
-# res = cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
-# res = d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
-# res = sorted(d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys())
-# self.assertEqual(res, ['key1', 'pwd']
-# res = extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
-# self.assertEqual(res, {'pwd': 'Not equal'}
-# res = extract_error(d.check, {'pwd': 'a', 'pwd1': None, 'key1': 'b'})
-# self.assertEqual(res, {'pwd': 'Not equal'}
-# res = get_values = (lambda d, keys: [d[k] for k in keys if k in d])
-# res = join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
-# res = Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
-# self.assertEqual(res, {'name': 'Adam Smith'}
-# res = Dict({KeysSubset(): Dict({'a': Any})}).check({'a': 3})
-# self.assertEqual(res, {'a': 3}
 
 
 # res = _dd(fold({'a__a': 4}))

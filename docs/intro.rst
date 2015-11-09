@@ -207,6 +207,8 @@ Methods:
 
 ``ignore_extra(*names)``: where ``names`` are the names of the keys or ``*`` to exclude listed key names or all unspecified ones from the validation process and final result
 
+``merge(Dict|dict|[t.Key...])`` : where argument can be other ``Dict``, ``dict`` like provided to ``Dict``, or list of ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s, like ``dict1 + dict2``.
+
 Key
 ...
 
@@ -219,6 +221,22 @@ Special class to create dict keys. Parameters are:
 
 You can provide ``to_name`` with ``>>`` operation::
     Key('javaStyleData') >> 'plain_cool_data'
+
+It provides method ``extract(data)`` that extract key value
+from data through mapping ``get`` method.
+Key `extract` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
+
+You can redefine ``get_data(data, default)`` method in subclassed ``Key`` if you want to use something other
+then ``.get(...)`` method.
+
+Like this for the aiohttp MultiDict::
+
+    class MDKey(t.Key):
+        def get_data(data, default):
+            return data.get_all(self.name, default)
+
+    t.Dict({MDKey('users'): t.List(t.String)})
+
 
 KeysSubset
 ..........

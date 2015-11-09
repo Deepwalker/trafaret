@@ -7,6 +7,8 @@ import re
 import copy
 import itertools
 import numbers
+import warnings
+from collections import Mapping as AbcMapping
 import pkg_resources
 
 
@@ -829,7 +831,7 @@ class Tuple(Trafaret):
     >>> extract_error(t, [3, 4, 5])
     {2: 'value is not a string'}
     >>> t
-    <Tuple(<Int>, <Int>, <String>)
+    <Tuple(<Int>, <Int>, <String>)>
     """
 
     def __init__(self, *args):
@@ -859,26 +861,21 @@ class Tuple(Trafaret):
 
 
 class Key(object):
-
     """
     Helper class for Dict.
 
-    >>> default = lambda: 1
-    >>> Key(name='test', default=default)
-    <Key "test">
-    >>> next(Key(name='test', default=default).pop({}))
-    ('test', 1)
-    >>> next(Key(name='test', default=2).pop({}))
-    ('test', 2)
-    >>> default = lambda: None
-    >>> next(Key(name='test', default=default).pop({}))
-    ('test', None)
-    >>> next(Key(name='test', default=None).pop({}))
-    ('test', None)
-    >>> next(Key(name='test').pop({}))
-    ('test', DataError(is required))
-    >>> list(Key(name='test', optional=True).pop({}))
-    []
+    It gets ``name``, and provides method ``extract(data)`` that extract key value
+    from data through mapping ``get`` method.
+    Key `extract` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
+
+    You can redefine ``get_data(data, default)`` method in subclassed ``Key`` if you want to use something other
+    then ``.get(...)`` method.
+
+    Like this for the aiohttp MultiDict::
+
+        class MDKey(t.Key):
+            def get_data(data, default):
+                return data.get_all(self.name, default)
     """
 
     def __init__(self, name, default=_empty, optional=False, to_name=None, trafaret=None):
@@ -888,19 +885,24 @@ class Key(object):
         self.optional = optional
         self.trafaret = trafaret or Any()
 
-    def pop(self, data):
+    def __call__(self, data):
         if self.name in data or self.default is not _empty:
             if callable(self.default):
                 default = self.default()
             else:
                 default = self.default
-            # default = callable(self.default) and self.default() or self.default
-            yield self.get_name(), catch_error(self.trafaret,
-                    data.pop(self.name, default))
-            raise StopIteration
+            yield (
+                self.get_name(),
+                catch_error(self.trafaret, self.get_data(data, default)),
+                (self.name,)
+            )
+            return
 
         if not self.optional:
-            yield self.name, DataError(error='is required')
+            yield self.name, DataError(error='is required'), (self.name,)
+
+    def get_data(self, data, default):
+        return data.get(self.name, default)
 
     def keys_names(self):
         yield self.name
@@ -967,14 +969,19 @@ class Dict(Trafaret):
     "{'baz': 'nyanya', 'foo': 4}"
     """
 
-    def __init__(self, keys={}, **trafarets):
+    def __init__(self, *args, keys={}, **trafarets):
+        if args and isinstance(args[0], AbcMapping):
+            keys = args[-1]
+            args = args[:-1]
+        if any(not callable(key) for key in args):
+            raise RuntimeError('Keys in single attributes must be callables')
         self.extras = []
         self.allow_any = False
         self.ignore = []
         self.ignore_any = False
-        self.keys = []
+        self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
-            key_ = key if isinstance(key, Key) else Key(key)
+            key_ = Key(key) if isinstance(key, str_types) else key
             key_.set_trafaret(self._trafaret(trafaret))
             self.keys.append(key_)
 
@@ -1001,25 +1008,42 @@ class Dict(Trafaret):
         return self
 
     def check_and_return(self, value):
-        if not isinstance(value, dict):
+        if not isinstance(value, AbcMapping):
             self._failure("value is not dict")
-        data = copy.copy(value)
         collect = {}
         errors = {}
+        touched_names = []
         for key in self.keys:
-            for k, v in key.pop(data):
-                if isinstance(v, DataError):
-                    errors[k] = v
-                else:
-                    collect[k] = v
+            if callable(key):
+                for k, v, name in key(value):
+                    if isinstance(v, DataError):
+                        errors[k] = v
+                    else:
+                        collect[k] = v
+                    touched_names.extend(name)
+            else:
+                warnings.warn(
+                    'Old pop based Keys subclasses deprecated. See README',
+                    DeprecationWarning
+                )
+                value_keys = set(value.keys())
+                for k, v in key.pop(value):
+                    if isinstance(v, DataError):
+                        errors[k] = v
+                    else:
+                        collect[k] = v
+                touched_names.extend(value_keys - set(value.keys()))
+
         if not self.ignore_any:
-            for key in data:
+            for key in value:
+                if key in touched_names:
+                    continue
                 if key in self.ignore:
                     continue
                 if not self.allow_any and key not in self.extras:
                     errors[key] = DataError("%s is not allowed key" % key)
                 else:
-                    collect[key] = data[key]
+                    collect[key] = value[key]
         if errors:
             raise DataError(error=errors)
         return collect
@@ -1048,7 +1072,7 @@ class Dict(Trafaret):
         r += ")>"
         return r
 
-    def extend(self, other):
+    def merge(self, other):
         """
         Extends one Dict with other Dict Key`s or Key`s list,
         or dict instance supposed for Dict
@@ -1081,7 +1105,7 @@ class Dict(Trafaret):
         new_trafaret.keys = self.keys + other_keys
         return new_trafaret
 
-    __add__ = extend
+    __add__ = merge
 
 
 def DictKeys(keys):
@@ -1106,17 +1130,9 @@ def DictKeys(keys):
 
 
 class Mapping(Trafaret):
-
     """
-    >>> trafaret = Mapping(String, Int)
-    >>> trafaret
-    <Mapping(<String> => <Int>)>
-    >>> _dd(trafaret.check({"foo": 1, "bar": 2}))
-    "{'bar': 2, 'foo': 1}"
-    >>> extract_error(trafaret, {"foo": 1, "bar": None})
-    {'bar': {'value': 'value is not int'}}
-    >>> extract_error(trafaret, {"foo": 1, 2: "bar"})
-    {2: {'key': 'value is not a string', 'value': "value can't be converted to int"}}
+    Mapping gets two trafarets as arguments, one for key and one for value,
+    like `Mapping(t.Int, t.List(t.Str))`.
     """
 
     def __init__(self, key, value):
@@ -1298,7 +1314,7 @@ def guard(trafaret=None, **kwargs):
     >>> help(fn)
     Help on function fn:
     <BLANKLINE>
-    fn(*args, **kwargs)
+    fn(a, b, c='default')
         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
     <BLANKLINE>
         docstring
