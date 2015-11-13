@@ -969,10 +969,12 @@ class Dict(Trafaret):
     "{'baz': 'nyanya', 'foo': 4}"
     """
 
-    def __init__(self, *args, keys={}, **trafarets):
+    def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
             keys = args[-1]
             args = args[:-1]
+        else:
+            keys = {}
         if any(not callable(key) for key in args):
             raise RuntimeError('Keys in single attributes must be callables')
         self.extras = []

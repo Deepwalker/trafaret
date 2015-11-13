@@ -1,6 +1,9 @@
 Trafaret
 ========
 
+Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
+or look to the docs/api/intro.rst for start.
+
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
 
@@ -35,7 +38,3 @@ Change dict names::
             return t.DataError('value is not in proper date/time format')
 
 Yes, you can write trafarets that simple.
-
-
-Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
-or look to the docs/api/intro.rst for start.
