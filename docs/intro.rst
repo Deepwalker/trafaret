@@ -222,20 +222,25 @@ Special class to create dict keys. Parameters are:
 You can provide ``to_name`` with ``>>`` operation::
     Key('javaStyleData') >> 'plain_cool_data'
 
-It provides method ``extract(data)`` that extract key value
+It provides method ``__call__(self, data)`` that extract key value
 from data through mapping ``get`` method.
-Key `extract` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
+Key ``__call__`` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
 
-You can redefine ``get_data(data, default)`` method in subclassed ``Key`` if you want to use something other
-then ``.get(...)`` method.
-
-Like this for the aiohttp MultiDict::
+You can redefine ``get_data(self, data, default)`` method in subclassed ``Key`` if you want to use something other
+then ``.get(...)`` method. Like this for the aiohttp MultiDict::
 
     class MDKey(t.Key):
         def get_data(data, default):
             return data.get_all(self.name, default)
 
     t.Dict({MDKey('users'): t.List(t.String)})
+
+Moreover, instead of ``Key`` you can use any callable, say function::
+
+    def simple_key(value):
+        yield 'simple', 'simple data', []
+
+    check_args = t.Dict(simple_key)
 
 
 KeysSubset

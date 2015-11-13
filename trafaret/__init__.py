@@ -866,7 +866,7 @@ class Key(object):
 
     It gets ``name``, and provides method ``extract(data)`` that extract key value
     from data through mapping ``get`` method.
-    Key `extract` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
+    Key `__call__` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
 
     You can redefine ``get_data(data, default)`` method in subclassed ``Key`` if you want to use something other
     then ``.get(...)`` method.
