@@ -51,6 +51,18 @@ def unfold(data, prefix='', delimeter='__'):
     return dict(recursive_unfold(data, prefix, delimeter))
 
 
+def split(str, delimeters):
+    if not delimeters:
+        return [str]
+    rest = delimeters[1:]
+    return [
+        subkey
+        for key in str.split(delimeters[0])
+        for subkey in split(key, rest)
+        if subkey
+    ]
+
+
 def fold(data, prefix='', delimeter='__'):
     """
     >>> _dd(fold({'a__a': 4}))
@@ -66,6 +78,9 @@ def fold(data, prefix='', delimeter='__'):
     >>> repr(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'))
     "[{'a': [4, 7]}, {'b': 5}]"
     """
+    if not isinstance(delimeter, (tuple, list)):
+        delimeter = (delimeter, )
+
     def deep(data):
         if len(data) == 1 and len(data[0][0]) < 2:
             if data[0][0]:
@@ -82,7 +97,7 @@ def fold(data, prefix='', delimeter='__'):
             return [i[1] for i in sorted(collect.items())]
         return collect
 
-    data_ = [(key.split(delimeter), value)
+    data_ = [(split(key, delimeter), value)
                  for key, value in sorted(data.items())]
     result = deep(data_)
     return result[prefix] if prefix else result

@@ -21,7 +21,7 @@ Work with regex::
     >>> c.check('name=Jeff')
     'Jeff'
 
-Change dict names::
+Rename dict keys::
 
     >>> c = t.Dict(t.Key('uNJ') >> 'user_name': t.String})
     >>> c.check({'uNJ': 'Adam'})

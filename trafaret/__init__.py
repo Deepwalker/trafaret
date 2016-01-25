@@ -268,6 +268,7 @@ class Or(Trafaret):
     """
 
     __metaclass__ = OrMeta
+    __slots__ = ['trafarets']
 
     def __init__(self, *trafarets):
         self.trafarets = list(map(self._trafaret, trafarets))
@@ -532,6 +533,7 @@ class Atom(Trafaret):
     >>> extract_error(Atom('atom'), 'molecule')
     "value is not exactly 'atom'"
     """
+    __slots__ = ['value']
 
     def __init__(self, value):
         self.value = value
@@ -782,6 +784,7 @@ class List(Trafaret):
     """
 
     __metaclass__ = SquareBracketsMeta
+    __slots__ = ['trafaret', 'min_length', 'max_length']
 
     def __init__(self, trafaret, min_length=0, max_length=None):
         self.trafaret = self._trafaret(trafaret)
@@ -833,6 +836,7 @@ class Tuple(Trafaret):
     >>> t
     <Tuple(<Int>, <Int>, <String>)>
     """
+    __slots__ = ['trafarets', 'length']
 
     def __init__(self, *args):
         self.trafarets = list(map(self._trafaret, args))
@@ -877,6 +881,7 @@ class Key(object):
             def get_data(data, default):
                 return data.get_all(self.name, default)
     """
+    __slots__ = ['name', 'to_name', 'default', 'optional', 'trafaret']
 
     def __init__(self, name, default=_empty, optional=False, to_name=None, trafaret=None):
         self.name = name
@@ -968,6 +973,7 @@ class Dict(Trafaret):
     >>> _dd(trafaret.check({'foo': 4, 'foor': 5}))
     "{'baz': 'nyanya', 'foo': 4}"
     """
+    __slots__ = ['extras', 'allow_any', 'ignore', 'ignore_any', 'keys']
 
     def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
