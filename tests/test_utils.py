@@ -11,7 +11,7 @@ class TestUtils(unittest.TestCase):
 
     def test_fold(self):
         data = {'leads[delete][0][id]': '42', 'account[subdomain]': 'murmurzet'}
-        folded = fold(data, delimeter=('[]', '[', ']'))
+        folded = fold(data, delimeter=('[', ']'))
         self.assertEqual(folded, {
             'leads': {
                 'delete': [

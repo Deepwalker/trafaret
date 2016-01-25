@@ -2,6 +2,7 @@
 import unittest
 import trafaret as t
 from trafaret.contrib.object_id import ObjectId
+from trafaret import extract_error
 
 class TestMongoIdTrafaret(unittest.TestCase):
 
