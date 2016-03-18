@@ -1050,7 +1050,7 @@ class Dict(Trafaret):
                     continue
                 if not self.allow_any and key not in self.extras:
                     errors[key] = DataError("%s is not allowed key" % key)
-                else:
+                elif key not in collect:
                     collect[key] = value[key]
         if errors:
             raise DataError(error=errors)

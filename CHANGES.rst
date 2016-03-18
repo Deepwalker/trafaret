@@ -1,6 +1,12 @@
 Changes
 =======
 
+2016-03-18
+----------
+
+Fixed Key default behaviour for Dict with allowed extra when names are the
+same in Key and in data source
+
 2014-09-17
 ----------
 
