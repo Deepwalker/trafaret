@@ -4,3 +4,7 @@
 \.project
 \.pydevproject
 *.egg-info
+build/
+dist/
+.idea/
+.coverage

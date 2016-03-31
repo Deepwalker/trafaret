@@ -10,6 +10,7 @@ import numbers
 import warnings
 from collections import Mapping as AbcMapping
 import pkg_resources
+import types
 
 
 # Python3 support
@@ -1418,13 +1419,35 @@ def extract_error(checker, *a, **kw):
     return res
 
 
+class MissingContribModuleStub(types.ModuleType):
+    """
+    Preserves initial exception to be raised on module access
+    """
+
+    def __init__(self, entrypoint, orig):
+        self.orig = orig
+        self.entrypoint = entrypoint
+
+    def __getattr__(self, item):
+        raise self.orig
+
+    def __call__(self, *args, **kwargs):
+        raise self.orig
+
+    @property
+    def __name__(self):
+        return self.entrypoint.name.lstrip('.')
+
+
 def load_contrib():
     for entrypoint in pkg_resources.iter_entry_points(ENTRY_POINT):
+
         try:
-            trafaret_class = entrypoint.load()
-            setattr(sys.modules[__name__], trafaret_class.__name__,
+            trafaret_class = entrypoint.load(require=False)
+        except (pkg_resources.DistributionNotFound, ImportError) as err:
+            trafaret_class = MissingContribModuleStub(entrypoint, err)
+
+        setattr(sys.modules[__name__], trafaret_class.__name__,
                     trafaret_class)
-        except pkg_resources.DistributionNotFound as err:
-            # TODO: find a way to pass error message upper
-            pass
+
 load_contrib()
