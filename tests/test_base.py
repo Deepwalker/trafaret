@@ -186,7 +186,7 @@ class TestDictTrafaret(unittest.TestCase):
         trafaret.check(Map({"foo": "xxx", "bar": 0.1}))
 
         res = extract_error(trafaret, object())
-        self.assertEqual(res, "value is not dict")
+        self.assertEqual(res, "value is not a dict")
 
         res = extract_error(trafaret, Map({"foo": "xxx"}))
         self.assertEqual(res, {'bar': 'is required'})
@@ -278,7 +278,7 @@ class TestForwardTrafaret(unittest.TestCase):
         res = node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
         self.assertEqual(res, True)
         res = extract_error(node, {"name": "foo", "children": [1]})
-        self.assertEqual(res, {'children': {0: 'value is not dict'}})
+        self.assertEqual(res, {'children': {0: 'value is not a dict'}})
         res = node.check({"name": "foo", "children": [{"name": "bar", "children": []}]})
         self.assertEqual(res, {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'})
         empty_node = t.Forward()
@@ -334,7 +334,7 @@ class TestList(unittest.TestCase):
 
     def test_list(self):
         res = extract_error(t.List(t.Int), 1)
-        self.assertEqual(res, 'value is not list')
+        self.assertEqual(res, 'value is not a list')
         res = t.List(t.Int).check([1, 2, 3])
         self.assertEqual(res, [1, 2, 3])
         res = t.List(t.String).check(["foo", "bar", "spam"])
@@ -561,6 +561,19 @@ class TestKeysSubset(unittest.TestCase):
 
         res = t.Dict({KeysSubset(): t.Dict({'a': t.Any})}).check({'a': 3})
         self.assertEqual(res, {'a': 3})
+
+
+class TestDataError(unittest.TestCase):
+    def test_dataerror_value(self):
+        error = t.DataError(error='Wait for good value', value='BAD ONE')
+        self.assertEqual(
+            error.as_dict(),
+            'Wait for good value'
+        )
+        self.assertEqual(
+            error.as_dict(value=True),
+            "Wait for good value, got 'BAD ONE'"
+        )
 
 
 # res = @guard(a=String, b=Int, c=String)

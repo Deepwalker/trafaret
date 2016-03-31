@@ -4,6 +4,7 @@ Changes
 2016-03-31
 ----------
 Fixed loading contrib modules, so now original contrib module loading exception will be raised on contrib Trafaret access.
+Added `value` option to internal _failure interface, and option `value` to `DataError.as_dict` method.
 
 2016-03-18
 ----------

@@ -59,16 +59,17 @@ def py3metafix(cls):
 
 
 class DataError(ValueError):
-
     """
     Error with data preserve
     error can be a message or None if error raised in childs
     data can be anything
     """
+    __slots__ = ['error', 'name', 'value']
 
-    def __init__(self, error=None, name=None):
+    def __init__(self, error=None, name=None, value=_empty):
         self.error = error
         self.name = name
+        self.value = value
 
     def __str__(self):
         return str(self.error)
@@ -76,17 +77,19 @@ class DataError(ValueError):
     def __repr__(self):
         return 'DataError(%s)' % str(self)
 
-    def as_dict(self):
+    def as_dict(self, value=False):
         def as_dict(dataerror):
             if not isinstance(dataerror.error, dict):
-                return self.error
+                if value and dataerror.value != _empty:
+                    return '%s, got %r' % (str(dataerror.error), dataerror.value)
+                else:
+                    return str(dataerror.error)
             return dict((k, v.as_dict() if isinstance(v, DataError) else v)
                         for k, v in dataerror.error.items())
         return as_dict(self)
 
 
 class TrafaretMeta(type):
-
     """
     Metaclass for trafarets to make using "|" operator possible not only
     on instances but on classes
@@ -108,7 +111,6 @@ class TrafaretMeta(type):
 
 @py3metafix
 class Trafaret(object):
-
     """
     Base class for trafarets, provides only one method for
     trafaret validation failure reporting
@@ -150,11 +152,12 @@ class Trafaret(object):
             val = converter(val)
         return val
 
-    def _failure(self, error=None):
+    @staticmethod
+    def _failure(error=None, value=_empty):
         """
         Shortcut method for raising validation error
         """
-        raise DataError(error=error)
+        raise DataError(error=error, value=value)
 
     @staticmethod
     def _trafaret(trafaret):
@@ -201,7 +204,6 @@ class TypeMeta(TrafaretMeta):
 
 @py3metafix
 class Type(Trafaret):
-
     """
     >>> Type(int)
     <Type(int)>
@@ -220,14 +222,13 @@ class Type(Trafaret):
 
     def check_value(self, value):
         if not isinstance(value, self.type_):
-            self._failure("value is not %s" % self.type_.__name__)
+            self._failure("value is not %s" % self.type_.__name__, value=value)
 
     def __repr__(self):
         return "<Type(%s)>" % self.type_.__name__
 
 
 class Any(Trafaret):
-
     """
     >>> Any()
     <Any>
@@ -242,7 +243,6 @@ class Any(Trafaret):
 
 
 class OrMeta(TrafaretMeta):
-
     """
     Allows to use "<<" operator on Or class
 
@@ -256,7 +256,6 @@ class OrMeta(TrafaretMeta):
 
 @py3metafix
 class Or(Trafaret):
-
     """
     >>> nullString = Or(String, Null)
     >>> nullString
@@ -296,7 +295,6 @@ class Or(Trafaret):
 
 
 class Null(Trafaret):
-
     """
     >>> Null()
     <Null>
@@ -307,14 +305,13 @@ class Null(Trafaret):
 
     def check_value(self, value):
         if value is not None:
-            self._failure("value should be None")
+            self._failure("value should be None", value=value)
 
     def __repr__(self):
         return "<Null>"
 
 
 class Bool(Trafaret):
-
     """
     >>> Bool()
     <Bool>
@@ -328,14 +325,13 @@ class Bool(Trafaret):
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False")
+            self._failure("value should be True or False", value=value)
 
     def __repr__(self):
         return "<Bool>"
 
 
 class StrBool(Trafaret):
-
     """
     >>> extract_error(StrBool(), 'aloha')
     "value can't be converted to Bool"
@@ -369,7 +365,7 @@ class StrBool(Trafaret):
     def check_value(self, value):
         _value = str(value).strip().lower()
         if _value not in self.convertable:
-            self._failure("value can't be converted to Bool")
+            self._failure("value can't be converted to Bool", value=value)
 
     def converter(self, value):
         if value is None:
@@ -383,7 +379,6 @@ class StrBool(Trafaret):
 
 
 class NumberMeta(TrafaretMeta):
-
     """
     Allows slicing syntax for min and max arguments for
     number trafarets
@@ -422,7 +417,6 @@ class NumberMeta(TrafaretMeta):
 
 @py3metafix
 class Float(Trafaret):
-
     """
     >>> Float()
     <Float>
@@ -461,14 +455,15 @@ class Float(Trafaret):
         self.gt = gt
         self.lt = lt
 
-    def _converter(self, val):
-        if not isinstance(val, self.convertable):
-            self._failure('value is not %s' % self.value_type.__name__)
+    def _converter(self, value):
+        if not isinstance(value, self.convertable):
+            self._failure('value is not %s' % self.value_type.__name__, value=value)
         try:
-            return self.value_type(val)
+            return self.value_type(value)
         except ValueError:
             self._failure(
-                "value can't be converted to %s" % self.value_type.__name__
+                "value can't be converted to %s" % self.value_type.__name__,
+                value=value
             )
 
     def check_and_return(self, val):
@@ -477,13 +472,13 @@ class Float(Trafaret):
         else:
             value = val
         if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte)
+            self._failure("value is less than %s" % self.gte, value=val)
         if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte)
+            self._failure("value is greater than %s" % self.lte, value=val)
         if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt)
+            self._failure("value should be less than %s" % self.lt, value=val)
         if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt)
+            self._failure("value should be greater than %s" % self.gt, value=val)
         return value
 
     def __lt__(self, lt):
@@ -505,7 +500,6 @@ class Float(Trafaret):
 
 
 class Int(Float):
-
     """
     >>> Int()
     <Int>
@@ -519,15 +513,14 @@ class Int(Float):
 
     value_type = int
 
-    def _converter(self, val):
-        if isinstance(val, float):
-            if not val.is_integer():
-                self._failure('value is not int')
-        return super(Int, self)._converter(val)
+    def _converter(self, value):
+        if isinstance(value, float):
+            if not value.is_integer():
+                self._failure('value is not int', value=value)
+        return super(Int, self)._converter(value)
 
 
 class Atom(Trafaret):
-
     """
     >>> Atom('atom').check('atom')
     'atom'
@@ -541,11 +534,10 @@ class Atom(Trafaret):
 
     def check_value(self, value):
         if self.value != value:
-            self._failure("value is not exactly '%s'" % self.value)
+            self._failure("value is not exactly '%s'" % self.value, value=value)
 
 
 class String(Trafaret):
-
     """
     >>> String()
     <String>
@@ -588,17 +580,17 @@ class String(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, str_types):
-            self._failure("value is not a string")
+            self._failure("value is not a string", value=value)
         if not self.allow_blank and len(value) is 0:
-            self._failure("blank value is not allowed")
+            self._failure("blank value is not allowed", value=value)
         if self.min_length is not None and len(value) < self.min_length:
-            self._failure('String is shorter than %s characters' % self.min_length)
+            self._failure('String is shorter than %s characters' % self.min_length, value=value)
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure('String is longer than %s characters' % self.max_length)
+            self._failure('String is longer than %s characters' % self.max_length, value=value)
         if self.regex is not None:
             match = self.regex.match(value)
             if not match:
-                self._failure("value does not match pattern: %s" % repr(self._raw_regex))
+                self._failure("value does not match pattern: %s" % repr(self._raw_regex), value=value)
             return match
         return value
 
@@ -612,7 +604,6 @@ class String(Trafaret):
 
 
 class Email(String):
-
     """
     >>> Email().check('someone@example.net')
     'someone@example.net'
@@ -662,14 +653,13 @@ class Email(String):
                     except DataError:
                         # Will fail with main error
                         pass
-        self._failure('value is not a valid email address')
+        self._failure('value is not a valid email address', value=value)
 
     def __repr__(self):
         return '<Email>'
 
 
 class URL(String):
-
     """
     >>> URL().check('http://example.net/resource/?param=value#anchor')
     'http://example.net/resource/?param=value#anchor'
@@ -712,14 +702,13 @@ class URL(String):
                     except DataError:
                         # Will fail with main error
                         pass
-        self._failure('value is not URL')
+        self._failure('value is not URL', value=value)
 
     def __repr__(self):
         return '<URL>'
 
 
 class SquareBracketsMeta(TrafaretMeta):
-
     """
     Allows usage of square brackets for List initialization
 
@@ -756,7 +745,6 @@ class SquareBracketsMeta(TrafaretMeta):
 
 @py3metafix
 class List(Trafaret):
-
     """
     >>> List(Int)
     <List(<Int>)>
@@ -765,7 +753,7 @@ class List(Trafaret):
     >>> List(Int, min_length=1, max_length=10)
     <List(min_length=1, max_length=10 | <Int>)>
     >>> extract_error(List(Int), 1)
-    'value is not list'
+    'value is not a list'
     >>> List(Int).check([1, 2, 3])
     [1, 2, 3]
     >>> List(String).check(["foo", "bar", "spam"])
@@ -794,11 +782,11 @@ class List(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, list):
-            self._failure("value is not list")
+            self._failure("value is not a list", value=value)
         if len(value) < self.min_length:
-            self._failure("list length is less than %s" % self.min_length)
+            self._failure("list length is less than %s" % self.min_length, value=value)
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure("list length is greater than %s" % self.max_length)
+            self._failure("list length is greater than %s" % self.max_length, value=value)
         lst = []
         errors = {}
         for index, item in enumerate(value):
@@ -847,9 +835,9 @@ class Tuple(Trafaret):
         try:
             value = tuple(value)
         except TypeError:
-            self._failure('value must be convertable to tuple')
+            self._failure('value must be convertable to tuple', value=value)
         if len(value) != self.length:
-            self._failure('value must contain exact %s items' % self.length)
+            self._failure('value must contain %s items' % self.length, value=value)
         result = []
         errors = {}
         for idx, (item, trafaret) in enumerate(zip(value, self.trafarets)):
@@ -858,7 +846,7 @@ class Tuple(Trafaret):
             except DataError as err:
                 errors[idx] = err
         if errors:
-            self._failure(errors)
+            self._failure(errors, value=value)
         return tuple(result)
 
     def __repr__(self):
@@ -933,7 +921,6 @@ class Key(object):
 
 
 class Dict(Trafaret):
-
     """
     >>> trafaret = Dict(foo=Int, bar=String) >> ignore
     >>> trafaret.check({"foo": 1, "bar": "spam"})
@@ -1018,7 +1005,7 @@ class Dict(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, AbcMapping):
-            self._failure("value is not dict")
+            self._failure("value is not a dict", value=value)
         collect = {}
         errors = {}
         touched_names = []
@@ -1143,6 +1130,7 @@ class Mapping(Trafaret):
     Mapping gets two trafarets as arguments, one for key and one for value,
     like `Mapping(t.Int, t.List(t.Str))`.
     """
+    __slots__ = ['key', 'value']
 
     def __init__(self, key, value):
         self.key = self._trafaret(key)
@@ -1150,7 +1138,7 @@ class Mapping(Trafaret):
 
     def check_and_return(self, mapping):
         if not isinstance(mapping, dict):
-            self._failure("value is not dict")
+            self._failure("value is not a dict", value=value)
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -1176,7 +1164,6 @@ class Mapping(Trafaret):
 
 
 class Enum(Trafaret):
-
     """
     >>> trafaret = Enum("foo", "bar", 1) >> ignore
     >>> trafaret
@@ -1186,20 +1173,20 @@ class Enum(Trafaret):
     >>> extract_error(trafaret, 2)
     "value doesn't match any variant"
     """
+    __slots__ = ['variants']
 
     def __init__(self, *variants):
         self.variants = variants[:]
 
     def check_value(self, value):
         if value not in self.variants:
-            self._failure("value doesn't match any variant")
+            self._failure("value doesn't match any variant", value=value)
 
     def __repr__(self):
         return "<Enum(%s)>" % (", ".join(map(repr, self.variants)))
 
 
 class Callable(Trafaret):
-
     """
     >>> (Callable() >> ignore).check(lambda: 1)
     >>> extract_error(Callable(), 1)
@@ -1208,14 +1195,13 @@ class Callable(Trafaret):
 
     def check_value(self, value):
         if not callable(value):
-            self._failure("value is not callable")
+            self._failure("value is not callable", value=value)
 
     def __repr__(self):
         return "<Callable>"
 
 
 class Call(Trafaret):
-
     """
     >>> def validator(value):
     ...     if value != "foo":
@@ -1230,6 +1216,7 @@ class Call(Trafaret):
     >>> extract_error(trafaret, "bar")
     'I want only foo!'
     """
+    __slots__ = ['fn']
 
     def __init__(self, fn):
         if not callable(fn):
@@ -1252,7 +1239,6 @@ class Call(Trafaret):
 
 
 class Forward(Trafaret):
-
     """
     >>> node = Forward()
     >>> node << Dict(name=String, children=List[node])
@@ -1261,7 +1247,7 @@ class Forward(Trafaret):
     >>> node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
     True
     >>> extract_error(node, {"name": "foo", "children": [1]})
-    {'children': {0: 'value is not dict'}}
+    {'children': {0: 'value is not a dict'}}
     >>> node.check({"name": "foo", "children": [ \
                         {"name": "bar", "children": []} \
                      ]}) == {'children': [{'children': [], 'name': 'bar'}], 'name': 'foo'}
@@ -1287,7 +1273,7 @@ class Forward(Trafaret):
 
     def check_and_return(self, value):
         if self.trafaret is None:
-            self._failure('trafaret not set yet')
+            self._failure('trafaret not set yet', value=value)
         return self.trafaret.check(value)
 
     def __repr__(self):
@@ -1301,7 +1287,6 @@ class Forward(Trafaret):
 
 
 class GuardError(DataError):
-
     """
     Raised when guarded function gets invalid arguments,
     inherits error message from corresponding DataError
@@ -1393,7 +1378,6 @@ def ignore(val):
 
 
 def catch_error(checker, *a, **kw):
-
     """
     Helper for tests - catch error and return it as dict
     """
@@ -1408,7 +1392,6 @@ def catch_error(checker, *a, **kw):
 
 
 def extract_error(checker, *a, **kw):
-
     """
     Helper for tests - catch error and return it as dict
     """
@@ -1441,7 +1424,6 @@ class MissingContribModuleStub(types.ModuleType):
 
 def load_contrib():
     for entrypoint in pkg_resources.iter_entry_points(ENTRY_POINT):
-
         try:
             trafaret_class = entrypoint.load(require=False)
         except (pkg_resources.DistributionNotFound, ImportError) as err:
