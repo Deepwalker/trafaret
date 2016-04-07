@@ -377,6 +377,8 @@ class TestMappingTrafaret(unittest.TestCase):
         self.assertEqual(res, {'bar': {'value': 'value is not int'}})
         res = extract_error(trafaret, {"foo": 1, 2: "bar"})
         self.assertEqual(res, {2: {'key': 'value is not a string', 'value': "value can't be converted to int"}})
+        res = extract_error(trafaret.check, None)
+        self.assertEqual(res, 'value is not a dict')
 
 
 class TestNullTrafaret(unittest.TestCase):
