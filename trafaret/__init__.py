@@ -1138,7 +1138,7 @@ class Mapping(Trafaret):
 
     def check_and_return(self, mapping):
         if not isinstance(mapping, dict):
-            self._failure("value is not a dict", value=value)
+            self._failure("value is not a dict", value=mapping)
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
