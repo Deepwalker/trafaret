@@ -1,6 +1,13 @@
 Trafaret
 ========
 
+-----
+
+|pypi_downloads| |pypi_version| |pypi_license|
+
+-----
+
+
 Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
 or look to the docs/api/intro.rst for start.
 
@@ -38,3 +45,16 @@ Rename dict keys::
             return t.DataError('value is not in proper date/time format')
 
 Yes, you can write trafarets that simple.
+
+
+.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/pundle.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/pundle
+    :alt: Downloads
+
+.. |pypi_version| image:: https://img.shields.io/pypi/v/pundle.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/pundle
+    :alt: Downloads
+
+.. |pypi_license| image:: https://img.shields.io/pypi/l/pundle.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/pundle
+    :alt: Downloads
