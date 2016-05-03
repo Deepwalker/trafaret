@@ -14,7 +14,9 @@ or look to the docs/api/intro.rst for start.
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
 
-For simple example what can be done::
+For simple example what can be done:
+
+.. code-block:: python
 
     import datetime
     import trafaret as t
@@ -22,19 +24,25 @@ For simple example what can be done::
     date = t.Dict(year=t.Int, month=t.Int, day=t.Int) >> (lambda d: datetime.datetime(**d))
     assert date.check({'year': 2012, 'month': 1, 'day': 12}) == datetime.datetime(2012, 1, 12)
 
-Work with regex::
+Work with regex:
+
+.. code-block:: python
 
     >>> c = t.String(regex=r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
 
-Rename dict keys::
+Rename dict keys:
+
+.. code-block:: python
 
     >>> c = t.Dict(t.Key('uNJ') >> 'user_name': t.String})
     >>> c.check({'uNJ': 'Adam'})
     {'user_name': 'Adam'}
 
-``Arrow`` date checking::
+``Arrow`` date checking:
+
+.. code-block:: python
 
     import arrow
 
