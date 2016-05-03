@@ -47,14 +47,14 @@ Rename dict keys::
 Yes, you can write trafarets that simple.
 
 
-.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/pundle.svg?style=flat-square
-    :target: https://pypi.python.org/pypi/pundle
+.. |pypi_downloads| image:: https://img.shields.io/pypi/dm/trafaret.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/trafaret
     :alt: Downloads
 
-.. |pypi_version| image:: https://img.shields.io/pypi/v/pundle.svg?style=flat-square
-    :target: https://pypi.python.org/pypi/pundle
+.. |pypi_version| image:: https://img.shields.io/pypi/v/trafaret.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/trafaret
     :alt: Downloads
 
-.. |pypi_license| image:: https://img.shields.io/pypi/l/pundle.svg?style=flat-square
-    :target: https://pypi.python.org/pypi/pundle
+.. |pypi_license| image:: https://img.shields.io/pypi/l/trafaret.svg?style=flat-square
+    :target: https://pypi.python.org/pypi/trafaret
     :alt: Downloads
