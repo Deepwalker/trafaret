@@ -1,6 +1,10 @@
 Changes
 =======
 
+2016-08-03
+----------
+Added ``Subclass`` trafaret.
+
 2016-03-31
 ----------
 Fixed loading contrib modules, so now original contrib module loading exception will be raised on contrib Trafaret access.

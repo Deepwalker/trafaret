@@ -4,7 +4,6 @@ import sys
 import functools
 import inspect
 import re
-import copy
 import itertools
 import numbers
 import warnings
@@ -41,7 +40,7 @@ Look at doctests for usage examples
 
 __all__ = ("DataError", "Trafaret", "Any", "Int", "String",
            "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
-           "Call", "Forward", "Bool", "Type", "Mapping", "guard", "Key",
+           "Call", "Forward", "Bool", "Type", "Subclass", "Mapping", "guard", "Key",
            "Tuple", "Atom", "Email", "URL")
 
 ENTRY_POINT = 'trafaret'
@@ -203,7 +202,40 @@ class TypeMeta(TrafaretMeta):
 
 
 @py3metafix
-class Type(Trafaret):
+class TypingTrafaret(Trafaret):
+    """A trafaret used for instance type and class inheritance checks."""
+
+    __metaclass__ = TypeMeta
+
+    def __init__(self, type_):
+        self.type_ = type_
+
+    def check_value(self, value):
+        if not self.typing_checker(value, self.type_):
+            self._failure(self.failure_message % self.type_.__name__, value=value)
+
+    def __repr__(self):
+        return "<%s(%s)>" % (self.__class__.__name__, self.type_.__name__)
+
+
+class Subclass(TypingTrafaret):
+    """
+    >>> Subclass(type)
+    <Subclass(type)>
+    >>> Subclass[type]
+    <Subclass(type)>
+    >>> s = Subclass[type]
+    >>> s.check(type)
+    type
+    >>> extract_error(s, object)
+    'value is not subclass of type'
+    """
+
+    typing_checker = issubclass
+    failure_message = "value is not subclass of %s"
+
+
+class Type(TypingTrafaret):
     """
     >>> Type(int)
     <Type(int)>
@@ -215,17 +247,9 @@ class Type(Trafaret):
     >>> extract_error(c, "foo")
     'value is not int'
     """
-    __metaclass__ = TypeMeta
 
-    def __init__(self, type_):
-        self.type_ = type_
-
-    def check_value(self, value):
-        if not isinstance(value, self.type_):
-            self._failure("value is not %s" % self.type_.__name__, value=value)
-
-    def __repr__(self):
-        return "<Type(%s)>" % self.type_.__name__
+    typing_checker = isinstance
+    failure_message = "value is not %s"
 
 
 class Any(Trafaret):

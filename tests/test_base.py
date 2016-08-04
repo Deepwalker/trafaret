@@ -533,6 +533,22 @@ class TestTypeTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value is not int')
 
 
+class TestSubclassTrafaret(unittest.TestCase):
+
+    def test_subclass(self):
+        res = t.Subclass(type)
+        self.assertEqual(repr(res), '<Subclass(type)>')
+        c = t.Subclass[type]
+
+        class Type(type):
+            pass
+
+        res = c.check(Type)
+        self.assertEqual(res, Type)
+        res = extract_error(c, object)
+        self.assertEqual(res, 'value is not subclass of type')
+
+
 class TestURLTrafaret(unittest.TestCase):
 
     def test_url(self):
