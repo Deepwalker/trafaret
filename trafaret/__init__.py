@@ -226,7 +226,7 @@ class Subclass(TypingTrafaret):
     <Subclass(type)>
     >>> s = Subclass[type]
     >>> s.check(type)
-    type
+    <type 'type'>
     >>> extract_error(s, object)
     'value is not subclass of type'
     """
@@ -1339,7 +1339,7 @@ def guard(trafaret=None, **kwargs):
     >>> help(fn)
     Help on function fn:
     <BLANKLINE>
-    fn(a, b, c='default')
+    fn(*args, **kwargs)
         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
     <BLANKLINE>
         docstring
@@ -1456,7 +1456,8 @@ class MissingContribModuleStub(types.ModuleType):
 def load_contrib():
     for entrypoint in pkg_resources.iter_entry_points(ENTRY_POINT):
         try:
-            trafaret_class = entrypoint.load(require=False)
+            trafaret_class = entrypoint.resolve()
+
         except (pkg_resources.DistributionNotFound, ImportError) as err:
             trafaret_class = MissingContribModuleStub(entrypoint, err)
 
