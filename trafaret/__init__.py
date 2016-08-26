@@ -605,7 +605,7 @@ class String(Trafaret):
     def check_and_return(self, value):
         if not isinstance(value, str_types):
             self._failure("value is not a string", value=value)
-        if not self.allow_blank and len(value) is 0:
+        if not self.allow_blank and len(value) == 0:
             self._failure("blank value is not allowed", value=value)
         if self.min_length is not None and len(value) < self.min_length:
             self._failure('String is shorter than %s characters' % self.min_length, value=value)
