@@ -45,7 +45,7 @@ Dict and Key
 you can use ``Key`` class. And ``Key`` instance can rename given key name to something
 else::
 
-    >>> c = t.Dict(t.Key('uNJ') >> 'user_name': t.String})
+    >>> c = t.Dict({t.Key('uNJ') >> 'user_name': t.String})
     >>> c.check({'uNJ': 'Adam'})
     {'user_name': 'Adam'}
 
