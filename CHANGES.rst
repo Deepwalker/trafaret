@@ -1,6 +1,14 @@
 Changes
 =======
 
+
+2016-09-25
+----------
+
+Added ``trafaret`` argument to ``DataError`` constructor and made ``_failure``
+a method (rather than static method)
+
+
 2016-08-03
 ----------
 Added ``Subclass`` trafaret.
