@@ -989,8 +989,8 @@ class Dict(Trafaret):
 
     def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
-            keys = args[-1]
-            args = args[:-1]
+            keys = args[0]
+            args = args[1:]
         else:
             keys = {}
         if any(not callable(key) for key in args):

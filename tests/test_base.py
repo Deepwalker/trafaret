@@ -99,6 +99,10 @@ class TestDictTrafaret(unittest.TestCase):
         res = trafaret.check({})
         self.assertEqual(res, {'simple': 'simple data'})
 
+        trafaret = t.Dict({t.Key('key'): t.String}, simple_key)
+        res = trafaret.check({'key': 'blabla'})
+        self.assertEqual(res, {'key': 'blabla', 'simple': 'simple data'})
+
 
     def test_base2(self):
         trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.Int)
