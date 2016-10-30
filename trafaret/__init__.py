@@ -985,7 +985,7 @@ class Dict(Trafaret):
     >>> _dd(trafaret.check({'foo': 4, 'foor': 5}))
     "{'baz': 'nyanya', 'foo': 4}"
     """
-    __slots__ = ['extras', 'allow_any', 'ignore', 'ignore_any', 'keys']
+    __slots__ = ['extras', 'extras_trafaret', 'allow_any', 'ignore', 'ignore_any', 'keys']
 
     def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
@@ -1005,12 +1005,13 @@ class Dict(Trafaret):
             key_.set_trafaret(self._trafaret(trafaret))
             self.keys.append(key_)
 
-    def allow_extra(self, *names):
+    def allow_extra(self, *names, trafaret=Any):
         for name in names:
             if name == "*":
                 self.allow_any = True
             else:
                 self.extras.append(name)
+        self.extras_trafaret = self._trafaret(trafaret)
         return self
 
     def ignore_extra(self, *names):
@@ -1035,12 +1036,12 @@ class Dict(Trafaret):
         touched_names = []
         for key in self.keys:
             if callable(key):
-                for k, v, name in key(value):
+                for k, v, names in key(value):
                     if isinstance(v, DataError):
                         errors[k] = v
                     else:
                         collect[k] = v
-                    touched_names.extend(name)
+                    touched_names.extend(names)
             else:
                 warnings.warn(
                     'Old pop based Keys subclasses deprecated. See README',
@@ -1062,8 +1063,13 @@ class Dict(Trafaret):
                     continue
                 if not self.allow_any and key not in self.extras:
                     errors[key] = DataError("%s is not allowed key" % key)
-                elif key not in collect:
-                    collect[key] = value[key]
+                elif key in collect:
+                    errors[key] = DataError("%s key was shadowed" % key)
+                else:
+                    try:
+                        collect[key] = self.extras_trafaret(value[key])
+                    except DataError as de:
+                        errors[key] = de
         if errors:
             raise DataError(error=errors, trafaret=self)
         return collect

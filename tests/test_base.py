@@ -118,12 +118,21 @@ class TestDictTrafaret(unittest.TestCase):
         trafaret = t.Dict({t.Key('bar', default='nyanya') >> 'baz': t.String}, foo=t.Int)
         res = trafaret.check({'foo': 4})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+
         trafaret.allow_extra('*')
-        res = trafaret.check({'baz': 'spam', 'foo': 4})
-        self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+        res = extract_error(trafaret, {'baz': 'spam', 'foo': 4})
+        self.assertEqual(res, {'baz': 'baz key was shadowed'})
+
+        trafaret.allow_extra('*', trafaret=t.String)
+        res = extract_error(trafaret, {'baaz': 5, 'foo': 4})
+        self.assertEqual(res, {'baaz': 'value is not a string'})
+        res = trafaret({'baaz': 'strstr', 'foo':4})
+        self.assertEqual(res, {'baaz': 'strstr', 'foo':4, 'baz': 'nyanya'})
+
         trafaret.ignore_extra('fooz')
         res = trafaret.check({'foo': 4, 'fooz': 5})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
+
         trafaret.ignore_extra('*')
         res = trafaret.check({'foo': 4, 'foor': 5})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
