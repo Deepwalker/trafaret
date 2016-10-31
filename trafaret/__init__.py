@@ -1005,7 +1005,8 @@ class Dict(Trafaret):
             key_.set_trafaret(self._trafaret(trafaret))
             self.keys.append(key_)
 
-    def allow_extra(self, *names, trafaret=Any):
+    def allow_extra(self, *names, **kw):
+        trafaret = kw.get('trafaret', Any)
         for name in names:
             if name == "*":
                 self.allow_any = True
