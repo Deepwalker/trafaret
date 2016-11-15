@@ -84,7 +84,7 @@ class DataError(ValueError):
                     return '%s, got %r' % (str(dataerror.error), dataerror.value)
                 else:
                     return str(dataerror.error)
-            return dict((k, v.as_dict() if isinstance(v, DataError) else v)
+            return dict((k, v.as_dict(value=value) if isinstance(v, DataError) else v)
                         for k, v in dataerror.error.items())
         return as_dict(self)
 

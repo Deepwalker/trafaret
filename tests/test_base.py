@@ -606,6 +606,16 @@ class TestDataError(unittest.TestCase):
             "Wait for good value, got 'BAD ONE'"
         )
 
+    def test_nested_dataerror_value(self):
+        error = t.DataError(error={0: t.DataError(error='Wait for good value', value='BAD ONE')})
+        self.assertEqual(
+            error.as_dict(),
+            {0: 'Wait for good value'}
+        )
+        self.assertEqual(
+            error.as_dict(value=True),
+            {0: "Wait for good value, got 'BAD ONE'"}
+        )
 
 # res = @guard(a=String, b=Int, c=String)
 #     def fn(a, b, c="default"):
