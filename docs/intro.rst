@@ -275,7 +275,7 @@ Enum
 ----
 
 This checker check that value one from provided. Like::
-    >>> Enum(1, 2, 'error').check('2')
+    >>> Enum(1, 2, 'error').check(2)
     2
 
 Callable
