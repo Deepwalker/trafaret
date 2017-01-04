@@ -98,7 +98,7 @@ Checks that data is instance of given class.
 Just instantitate it with any class, like int, float, str.
 Sample::
 
-    >>> Type(int).check(4)
+    >>> t.Type(int).check(4)
     4
 
 Any
@@ -126,7 +126,7 @@ Bool
 ----
 Check if value is boolean::
 
-    >>> t.Bool.check(True)
+    >>> t.Bool().check(True)
     True
 
 Float
