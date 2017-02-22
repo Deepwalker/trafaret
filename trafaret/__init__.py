@@ -77,6 +77,9 @@ class DataError(ValueError):
     def __repr__(self):
         return 'DataError(%s)' % str(self)
 
+    def __bool__(self):
+        return False
+
     def as_dict(self, value=False):
         def as_dict(dataerror):
             if not isinstance(dataerror.error, dict):
@@ -1408,7 +1411,7 @@ def ignore(val):
     pass
 
 
-def catch_error(checker, *a, **kw):
+def catch(checker, *a, **kw):
     """
     Helper for tests - catch error and return it as dict
     """
@@ -1420,6 +1423,8 @@ def catch_error(checker, *a, **kw):
             return checker(*a, **kw)
     except DataError as error:
         return error
+
+catch_error = catch
 
 
 def extract_error(checker, *a, **kw):
