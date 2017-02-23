@@ -580,6 +580,8 @@ class String(Trafaret):
     'value is not a string'
     >>> String(regex='\w+').check('wqerwqer')
     'wqerwqer'
+    >>> String(allow_blank=True, regex='\w+').check('')
+    ''
     >>> extract_error(String(regex='^\w+$'), 'wqe rwqer')
     "value does not match pattern: '^\\\\\\\\w+$'"
     >>> String(min_length=2, max_length=3).check('123')
@@ -610,6 +612,8 @@ class String(Trafaret):
             self._failure("value is not a string", value=value)
         if not self.allow_blank and len(value) == 0:
             self._failure("blank value is not allowed", value=value)
+        elif self.allow_blank and len(value) == 0:
+            return value
         if self.min_length is not None and len(value) < self.min_length:
             self._failure('String is shorter than %s characters' % self.min_length, value=value)
         if self.max_length is not None and len(value) > self.max_length:
