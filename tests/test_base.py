@@ -441,7 +441,7 @@ class TestOrNotToTest(unittest.TestCase):
         res = extract_error(nullString, 1)
         self.assertEqual(res, {0: 'value is not a string', 1: 'value should be None'})
         res = t.Or << t.Int << t.String
-        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')    
+        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
 
 
 
@@ -567,8 +567,18 @@ class TestURLTrafaret(unittest.TestCase):
     def test_url(self):
         res = t.URL().check('http://example.net/resource/?param=value#anchor')
         self.assertEqual(res, 'http://example.net/resource/?param=value#anchor')
+
         res = str(t.URL().check('http://пример.рф/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor')
+
+        res = str(t.URL().check('http://user@example.net/resource/?param=value#anchor'))
+        self.assertEqual(res, 'http://user@example.net/resource/?param=value#anchor')
+
+        res = str(t.URL().check('http://user:@example.net/resource/?param=value#anchor'))
+        self.assertEqual(res, 'http://user:@example.net/resource/?param=value#anchor')
+
+        res = str(t.URL().check('http://user:password@example.net/resource/?param=value#anchor'))
+        self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
 
 class TestKeysSubset(unittest.TestCase):
