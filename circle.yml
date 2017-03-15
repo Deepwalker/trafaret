@@ -2,4 +2,6 @@
 machine:
   python:
     version:
-      pyenv local 3.6.0 2.7.10
+      3.6.0
+  post:
+    - pyenv local 3.6.0 2.7.10
