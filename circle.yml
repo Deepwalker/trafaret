@@ -1,0 +1,5 @@
+## Customize the test machine
+machine:
+  python:
+    version:
+      pyenv local 3.6.0 2.7.10
