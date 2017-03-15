@@ -2,7 +2,6 @@
 import unittest
 import trafaret as t
 from collections import Mapping as AbcMapping
-from functools import partial
 from trafaret import extract_error, ignore, DataError
 from trafaret.extras import KeysSubset
 
@@ -637,86 +636,6 @@ class TestDataError(unittest.TestCase):
         trafaret = t.Int()
         val = t.catch(trafaret, 'a') or 100
         self.assertEqual(val, 100)
-
-
-class TestPartialTrafaret(unittest.TestCase):
-    def test_partial_trafaret(self):
-        trafaret = partial(
-            t.String,
-            min_length=2,
-        )
-        res = trafaret()('ua')
-        self.assertEqual(res, 'ua')
-        with self.assertRaises(t.DataError):
-            trafaret()('u')
-
-        trafaret = partial(
-            trafaret,
-            max_length=3,
-        )
-        res = trafaret()('ukr')
-        self.assertEqual(res, 'ukr')
-        with self.assertRaises(t.DataError):
-            trafaret()('ukra')
-
-    def test_partial_in_dict(self):
-        child_trafaret = partial(
-            t.String,
-            min_length=2,
-        )
-        child_trafaret = partial(
-            child_trafaret,
-            max_length=3,
-        )
-        trafaret = t.Dict({
-            t.Key('country_code'): child_trafaret,
-        })
-        res = trafaret({'country_code': 'ua'})
-        self.assertEqual(res, {'country_code': 'ua'})
-
-        trafaret = t.Dict({
-            t.Key('country_code'): child_trafaret(),
-        })
-        res = trafaret({'country_code': 'ua'})
-        self.assertEqual(res, {'country_code': 'ua'})
-
-    def test_partial_in_list(self):
-        child_trafaret = partial(
-            t.String,
-            min_length=2,
-        )
-        child_trafaret = partial(
-            child_trafaret,
-            max_length=3,
-        )
-        trafaret = t.List(child_trafaret, min_length=1)
-        res = trafaret(['foo', 'bar'])
-        self.assertEqual(res, ['foo', 'bar'])
-
-    def test_partial_Or(self):
-        child_trafaret = partial(
-            t.String,
-            min_length=2,
-        )
-        child_trafaret = partial(
-            child_trafaret,
-            max_length=3,
-        )
-        trafaret = t.Or(child_trafaret, t.Null)
-        res = trafaret('foo')
-        self.assertEqual(res, 'foo')
-        res = trafaret(None)
-        self.assertEqual(res, None)
-
-    def test_wrong_partial(self):
-        trafaret = partial(
-            lambda min_length: min_length,
-            min_length=2,
-        )
-        with self.assertRaises(TypeError):
-            trafaret = t.Dict({
-                t.Key('country_code'): trafaret,
-            })
 
 
 # res = @guard(a=String, b=Int, c=String)

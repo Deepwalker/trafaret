@@ -37,16 +37,6 @@ Regex String
 
 Some way you can use all re.Match power to extract from strings dicts and so on.
 
-functools.partial
-.................
-
-You can use ``functools.partial`` with trafaret::
-
-    >>> Word = functools.partial(t.String, regex=r'^[a-zA-Z]+$')
-    >>> ShortWord = functools.partial(Word, min_length=3, max_length=5)
-    >>> d = t.Dict({'short_word': ShortWord})
-    >>> d.check({'short_word': 'foo'})
-    {'short_word': 'foo'}
 
 Dict and Key
 ............

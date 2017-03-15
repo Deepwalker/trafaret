@@ -169,7 +169,7 @@ class Trafaret(object):
         """
         if isinstance(trafaret, Trafaret) or inspect.isroutine(trafaret):
             return trafaret
-        elif isinstance(trafaret, functools.partial) or issubclass(trafaret, Trafaret):
+        elif issubclass(trafaret, Trafaret):
             return trafaret()
         elif isinstance(trafaret, type):
             return Type(trafaret)
@@ -1260,10 +1260,7 @@ class Call(Trafaret):
     def __init__(self, fn):
         if not callable(fn):
             raise RuntimeError("Call argument should be callable")
-        if py3:
-            argspec = inspect.getfullargspec(fn)
-        else:
-            argspec = inspect.getargspec(fn)
+        argspec = inspect.getargspec(fn)
         if len(argspec.args) - len(argspec.defaults or []) > 1:
             raise RuntimeError("Call argument should be"
                                " one argument function")
@@ -1380,10 +1377,7 @@ def guard(trafaret=None, **kwargs):
         trafaret = Dict(**kwargs)
 
     def wrapper(fn):
-        if py3:
-            argspec = inspect.getfullargspec(fn)
-        else:
-            argspec = inspect.getargspec(fn)
+        argspec = inspect.getargspec(fn)
 
         @functools.wraps(fn)
         def decor(*args, **kwargs):
