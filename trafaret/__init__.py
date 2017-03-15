@@ -10,10 +10,10 @@ import warnings
 from collections import Mapping as AbcMapping
 import pkg_resources
 import types
+from .lib import py3, py3metafix
 
 
 # Python3 support
-py3 = sys.version_info[0] == 3
 if py3:
     import urllib.parse as urlparse
     str_types = (str, bytes)
@@ -38,23 +38,16 @@ It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
 
-__all__ = ("DataError", "Trafaret", "Any", "Int", "String",
-           "List", "Dict", "Or", "Null", "Float", "Enum", "Callable",
-           "Call", "Forward", "Bool", "Type", "Subclass", "Mapping", "guard", "Key",
-           "Tuple", "Atom", "Email", "URL")
+__all__ = (
+    "DataError", "Trafaret", "Any", "Int", "String",
+    "List", "Dict", "Or",  "And", "Null", "Float", "Enum", "Callable",
+    "Call", "Forward", "Bool", "Type", "Subclass", "Mapping", "guard", "Key",
+    "Tuple", "Atom", "Email", "URL",
+)
 
 ENTRY_POINT = 'trafaret'
 _empty = object()
 MAX_EMAIL_LEN = 254
-
-
-def py3metafix(cls):
-    if not py3:
-        return cls
-    else:
-        newcls = cls.__metaclass__(cls.__name__, (cls,), {})
-        newcls.__doc__ = cls.__doc__
-        return newcls
 
 
 class DataError(ValueError):
@@ -78,6 +71,9 @@ class DataError(ValueError):
         return 'DataError(%s)' % str(self)
 
     def __bool__(self):
+        return False
+
+    def __nonzero__(self):
         return False
 
     def as_dict(self, value=False):

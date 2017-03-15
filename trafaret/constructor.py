@@ -1,4 +1,5 @@
 import trafaret as t
+from trafaret.lib import py3, py3metafix
 
 
 class ConstructMeta(type):
@@ -9,7 +10,8 @@ class ConstructMeta(type):
         return construct(other)
 
 
-class C(object, metaclass=ConstructMeta):
+@py3metafix
+class C(object):
     __metaclass__ = ConstructMeta
 
 
