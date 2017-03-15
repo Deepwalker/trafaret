@@ -1,4 +1,4 @@
-from bson import ObjectId
+from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
 from .. import Trafaret, str_types

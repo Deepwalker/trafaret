@@ -8,4 +8,4 @@ machine:
 
 dependencies:
   pre:
-    - pip install bson
+    - pip install pymongo
