@@ -4,4 +4,5 @@ machine:
     version:
       3.6.0
   post:
+    - pip install bson
     - pyenv local 3.6.0 2.7.10
