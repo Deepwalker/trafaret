@@ -3,7 +3,7 @@ Trafaret
 
 -----
 
-|pypi_version| |pypi_license|
+|circleci_build| |pypi_version| |pypi_license|
 
 -----
 
@@ -74,6 +74,10 @@ Rename dict keys:
 
 Yes, you can write trafarets that simple.
 
+
+.. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
+    :target: https://pypi.python.org/pypi/trafaret
+    :alt: Build status
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/trafaret.svg?style=flat-square
     :target: https://pypi.python.org/pypi/trafaret
