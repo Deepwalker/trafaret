@@ -443,6 +443,11 @@ class TestOrNotToTest(unittest.TestCase):
         res = t.Or << t.Int << t.String
         self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
 
+    def test_operator(self):
+        check = t.String | t.Int
+        self.assertEqual(check('a'), 'a')
+        self.assertEqual(check(5), 5)
+
 
 
 class TestStrBoolTrafaret(unittest.TestCase):

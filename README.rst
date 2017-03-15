@@ -14,6 +14,26 @@ or look to the docs/api/intro.rst for start.
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
 
+It have shortcut syntax and ability to express anything that you can code:
+
+.. code-block:: python
+
+    >>> from trafaret.constructor import construct
+    >>> validator = construct({'a': int, 'b': [str]})
+    >>> validator({'a': 5, 'b': ['lorem', 'ipsum']})
+    {'a': 5, 'b': ['lorem', 'ipsum']}
+
+    >>> validator({'a': 5, 'b': ['gorky', 9]})
+    Traceback (most recent call last):
+      File "<console>", line 1, in <module>
+      File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 204, in __call__
+        return self.check(val)
+      File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 144, in check
+        return self._convert(self.check_and_return(value))
+      File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 1105, in check_and_return
+        raise DataError(error=errors, trafaret=self)
+    trafaret.DataError: {'b': DataError({1: DataError(value is not a string)})}
+
 For simple example what can be done:
 
 .. code-block:: python

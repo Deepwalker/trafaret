@@ -108,6 +108,9 @@ class TrafaretMeta(type):
     def __or__(cls, other):
         return cls() | other
 
+    def __and__(cls, other):
+        return cls() & other
+
     def __rshift__(cls, other):
         return cls() >> other
 
@@ -189,6 +192,9 @@ class Trafaret(object):
 
     def __or__(self, other):
         return Or(self, other)
+
+    def __and__(self, other):
+        return And(self, other)
 
     def __rshift__(self, other):
         self.append(other)
@@ -319,6 +325,22 @@ class Or(Trafaret):
 
     def __repr__(self):
         return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))
+
+
+class And(Trafaret):
+    """
+    Will work over trafarets sequentially
+    """
+    __slots__ = ('trafaret', 'other')
+
+    def __init__(self, trafaret, other):
+        self.trafaret = trafaret
+        self.other = trafaret
+
+    def check_and_return(self, value):
+        res = self.trafaret(value)
+        return self.other(res)
+
 
 
 class Null(Trafaret):
@@ -1260,7 +1282,10 @@ class Call(Trafaret):
     def __init__(self, fn):
         if not callable(fn):
             raise RuntimeError("Call argument should be callable")
-        argspec = inspect.getargspec(fn)
+        if py3:
+            argspec = inspect.getfullargspec(fn)
+        else:
+            argspec = inspect.getargspec(fn)
         if len(argspec.args) - len(argspec.defaults or []) > 1:
             raise RuntimeError("Call argument should be"
                                " one argument function")
