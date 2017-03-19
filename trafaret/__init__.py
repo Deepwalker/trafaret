@@ -331,7 +331,7 @@ class And(Trafaret):
 
     def __init__(self, trafaret, other):
         self.trafaret = trafaret
-        self.other = trafaret
+        self.other = other
 
     def check_and_return(self, value):
         res = self.trafaret(value)

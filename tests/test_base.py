@@ -449,6 +449,11 @@ class TestOrNotToTest(unittest.TestCase):
         self.assertEqual(check(5), 5)
 
 
+class TestAndTest(unittest.TestCase):
+    def test_and(self):
+        indeed_int = t.Atom('123') & int
+        self.assertEqual(indeed_int('123'), 123) # fixed 0.8.0 error
+
 
 class TestStrBoolTrafaret(unittest.TestCase):
 
