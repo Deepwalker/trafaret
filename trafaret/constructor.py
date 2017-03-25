@@ -12,10 +12,25 @@ class ConstructMeta(type):
 
 @py3metafix
 class C(object):
+    '''
+    Start object. It has `|` and `&` operations defined that will use construct to it args
+    Use it like `C & int & check_less_500`
+    '''
     __metaclass__ = ConstructMeta
 
 
 def construct(arg):
+    '''
+    Shortcut syntax to define trafarets.
+    - int, str, float and bool will return t.Int, t.String, t.Float and t.Bool
+    - one element list will return t.List
+    - tuple or list with several args will return t.Tuple
+    - dict will return t.Dict. If key has '?' at the and it will be optional and '?' will be removed
+    - any callable will be t.Call
+    - otherwise it will be returned as is
+
+    construct is recursive and will try construct all lists, tuples and dicts args
+    '''
     if isinstance(arg, t.Trafaret):
         return arg
     elif isinstance(arg, tuple) or (isinstance(arg, list) and len(arg) > 1):
