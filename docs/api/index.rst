@@ -8,3 +8,4 @@ API docs
   trafaret.extras
   trafaret.utils
   trafaret.visitor
+  trafaret.constructor
