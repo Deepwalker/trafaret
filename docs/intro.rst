@@ -26,12 +26,12 @@ Features
 
 Trafaret has very handy features, read below some samples.
 
-Regex String
-............
+Regexp
+......
 
-``String`` can work with regular expressions, and this givs you real power::
+``RegexpRow`` can work with regular expressions, and this givs you real power::
 
-    >>> c = t.String(regex=r'^name=(\w+)$') >> (lambda m: m.groups()[0])
+    >>> c = t.RegexpRow(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
 

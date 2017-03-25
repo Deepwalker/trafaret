@@ -77,6 +77,20 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
         self.assertEqual(res, {'bar': 'is required'})
 
+    def test_kwargs_extra(self):
+        trafaret = t.Dict(t.Key('foo', trafaret=t.Int()), allow_extra=['eggs'])
+        trafaret.check({"foo": 1, "eggs": None})
+        trafaret.check({"foo": 1})
+        with self.assertRaises(t.DataError):
+            trafaret.check({"foo": 2, "marmalade": 5})
+
+    def test_kwargs_ignore(self):
+        trafaret = t.Dict(t.Key('foo', trafaret=t.Int()), ignore_extra=['eggs'])
+        trafaret.check({"foo": 1, "eggs": None})
+        trafaret.check({"foo": 1})
+        with self.assertRaises(t.DataError):
+            trafaret.check({"foo": 2, "marmalade": 5})
+
     def test_old_keys(self):
         class OldKey(object):
             def pop(self, value):
@@ -517,6 +531,16 @@ class TestStringTrafaret(unittest.TestCase):
         #     AssertionError: Either allow_blank or min_length should be specified, not both
         res = t.String(min_length=0, max_length=6, allow_blank=True).check('123')
         self.assertEqual(res, '123')
+
+class TestRegexpTrafaret(unittest.TestCase):
+    def test_regexp(self):
+        trafaret = t.Regexp('cat')
+        self.assertEqual(trafaret('cat1212'), 'cat')
+
+    def test_regexp_raw(self):
+        trafaret = t.RegexpRaw('.*(cat).*')
+        self.assertEqual(trafaret('cat1212').groups()[0], 'cat')
+
 
 
 class TestTrafaretMeta(unittest.TestCase):

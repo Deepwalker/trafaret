@@ -14,6 +14,7 @@ Contents:
   :glob:
 
   intro
+  changelog
   api/index
 
 Indices and tables

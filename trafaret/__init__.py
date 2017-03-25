@@ -32,6 +32,11 @@ def _dd(value):
         return repr(value)
     return r"{%s}" % ', '.join("%r: %s" % (x[0], _dd(x[1])) for x in sorted(value.items(), key=lambda x: x[0]))
 
+
+def deprecated(message):
+    warnings.warn(message, DeprecationWarning)
+
+
 """
 Trafaret is tiny library for data validation
 It provides several primitives to validate complex data structures
@@ -116,28 +121,21 @@ class Trafaret(object):
     """
     Base class for trafarets, provides only one method for
     trafaret validation failure reporting
-
-    Check that converters can be stacked
-    >>> (Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
-    6
-
-    Check order
-    >>> (Int() >> float >> str).check(4)
-    '4.0'
     """
 
     __metaclass__ = TrafaretMeta
 
-    def check(self, value):
+    def check(self, value, convert=True):
         """
         Common logic. In subclasses you need to implement check_value or
         check_and_return.
         """
         if hasattr(self, 'check_value'):
             self.check_value(value)
-            return self._convert(value)
+            return self.converter(value) if convert else value
         if hasattr(self, 'check_and_return'):
-            return self._convert(self.check_and_return(value))
+            res_value = self.check_and_return(value)
+            return self.converter(res_value) if convert else res_value
         cls = "%s.%s" % (type(self).__module__, type(self).__name__)
         raise NotImplementedError("You must implement check_value or"
                                   " check_and_return methods '%s'" % cls)
@@ -147,12 +145,6 @@ class Trafaret(object):
         You can change converter with `>>` operator or append method
         """
         return value
-
-    def _convert(self, value):
-        val = value
-        for converter in getattr(self, 'converters', [self.converter]):
-            val = converter(val)
-        return val
 
     def _failure(self, error=None, value=_empty):
         """
@@ -166,25 +158,13 @@ class Trafaret(object):
         Helper for complex trafarets, takes trafaret instance or class
         and returns trafaret instance
         """
-        if isinstance(trafaret, Trafaret) or inspect.isroutine(trafaret):
-            return trafaret
-        elif issubclass(trafaret, Trafaret):
-            return trafaret()
-        elif isinstance(trafaret, type):
-            return Type(trafaret)
-        else:
-            raise RuntimeError("%r should be instance or subclass"
-                               " of Trafaret" % trafaret)
+        return ensure_trafaret(trafaret)
 
     def append(self, converter):
         """
         Appends new converter to list.
         """
-        if hasattr(self, 'converters'):
-            self.converters.append(converter)
-        else:
-            self.converters = [converter]
-        return self
+        return And(self, converter, disable_old_check_convert=True)
 
     def __or__(self, other):
         return Or(self, other)
@@ -193,12 +173,27 @@ class Trafaret(object):
         return And(self, other)
 
     def __rshift__(self, other):
-        self.append(other)
-        return self
+        return And(self, other, disable_old_check_convert=True)
 
     def __call__(self, val):
         return self.check(val)
 
+
+def ensure_trafaret(trafaret):
+    """
+    Helper for complex trafarets, takes trafaret instance or class
+    and returns trafaret instance
+    """
+    if isinstance(trafaret, Trafaret) or inspect.isroutine(trafaret):
+        return trafaret
+    elif isinstance(trafaret, type):
+        if issubclass(trafaret, Trafaret):
+            return trafaret()
+        else:
+            return Type(trafaret)
+    else:
+        raise RuntimeError("%r should be instance or subclass"
+                           " of Trafaret" % trafaret)
 
 class TypeMeta(TrafaretMeta):
 
@@ -300,7 +295,7 @@ class Or(Trafaret):
     __slots__ = ['trafarets']
 
     def __init__(self, *trafarets):
-        self.trafarets = list(map(self._trafaret, trafarets))
+        self.trafarets = list(map(ensure_trafaret, trafarets))
 
     def check_and_return(self, value):
         errors = []
@@ -312,7 +307,7 @@ class Or(Trafaret):
         raise DataError(dict(enumerate(errors)), trafaret=self)
 
     def __lshift__(self, trafaret):
-        self.trafarets.append(self._trafaret(trafaret))
+        self.trafarets.append(ensure_trafaret(trafaret))
         return self
 
     def __or__(self, trafaret):
@@ -327,15 +322,38 @@ class And(Trafaret):
     """
     Will work over trafarets sequentially
     """
-    __slots__ = ('trafaret', 'other')
+    __slots__ = ('trafaret', 'other', 'disable_old_check_convert')
 
-    def __init__(self, trafaret, other):
+    def __init__(self, trafaret, other, disable_old_check_convert=False):
         self.trafaret = trafaret
         self.other = other
+        self.disable_old_check_convert = disable_old_check_convert
 
     def check_and_return(self, value):
-        res = self.trafaret(value)
-        return self.other(res)
+        if isinstance(self.trafaret, Trafaret) and self.disable_old_check_convert:
+            res = self.trafaret.check(value, convert=False)
+        else:
+            res = self.trafaret(value)
+        if isinstance(res, DataError):
+            raise DataError
+        res = self.other(res)
+        if isinstance(res, DataError):
+            raise DataError
+        return res
+
+    # support old code for some deprecation period
+    def allow_extra(self, *names, **kw):
+        deprecated('Call allow_extra after >> or & operations is deprecated')
+        self.trafaret = self.trafaret.allow_extra(*names, **kw)
+        return self
+
+    def ignore_extra(self, *names):
+        deprecated('Call ignore_extra after >> or & operations is deprecated')
+        self.trafaret = self.trafaret.ignore_extra(*names)
+        return self
+
+    def __repr__(self):
+        return repr(self.trafaret)
 
 
 
@@ -582,6 +600,33 @@ class Atom(Trafaret):
             self._failure("value is not exactly '%s'" % self.value, value=value)
 
 
+class RegexpRaw(Trafaret):
+    """
+    Check if given string match given regexp
+    """
+    __slots__ = ('regexp', 'raw_regexp')
+
+    def __init__(self, regexp):
+        self.regexp = re.compile(regexp) if isinstance(regexp, str_types) else regexp
+        self.raw_regexp = self.regexp.pattern if self.regexp else None
+
+    def check(self, value):
+        if not isinstance(value, str_types):
+            self._failure("value is not a string", value=value)
+        match = self.regexp.match(value)
+        if not match:
+            self._failure('does not match pattern %s' % self.raw_regexp)
+        return match
+
+    def __repr__(self):
+        return '<Regexp>'
+
+
+class Regexp(RegexpRaw):
+    def check(self, value):
+        return super(Regexp, self).check(value).group()
+
+
 class String(Trafaret):
     """
     >>> String()
@@ -621,6 +666,8 @@ class String(Trafaret):
             "Either allow_blank or min_length should be specified, not both"
         self.allow_blank = allow_blank
         self.regex = re.compile(regex) if isinstance(regex, str_types) else regex
+        if self.regex is not None:
+            deprecated('Deprecated, use Regexp or RegexpRaw instead')
         self.min_length = min_length
         self.max_length = max_length
         self._raw_regex = self.regex.pattern if self.regex else None
@@ -826,7 +873,7 @@ class List(Trafaret):
     __slots__ = ['trafaret', 'min_length', 'max_length']
 
     def __init__(self, trafaret, min_length=0, max_length=None):
-        self.trafaret = self._trafaret(trafaret)
+        self.trafaret = ensure_trafaret(trafaret)
         self.min_length = min_length
         self.max_length = max_length
 
@@ -878,7 +925,7 @@ class Tuple(Trafaret):
     __slots__ = ['trafarets', 'length']
 
     def __init__(self, *args):
-        self.trafarets = list(map(self._trafaret, args))
+        self.trafarets = list(map(ensure_trafaret, args))
         self.length = len(self.trafarets)
 
     def check_and_return(self, value):
@@ -952,7 +999,7 @@ class Key(object):
         yield self.name
 
     def set_trafaret(self, trafaret):
-        self.trafaret = Trafaret._trafaret(trafaret)
+        self.trafaret = ensure_trafaret(trafaret)
         return self
 
     def __rshift__(self, name):
@@ -1021,14 +1068,22 @@ class Dict(Trafaret):
             keys = {}
         if any(not callable(key) for key in args):
             raise RuntimeError('Keys in single attributes must be callables')
-        self.extras = []
-        self.allow_any = False
-        self.ignore = []
-        self.ignore_any = False
+
+        # extra
+        allow_extra = trafarets.pop('allow_extra', [])
+        allow_extra_trafaret = trafarets.pop('allow_extra_trafaret', Any)
+        self.extras_trafaret = ensure_trafaret(allow_extra_trafaret)
+        self.allow_any = '*' in allow_extra
+        self.extras = [name for name in allow_extra if name != '*']
+        # ignore
+        ignore_extra = trafarets.pop('ignore_extra', [])
+        self.ignore_any = '*' in ignore_extra
+        self.ignore = [name for name in ignore_extra if name != '*']
+
         self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = Key(key) if isinstance(key, str_types) else key
-            key_.set_trafaret(self._trafaret(trafaret))
+            key_.set_trafaret(ensure_trafaret(trafaret))
             self.keys.append(key_)
 
     def allow_extra(self, *names, **kw):
@@ -1038,7 +1093,7 @@ class Dict(Trafaret):
                 self.allow_any = True
             else:
                 self.extras.append(name)
-        self.extras_trafaret = self._trafaret(trafaret)
+        self.extras_trafaret = ensure_trafaret(trafaret)
         return self
 
     def ignore_extra(self, *names):
@@ -1070,10 +1125,7 @@ class Dict(Trafaret):
                         collect[k] = v
                     touched_names.extend(names)
             else:
-                warnings.warn(
-                    'Old pop based Keys subclasses deprecated. See README',
-                    DeprecationWarning
-                )
+                deprecated('Old pop based Keys subclasses deprecated. See README')
                 value_keys = set(value.keys())
                 for k, v in key.pop(value):
                     if isinstance(v, DataError):
@@ -1190,8 +1242,8 @@ class Mapping(Trafaret):
     __slots__ = ['key', 'value']
 
     def __init__(self, key, value):
-        self.key = self._trafaret(key)
-        self.value = self._trafaret(value)
+        self.key = ensure_trafaret(key)
+        self.value = ensure_trafaret(value)
 
     def check_and_return(self, mapping):
         if not isinstance(mapping, dict):
@@ -1329,7 +1381,7 @@ class Forward(Trafaret):
     def provide(self, trafaret):
         if self.trafaret:
             raise RuntimeError("trafaret for Forward is already specified")
-        self.trafaret = self._trafaret(trafaret)
+        self.trafaret = ensure_trafaret(trafaret)
 
     def check_and_return(self, value):
         if self.trafaret is None:
