@@ -76,7 +76,7 @@ Yes, you can write trafarets that simple.
 
 
 .. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
-    :target: https://pypi.python.org/pypi/trafaret
+    :target: https://circleci.com/gh/Deepwalker/trafaret
     :alt: Build status
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/trafaret.svg?style=flat-square
