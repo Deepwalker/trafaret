@@ -14,6 +14,7 @@ class ConstructMeta(type):
 class C(object):
     '''
     Start object. It has `|` and `&` operations defined that will use construct to it args
+
     Use it like `C & int & check_less_500`
     '''
     __metaclass__ = ConstructMeta
@@ -22,6 +23,7 @@ class C(object):
 def construct(arg):
     '''
     Shortcut syntax to define trafarets.
+
     - int, str, float and bool will return t.Int, t.String, t.Float and t.Bool
     - one element list will return t.List
     - tuple or list with several args will return t.Tuple
