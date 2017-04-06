@@ -605,6 +605,9 @@ class TestURLTrafaret(unittest.TestCase):
         res = str(t.URL().check('http://пример.рф/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor')
 
+        res = t.URL().check('http://example_underscore.net/resource/?param=value#anchor')
+        self.assertEqual(res, 'http://example_underscore.net/resource/?param=value#anchor')
+
         res = str(t.URL().check('http://user@example.net/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://user@example.net/resource/?param=value#anchor')
 
