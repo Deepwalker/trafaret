@@ -13,6 +13,9 @@ import types
 from .lib import py3, py3metafix
 
 
+__VERSION__ = (0, 9, 0)
+
+
 # Python3 support
 if py3:
     import urllib.parse as urlparse

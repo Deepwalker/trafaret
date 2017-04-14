@@ -7,10 +7,12 @@ import os.path
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+version = [line for line in read('trafaret/__init__.py').split('\n') if '__VERSION__' in line][0]
+exec(version)
 
 setupconf = dict(
     name='trafaret',
-    version='0.9.0',
+    version='.'.join(str(ver) for ver in __VERSION__),
     license='BSD',
     url='https://github.com/Deepwalker/trafaret/',
     author='Barbuza, Deepwalker, nimnull',
