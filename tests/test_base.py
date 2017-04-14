@@ -251,7 +251,8 @@ class TestEmailTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value is not a valid email address')
         res = extract_error(t.Email(), 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
         self.assertEqual(res, True)
-
+        res = extract_error(t.Email(), 123)
+        self.assertEqual(res, 'value is not a string')
 
 
 class TestEnumTrafaret(unittest.TestCase):

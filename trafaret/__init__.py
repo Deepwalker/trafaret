@@ -732,10 +732,13 @@ class Email(String):
         try:
             return super(Email, self).check_and_return(value)
         except DataError:
-            if value and isinstance(value, bytes):
-                decoded = value.decode('utf-8')
+            if value and isinstance(value, str_types):
+                if isinstance(value, bytes):
+                    decoded = value.decode('utf-8')
+                else:
+                    decoded = value
             else:
-                decoded = value
+                raise
             # Trivial case failed. Try for possible IDN domain-part
             if decoded and '@' in decoded:
                 parts = decoded.split('@')
