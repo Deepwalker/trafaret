@@ -75,6 +75,14 @@ Rename dict keys:
 Yes, you can write trafarets that simple.
 
 
+Related projects
+----------------
+
+`Trafaret Config <https://github.com/tailhook/trafaret-config>`_
+
+`Trafaret Validator <https://github.com/Lex0ne/trafaret_validator>`_
+
+
 .. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
     :target: https://circleci.com/gh/Deepwalker/trafaret
     :alt: Build status
