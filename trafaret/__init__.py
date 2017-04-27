@@ -1462,9 +1462,11 @@ def guard(trafaret=None, **kwargs):
         def decor(*args, **kwargs):
             fnargs = argspec.args
             if fnargs[0] in ['self', 'cls']:
+                obj = args[0]
                 fnargs = fnargs[1:]
                 checkargs = args[1:]
             else:
+                obj = None
                 checkargs = args
 
             try:
@@ -1478,7 +1480,7 @@ def guard(trafaret=None, **kwargs):
                 converted = trafaret.check(call_args)
             except DataError as err:
                 raise GuardError(error=err.error)
-            return fn(**converted)
+            return fn(obj, **converted) if obj else fn(**converted)
         decor.__doc__ = "guarded with %r\n\n" % trafaret + (decor.__doc__ or "")
         return decor
     return wrapper
