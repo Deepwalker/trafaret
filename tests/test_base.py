@@ -543,7 +543,6 @@ class TestRegexpTrafaret(unittest.TestCase):
         self.assertEqual(trafaret('cat1212').groups()[0], 'cat')
 
 
-
 class TestTrafaretMeta(unittest.TestCase):
     def test_meta(self):
         res = (t.Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)

@@ -613,7 +613,7 @@ class RegexpRaw(Trafaret):
         self.regexp = re.compile(regexp) if isinstance(regexp, str_types) else regexp
         self.raw_regexp = self.regexp.pattern if self.regexp else None
 
-    def check(self, value, convert=False):
+    def check_and_return(self, value):
         if not isinstance(value, str_types):
             self._failure("value is not a string", value=value)
         match = self.regexp.match(value)
@@ -626,8 +626,8 @@ class RegexpRaw(Trafaret):
 
 
 class Regexp(RegexpRaw):
-    def check(self, value, convert=False):
-        return super(Regexp, self).check(value).group()
+    def check_and_return(self, value):
+        return super(Regexp, self).check_and_return(value).group()
 
 
 class String(Trafaret):
