@@ -1474,7 +1474,7 @@ def guard(trafaret=None, **kwargs):
                     itertools.chain(zip(fnargs, checkargs), kwargs.items())
                 )
                 for name, default in zip(reversed(fnargs),
-                                         argspec.defaults or ()):
+                                         reversed(argspec.defaults or ())):
                     if name not in call_args:
                         call_args[name] = default
                 converted = trafaret.check(call_args)
