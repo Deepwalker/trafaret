@@ -8,12 +8,11 @@ import itertools
 import numbers
 import warnings
 from collections import Mapping as AbcMapping
-import pkg_resources
 import types
 from .lib import py3, py3metafix
 
 
-__VERSION__ = (0, 9, 1)
+__VERSION__ = (0, 10, 0)
 
 
 # Python3 support
@@ -53,7 +52,6 @@ __all__ = (
     "Tuple", "Atom", "Email", "URL",
 )
 
-ENTRY_POINT = 'trafaret'
 _empty = object()
 MAX_EMAIL_LEN = 254
 
@@ -1542,17 +1540,3 @@ class MissingContribModuleStub(types.ModuleType):
     @property
     def __name__(self):
         return self.entrypoint.name.lstrip('.')
-
-
-def load_contrib():
-    for entrypoint in pkg_resources.iter_entry_points(ENTRY_POINT):
-        try:
-            trafaret_class = entrypoint.resolve()
-
-        except (pkg_resources.DistributionNotFound, ImportError) as err:
-            trafaret_class = MissingContribModuleStub(entrypoint, err)
-
-        setattr(sys.modules[__name__], trafaret_class.__name__,
-                    trafaret_class)
-
-load_contrib()
