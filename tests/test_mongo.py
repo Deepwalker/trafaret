@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 import unittest
 import trafaret as t
-from trafaret.contrib.object_id import ObjectId
+from trafaret.contrib.object_id import ObjectId, MongoId
 from trafaret import extract_error
 
 class TestMongoIdTrafaret(unittest.TestCase):
 
     def test_mongo_id(self):
-        c = t.MongoId()
+        c = MongoId()
         self.assertIsInstance(repr(c), str)
         self.assertEqual(c.check("5583f69d690b2d70a4afdfae"),
                          ObjectId('5583f69d690b2d70a4afdfae'))
@@ -19,7 +19,7 @@ class TestMongoIdTrafaret(unittest.TestCase):
         self.assertEqual(res, "blank value is not allowed")
 
     def test_mongo_id_blank(self):
-        c = t.MongoId(allow_blank=True)
+        c = MongoId(allow_blank=True)
         self.assertEqual(c.check("5583f69d690b2d70a4afdfae"),
                          ObjectId('5583f69d690b2d70a4afdfae'))
         res = extract_error(c, 'just_id')

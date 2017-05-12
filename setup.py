@@ -26,12 +26,6 @@ setupconf = dict(
         objectid=['pymongo>=2.4.1'],
         rfc3339=['python-dateutil>=1.5']
     ),
-    entry_points=dict(
-        trafaret=[
-            '.MongoId = trafaret.contrib.object_id:MongoId [objectid]',
-            '.DateTime = trafaret.contrib.rfc_3339:DateTime [rfc3339]'
-        ]
-    ),
     classifiers=[
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
