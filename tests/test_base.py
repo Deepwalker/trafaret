@@ -618,6 +618,88 @@ class TestURLTrafaret(unittest.TestCase):
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
 
+class TestIPTrafaret(unittest.TestCase):
+    def setUp(self):
+        self.valid_ips_v4 = (
+            '127.0.0.1',
+            '8.8.8.8',
+            '192.168.1.1',
+        )
+
+        self.invalid_ips_v4 = (
+            '32.64.128.256',
+            '2001:0db8:0000:0042:0000:8a2e:0370:7334',
+            '192.168.1.1 ',
+        )
+
+        self.valid_ips_v6 = (
+            '2001:0db8:0000:0042:0000:8a2e:0370:7334',
+            '2001:0Db8:0000:0042:0000:8A2e:0370:7334',
+            '2001:cdba:0:0:0:0:3257:9652',
+            '2001:cdba::3257:9652',
+            'fe80::',
+            '::',
+            '::1',
+            '2001:db8::',
+            'ffaa::',
+            '::ffff:255.255.255.0',
+            '2001:db8:3:4::192.168.1.1',
+            'fe80::1:2%en0',
+        )
+
+        self.invalid_ips_v6 = (
+            '2001:0db8:z000:0042:0000:8a2e:0370:7334',
+            '2001:cdba:0:0:::0:0:3257:9652',
+            '2001:cdba::3257:::9652',
+            '127.0.0.1',
+            ':ffaa:'
+        )
+
+        self.invalid_ips_generic = (
+            '2001:cdba::3257:::9652',
+            '32.64.128.256',
+        )
+
+    def test_ip(self):
+        ip = t.IP(version=4)
+
+        for data in self.valid_ips_v4:
+            result = ip(data)
+
+            self.assertEqual(result, data)
+
+        for data in self.invalid_ips_v4:
+            with self.assertRaises(t.DataError):
+                ip(data)
+
+        ip = t.IP(version=6)
+
+        for data in self.valid_ips_v6:
+            result = ip(data)
+
+            self.assertEqual(result, data)
+
+        for data in self.invalid_ips_v6:
+            with self.assertRaises(t.DataError):
+                ip(data)
+
+        ip = t.IP()
+
+        for data in self.valid_ips_v4:
+            result = ip(data)
+
+            self.assertEqual(result, data)
+
+        for data in self.valid_ips_v6:
+            result = ip(data)
+
+            self.assertEqual(result, data)
+
+        for data in self.invalid_ips_generic:
+            with self.assertRaises(t.DataError):
+                ip(data)
+
+
 class TestKeysSubset(unittest.TestCase):
     def test_keys_subset(self):
         cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal')}
