@@ -809,6 +809,76 @@ class URL(String):
         return '<URL>'
 
 
+class IP(Trafaret):
+    """
+    >>> IP().check('127.0.0.1')
+    '127.0.0.1'
+    >>> IP().check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
+    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
+    >>> IP(version=4).check('127.0.0.1')
+    '127.0.0.1'
+    >>> IP(version=6).check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
+    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
+    """
+
+    regex_ip_v4 = re.compile(
+        r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',
+    )
+
+    regex_ip_v6 = re.compile(
+        r'^('
+        r'(::)|'
+        r'(::[0-9a-f]{1,4})|'
+        r'([0-9a-f]{1,4}:){7,7}[0-9a-f]{1,4}|'
+        r'([0-9a-f]{1,4}:){1,7}:|'
+        r'([0-9a-f]{1,4}:){1,6}:[0-9a-f]{1,4}|'
+        r'([0-9a-f]{1,4}:){1,5}(:[0-9a-f]{1,4}){1,2}|'
+        r'([0-9a-f]{1,4}:){1,4}(:[0-9a-f]{1,4}){1,3}|'
+        r'([0-9a-f]{1,4}:){1,3}(:[0-9a-f]{1,4}){1,4}|'
+        r'([0-9a-f]{1,4}:){1,2}(:[0-9a-f]{1,4}){1,5}|'
+        r'[0-9a-f]{1,4}:((:[0-9a-f]{1,4}){1,6})|'
+        r':((:[0-9a-f]{1,4}){1,7}:)|'
+        r'fe80:(:[0-9a-f]{0,4}){0,4}%[0-9a-z]{1,}|'
+        r'::(ffff(:0{1,4}){0,1}:){0,1}((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])|'  # noqa
+        r'([0-9a-f]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])'  # noqa
+        r')$',
+        re.IGNORECASE,
+    )
+
+    def __init__(self, version=None):
+        if version not in (None, 4, 6):
+            raise AttributeError('version should be None, 4 or 6')
+
+        self.version = version
+
+    def _match_ip_regex(self, pattern, value):
+        match = pattern.match(value)
+
+        if not match:
+            self._failure('value is not IP address', value=value)
+
+        return match.group()
+
+    def check_and_return(self, value):
+        if not isinstance(value, str_types):
+            self._failure('value is not a string', value=value)
+
+        if self.version is None:
+            try:
+                match = self._match_ip_regex(self.regex_ip_v4, value)
+            except DataError:
+                match = self._match_ip_regex(self.regex_ip_v6, value)
+        elif self.version == 4:
+            match = self._match_ip_regex(self.regex_ip_v4, value)
+        elif self.version == 6:
+            match = self._match_ip_regex(self.regex_ip_v6, value)
+
+        return match
+
+    def __repr__(self):
+        return '<IP>'
+
+
 class SquareBracketsMeta(TrafaretMeta):
     """
     Allows usage of square brackets for List initialization
