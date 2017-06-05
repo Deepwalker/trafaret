@@ -809,23 +809,36 @@ class URL(String):
         return '<URL>'
 
 
-class IP(Trafaret):
+class IPv4(Regexp):
     """
-    >>> IP().check('127.0.0.1')
+    >>> IPv4().check('127.0.0.1')
     '127.0.0.1'
-    >>> IP().check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
-    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
-    >>> IP(version=4).check('127.0.0.1')
-    '127.0.0.1'
-    >>> IP(version=6).check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
-    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
     """
 
-    regex_ip_v4 = re.compile(
-        r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',
+    regex = re.compile(
+        r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',  # noqa
     )
 
-    regex_ip_v6 = re.compile(
+    def __init__(self):
+        super(IPv4, self).__init__(self.regex)
+
+    def check_and_return(self, value):
+        try:
+            return super(IPv4, self).check_and_return(value)
+        except DataError:
+            self._failure('value is not IPv4 address')
+
+    def __repr__(self):
+        return '<IPv4>'
+
+
+class IPv6(Regexp):
+    """
+    >>> IPv6().check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
+    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
+    """
+
+    regex = re.compile(
         r'^('
         r'(::)|'
         r'(::[0-9a-f]{1,4})|'
@@ -845,38 +858,17 @@ class IP(Trafaret):
         re.IGNORECASE,
     )
 
-    def __init__(self, version=None):
-        if version not in (None, 4, 6):
-            raise AttributeError('version should be None, 4 or 6')
-
-        self.version = version
-
-    def _match_ip_regex(self, pattern, value):
-        match = pattern.match(value)
-
-        if not match:
-            self._failure('value is not IP address', value=value)
-
-        return match.group()
+    def __init__(self):
+        super(IPv6, self).__init__(self.regex)
 
     def check_and_return(self, value):
-        if not isinstance(value, str_types):
-            self._failure('value is not a string', value=value)
-
-        if self.version is None:
-            try:
-                match = self._match_ip_regex(self.regex_ip_v4, value)
-            except DataError:
-                match = self._match_ip_regex(self.regex_ip_v6, value)
-        elif self.version == 4:
-            match = self._match_ip_regex(self.regex_ip_v4, value)
-        elif self.version == 6:
-            match = self._match_ip_regex(self.regex_ip_v6, value)
-
-        return match
+        try:
+            return super(IPv6, self).check_and_return(value)
+        except DataError:
+            self._failure('value is not IPv6 address')
 
     def __repr__(self):
-        return '<IP>'
+        return '<IPv6>'
 
 
 class SquareBracketsMeta(TrafaretMeta):
