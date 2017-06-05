@@ -618,21 +618,36 @@ class TestURLTrafaret(unittest.TestCase):
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
 
-class TestIPTrafaret(unittest.TestCase):
+class TestIPv4Trafaret(unittest.TestCase):
     def setUp(self):
-        self.valid_ips_v4 = (
+        self.valid_ips = (
             '127.0.0.1',
             '8.8.8.8',
             '192.168.1.1',
         )
 
-        self.invalid_ips_v4 = (
+        self.invalid_ips = (
             '32.64.128.256',
             '2001:0db8:0000:0042:0000:8a2e:0370:7334',
             '192.168.1.1 ',
         )
 
-        self.valid_ips_v6 = (
+    def test_ipv4(self):
+        ip = t.IPv4()
+
+        for data in self.valid_ips:
+            result = ip(data)
+
+            self.assertEqual(result, data)
+
+        for data in self.invalid_ips:
+            with self.assertRaises(t.DataError):
+                ip(data)
+
+
+class TestIPv6Trafaret(unittest.TestCase):
+    def setUp(self):
+        self.valid_ips = (
             '2001:0db8:0000:0042:0000:8a2e:0370:7334',
             '2001:0Db8:0000:0042:0000:8A2e:0370:7334',
             '2001:cdba:0:0:0:0:3257:9652',
@@ -647,7 +662,7 @@ class TestIPTrafaret(unittest.TestCase):
             'fe80::1:2%en0',
         )
 
-        self.invalid_ips_v6 = (
+        self.invalid_ips = (
             '2001:0db8:z000:0042:0000:8a2e:0370:7334',
             '2001:cdba:0:0:::0:0:3257:9652',
             '2001:cdba::3257:::9652',
@@ -655,47 +670,15 @@ class TestIPTrafaret(unittest.TestCase):
             ':ffaa:'
         )
 
-        self.invalid_ips_generic = (
-            '2001:cdba::3257:::9652',
-            '32.64.128.256',
-        )
+    def test_ipv6(self):
+        ip = t.IPv6()
 
-    def test_ip(self):
-        ip = t.IP(version=4)
-
-        for data in self.valid_ips_v4:
+        for data in self.valid_ips:
             result = ip(data)
 
             self.assertEqual(result, data)
 
-        for data in self.invalid_ips_v4:
-            with self.assertRaises(t.DataError):
-                ip(data)
-
-        ip = t.IP(version=6)
-
-        for data in self.valid_ips_v6:
-            result = ip(data)
-
-            self.assertEqual(result, data)
-
-        for data in self.invalid_ips_v6:
-            with self.assertRaises(t.DataError):
-                ip(data)
-
-        ip = t.IP()
-
-        for data in self.valid_ips_v4:
-            result = ip(data)
-
-            self.assertEqual(result, data)
-
-        for data in self.valid_ips_v6:
-            result = ip(data)
-
-            self.assertEqual(result, data)
-
-        for data in self.invalid_ips_generic:
+        for data in self.invalid_ips:
             with self.assertRaises(t.DataError):
                 ip(data)
 
