@@ -1516,7 +1516,10 @@ def guard(trafaret=None, **kwargs):
         trafaret = Dict(**kwargs)
 
     def wrapper(fn):
-        argspec = inspect.getargspec(fn)
+        if py3:
+            argspec = inspect.getfullargspec(fn)
+        else:
+            argspec = inspect.getargspec(fn)
 
         @functools.wraps(fn)
         def decor(*args, **kwargs):
