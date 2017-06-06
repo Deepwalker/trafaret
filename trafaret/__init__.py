@@ -12,7 +12,7 @@ import types
 from .lib import py3, py3metafix
 
 
-__VERSION__ = (0, 10, 0)
+__VERSION__ = (0, 10, 1)
 
 
 # Python3 support
