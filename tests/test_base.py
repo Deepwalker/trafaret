@@ -729,16 +729,6 @@ class TestDataError(unittest.TestCase):
             {0: "Wait for good value, got 'BAD ONE'"}
         )
 
-    def test_dataerror_as_boolean(self):
-        error = t.DataError('error')
-        self.assertEqual(bool(error), False)
-        self.assertEqual(error or 2, 2)
-
-    def test_dataerror_and_catch(self):
-        trafaret = t.Int()
-        val = t.catch(trafaret, 'a') or 100
-        self.assertEqual(val, 100)
-
 
 # res = @guard(a=String, b=Int, c=String)
 #     def fn(a, b, c="default"):

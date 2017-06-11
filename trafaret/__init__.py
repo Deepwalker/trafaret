@@ -12,7 +12,7 @@ import types
 from .lib import py3, py3metafix
 
 
-__VERSION__ = (0, 10, 1)
+__VERSION__ = (0, 10, 2)
 
 
 # Python3 support
@@ -75,12 +75,6 @@ class DataError(ValueError):
 
     def __repr__(self):
         return 'DataError(%s)' % str(self)
-
-    def __bool__(self):
-        return False
-
-    def __nonzero__(self):
-        return False
 
     def as_dict(self, value=False):
         def as_dict(dataerror):
