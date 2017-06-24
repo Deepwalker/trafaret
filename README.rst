@@ -3,7 +3,7 @@ Trafaret
 
 -----
 
-|circleci_build| |pypi_version| |pypi_license|
+|circleci_build| |gitter_chat| |pypi_version| |pypi_license|
 
 -----
 
@@ -86,6 +86,10 @@ Related projects
 .. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
     :target: https://circleci.com/gh/Deepwalker/trafaret
     :alt: Build status
+
+.. |gitter_chat| image:: https://badges.gitter.im/Deepwalker/trafaret.png
+    :target: https://gitter.im/Deepwalker/trafaret
+    :alt: Gitter
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/trafaret.svg?style=flat-square
     :target: https://pypi.python.org/pypi/trafaret
