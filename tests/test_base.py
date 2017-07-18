@@ -469,6 +469,13 @@ class TestAndTest(unittest.TestCase):
         indeed_int = t.Atom('123') & int
         self.assertEqual(indeed_int('123'), 123) # fixed 0.8.0 error
 
+    def test_raise_error(self):
+        other = lambda v: DataError('other error')
+        fail_other = t.Atom('a') & other
+        res = extract_error(fail_other, 'a')
+        self.assertEqual(res, 'other error')
+
+
 
 class TestStrBoolTrafaret(unittest.TestCase):
 

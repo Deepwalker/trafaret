@@ -12,7 +12,7 @@ import types
 from .lib import py3, py3metafix
 
 
-__VERSION__ = (0, 10, 2)
+__VERSION__ = (0, 10, 3)
 
 
 # Python3 support
@@ -333,7 +333,7 @@ class And(Trafaret):
             raise DataError
         res = self.other(res)
         if isinstance(res, DataError):
-            raise DataError
+            raise res
         return res
 
     # support old code for some deprecation period
