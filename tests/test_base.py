@@ -2,7 +2,7 @@
 import unittest
 import trafaret as t
 from collections import Mapping as AbcMapping
-from trafaret import extract_error, ignore, DataError
+from trafaret import catch_error, extract_error, ignore, DataError
 from trafaret.extras import KeysSubset
 
 
@@ -548,6 +548,11 @@ class TestRegexpTrafaret(unittest.TestCase):
     def test_regexp_raw(self):
         trafaret = t.RegexpRaw('.*(cat).*')
         self.assertEqual(trafaret('cat1212').groups()[0], 'cat')
+
+    def test_regexp_raw_error(self):
+        trafaret = t.RegexpRaw('cat')
+        res = catch_error(trafaret, 'dog')
+        self.assertEqual(res.as_dict(value=True), 'does not match pattern cat, got \'dog\'')
 
 
 class TestTrafaretMeta(unittest.TestCase):

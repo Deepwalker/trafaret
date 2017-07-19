@@ -610,7 +610,7 @@ class RegexpRaw(Trafaret):
             self._failure("value is not a string", value=value)
         match = self.regexp.match(value)
         if not match:
-            self._failure('does not match pattern %s' % self.raw_regexp)
+            self._failure('does not match pattern %s' % self.raw_regexp, value=value)
         return match
 
     def __repr__(self):
