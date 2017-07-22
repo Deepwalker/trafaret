@@ -15,9 +15,9 @@ Sample usage::
 Some checkers have default converter, but when you use ``>>`` or ``.append``,
 you disable default converter with your own.
 
-This does not mean that ``Int`` will not
-convert numbers to int, this mean that some checkers, like ``String`` with regular expression,
-have special converters applied to  that can be overriden by your own.
+This does not mean that ``Int`` will not convert numbers to integers,
+this mean that some checkers, like ``String`` with regular expression,
+have special converters applied them and can be overriden.
 
 Converters can be chained. You can raise ``DataError`` in converters.
 
@@ -29,27 +29,29 @@ Trafaret has very handy features, read below some samples.
 Regexp
 ......
 
-``RegexpRow`` can work with regular expressions, and this givs you real power::
+``RegexpRow`` can work with regular expressions::
 
     >>> c = t.RegexpRow(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
 
-Some way you can use all re.Match power to extract from strings dicts and so on.
+You can use all ``re.match`` power to extract from strings dicts and
+other higher level datastructures.
 
 
 Dict and Key
 ............
 
-``Dict`` get dict with keys and checkers, like  ``{'a': t.Int}``. But instead of string key
-you can use ``Key`` class. And ``Key`` instance can rename given key name to something
-else::
+``Dict`` take as argument dictionaries with string keys and checkers
+as value, like ``{'a': t.Int}``. But instead of a string key you can
+use the ``Key`` class. A ``Key`` instance can rename the given key
+name to something else::
 
     >>> c = t.Dict({t.Key('uNJ') >> 'user_name': t.String})
     >>> c.check({'uNJ': 'Adam'})
     {'user_name': 'Adam'}
 
-And we can do more with right converter::
+And we can do more with the right converter::
 
     >>> from trafaret.utils import fold
     >>> c = t.Dict({t.Key('uNJ') >> 'user__name': t.String}) >> fold
@@ -65,38 +67,40 @@ We have some example of enhanced ``Key`` in extras::
     {'pwd': 'a', 'key1': 'b'}
 
 DataError
------------------------
+---------
 
-Exception class that used in library. Exception hold errors in ``error`` attribute.
-For simple checkers it will be just a string. For nested structures it will be `dict`
-instance.
+Exception class that is used in the library. Exception hold errors in
+``error`` attribute.  For simple checkers it will be just a
+string. For nested structures it will be `dict` instance.
 
 Trafaret
 --------
 
-Base class for checkers. Use it to make new checkers.
-In derrived classes you need to implement `_check` or `_check_val`
-methods. `_check_val` must return value, `_check` must return `None` on success.
+Base class for checkers. Use it to create new checkers.  In derrived
+classes you need to implement `_check` or `_check_val`
+methods. `_check_val` must return a value, `_check` must return `None`
+on success.
 
-You can implement `converter` method if you want to convert value somehow, but
-want to make free for developer to apply his own converters to raw data. This
-used to return strings instead of `Match` object in `String` trafaret.
+You can implement `converter` method if you want to convert value
+somehow, that said you prolly want to make it possible for the
+developer to apply their own converters to raw data. This used to
+return strings instead of `re.Match` object in `String` trafaret.
 
 Subclassing
 -----------
 
-For your own trafaret creation you need to subclass ``Trafaret`` class and
-implement ``check_value`` or ``check_and_return`` methods. ``check_value`` can return nothing
-on success, ``check_and_return`` must return value. In case of failure you need to raise ``DataError``.
-You can use ``self._failure`` shortcut function to do this.
-Check library code for samples.
+For your own trafaret creation you need to subclass ``Trafaret`` class
+and implement ``check_value`` or ``check_and_return``
+methods. ``check_value`` can return nothing on success,
+``check_and_return`` must return value. In case of failure you need to
+raise ``DataError``.  You can use ``self._failure`` shortcut function
+to do this.  Check library code for samples.
 
 Type
 ----
 
-Checks that data is instance of given class.
-Just instantitate it with any class, like int, float, str.
-Sample::
+Checks that data is instance of given class.  Just instantitate it
+with any class, like `int`, `float`, `str`.  For instancce::
 
     >>> t.Type(int).check(4)
     4
@@ -109,8 +113,8 @@ Will match any element.
 Or
 --
 
-Get other converters as args.
-This samples are equivalent::
+`Or` takes other converters as arguments. The input is considered
+valid if one of the converters succeed::
 
     >>> Or(t.Int, t.Null).check(None)
     None
@@ -124,21 +128,24 @@ Value must be `None`.
 
 Bool
 ----
-Check if value is boolean::
+
+Check if value is a boolean::
 
     >>> t.Bool().check(True)
     True
 
 Float
 -----
-Check if value is float or can be converted to.
-Supports ``lte``, ``gte``, ``lt``, ``gt`` parameters::
+
+Check if value is a float or can be converted to a float. Supports
+``lte``, ``gte``, ``lt``, ``gt`` parameters::
 
     >>> t.Float(gt=3.5).check(4)
     4
 
 Int
 ---
+
 Similar to ``Float``, but checking for int::
 
     >>> t.Int(gt=3).check(4)
@@ -146,27 +153,31 @@ Similar to ``Float``, but checking for int::
 
 Atom
 ----
+
 Value must be exactly equal to Atom first arg::
 
     >>> t.Atom('this_key_must_be_this').check('this_key_must_be_this')
     'this_key_must_be_this'
 
-This may be useful in ``Dict`` in pair with ``Or`` statements.
+This may be useful in ``Dict`` with ``Or`` statements to create
+enumerations.
 
 
 String, Email, URL
 ------------------
 
-Basicaly just check that arg is string.
+Basicaly just check that argument is a string.
+
 Argument ``allow_blank`` indicates if string can be blank ot not.
-If you will provide ``regex`` param - will return ``re.Match`` object.
-Default converter will return ``match.group()`` result. You will get ``re.Match`` object
-in converter.
 
-``Email`` and ``URL`` just provide regular expressions and a bit of logic for IDNA domains.
-Default converters return email and domain, but you will get ``re.Match`` in converter.
+If you provide a ``regex`` parameter - it will return ``re`` match
+object.  Default converter will return ``match.group()`` result.
 
-So, some examples to make things clear::
+``Email`` and ``URL`` just provide regular expressions and a bit of
+logic for IDNA domains.  Default converters return email and domain,
+but you will get ``re`` match object in converter.
+
+Here is some examples to make things clear::
 
     >>> t.String().check('werwerwer')
     'werwerwer'
@@ -185,6 +196,7 @@ List
 ----
 
 Just List of elements of one type. In converter you will get list of converted elements.
+
 Sample::
 
     >>> t.List(t.Int).check(range(100))
@@ -195,39 +207,52 @@ Sample::
 Dict
 ----
 
-Dict include named params. You can use for keys plain strings and ``Key`` instances.
-In case you provide just string keys, they will converted to ``Key`` instances. Actual
-checking proceeded in ``Key`` instance.
+`Dict` include named parameters. You can use for keys plain strings
+and ``Key`` instances.  In case you provide just string keys, they
+will converted to ``Key`` instances. Actual checking proceeded with
+``Key`` instance.
 
 Methods:
 
-``allow_extra(*names)`` : where ``names`` can be key names or ``*`` to allow any additional keys.
+- ``allow_extra(*names)`` : where ``names`` can be key names or ``*``
+  to allow any additional keys.
 
-``make_optional(*names)`` : where ``names`` can be key names or ``*`` to make all options optional.
+- ``make_optional(*names)`` : where ``names`` can be key names or
+  ``*`` to make all options optional.
 
-``ignore_extra(*names)``: where ``names`` are the names of the keys or ``*`` to exclude listed key names or all unspecified ones from the validation process and final result
+- ``ignore_extra(*names)``: where ``names`` are the names of the keys
+  or ``*`` to exclude listed key names or all unspecified ones from
+  the validation process and final result
 
-``merge(Dict|dict|[t.Key...])`` : where argument can be other ``Dict``, ``dict`` like provided to ``Dict``, or list of ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s, like ``dict1 + dict2``.
+- ``merge(Dict|dict|[t.Key...])`` : where argument can be other
+  ``Dict``, ``dict`` like provided to ``Dict``, or list of
+  ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s,
+  like ``dict1 + dict2``.
 
 Key
 ...
 
 Special class to create dict keys. Parameters are:
 
-    * name - key name
-    * default - default if key is not present
-    * optional - if True allow to not provide arg
-    * to_name - instead of key name will be returned this key
+- `name` - key name
+- `default` - default if key is not present
+- `optional` - if `True` the key is optional
+- `to_name` - allows to rename the key
 
 You can provide ``to_name`` with ``>>`` operation::
+  
     Key('javaStyleData') >> 'plain_cool_data'
 
 It provides method ``__call__(self, data)`` that extract key value
 from data through mapping ``get`` method.
-Key ``__call__`` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
 
-You can redefine ``get_data(self, data, default)`` method in subclassed ``Key`` if you want to use something other
-then ``.get(...)`` method. Like this for the aiohttp MultiDict::
+Key ``__call__`` method yields ``(key name, Maybe(DataError), [touched
+keys])`` triples.
+
+You can redefine ``get_data(self, data, default)`` method in
+subclassed ``Key`` if you want to use something other then
+``.get(...)`` method. Like this for the `aiohttp
+<http://aiohttp.readthedocs.io/>`_'s `MultiDict` class::
 
     class MDKey(t.Key):
         def get_data(data, default):
@@ -235,7 +260,7 @@ then ``.get(...)`` method. Like this for the aiohttp MultiDict::
 
     t.Dict({MDKey('users'): t.List(t.String)})
 
-Moreover, instead of ``Key`` you can use any callable, say function::
+Moreover, instead of ``Key`` you can use any callable, say a function::
 
     def simple_key(value):
         yield 'simple', 'simple data', []
@@ -246,23 +271,25 @@ Moreover, instead of ``Key`` you can use any callable, say function::
 KeysSubset
 ..........
 
-Experimental feature, not stable API. Sometimes you need to make something with part of dict keys.
-So you can::
+Experimental feature, not stable API. Sometimes you need to make
+something with part of dict keys.  So you can::
 
     >>> join = (lambda d: {'name': ' '.join(d.values())})
     >>> Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
     {'name': 'Smith Adam'}
 
-As you can see you need to return dict from checker.
+As you can see you need to return a `dict` from checker.
 
 Error raise
 ...........
 
-In ``Dict`` you can just return error from checkers or converters, there is need not to raise them.
+In ``Dict`` you can just return error from checkers or converters,
+there is need not to raise them.
 
 
 Mapping
 -------
+
 Check both keys and values::
 
     >>> trafaret = Mapping(String, Int)
@@ -274,16 +301,19 @@ Check both keys and values::
 Enum
 ----
 
-This checker check that value one from provided. Like::
-    >>> Enum(1, 2, 'error').check(2)
-    2
+Example::
+
+  >>> Enum(1, 2, 'error').check(2)
+  2
 
 Callable
 --------
+
 Check if data is callable.
 
 Call
 ----
+
 Take a function that will be called in ``check``. Function must return value or ``DataError``.
 
 Forward
@@ -306,6 +336,6 @@ Decorator for function::
     ...     return (a, b, c)
 
 GuardError
-....................
+..........
 
-Derived from DataError.
+Derived from ``DataError``.
