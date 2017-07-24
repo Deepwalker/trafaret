@@ -474,8 +474,10 @@ class NumberMeta(TrafaretMeta):
 
 
 @py3metafix
-class Float(Trafaret):
+class FloatRaw(Trafaret):
     """
+    Tests that value is a float or a string that is convertable to float.
+
     >>> Float()
     <Float>
     >>> Float(gte=1)
@@ -524,20 +526,24 @@ class Float(Trafaret):
                 value=value
             )
 
-    def check_and_return(self, val):
-        if not isinstance(val, self.value_type):
-            value = self._converter(val)
+    def _check(self, data):
+        if not isinstance(data, self.value_type):
+            value = self._converter(data)
         else:
-            value = val
+            value = data
         if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte, value=val)
+            self._failure("value is less than %s" % self.gte, value=data)
         if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte, value=val)
+            self._failure("value is greater than %s" % self.lte, value=data)
         if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt, value=val)
+            self._failure("value should be less than %s" % self.lt, value=data)
         if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt, value=val)
+            self._failure("value should be greater than %s" % self.gt, value=data)
         return value
+
+    def check_and_return(self, data):
+        self._check(data)
+        return data
 
     def __lt__(self, lt):
         return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
@@ -557,7 +563,15 @@ class Float(Trafaret):
         return r
 
 
-class Int(Float):
+class Float(FloatRaw):
+    """Checks that value is a float.
+    Or if value is a string converts this string to float
+    """
+    def check_and_return(self, data):
+        return self._check(data)
+
+
+class IntRaw(FloatRaw):
     """
     >>> Int()
     <Int>
@@ -575,7 +589,12 @@ class Int(Float):
         if isinstance(value, float):
             if not value.is_integer():
                 self._failure('value is not int', value=value)
-        return super(Int, self)._converter(value)
+        return super(IntRaw, self)._converter(value)
+
+
+class Int(IntRaw):
+    def check_and_return(self, data):
+        return self._check(data)
 
 
 class Atom(Trafaret):
