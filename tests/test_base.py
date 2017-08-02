@@ -2,15 +2,16 @@
 import unittest
 import trafaret as t
 from collections import Mapping as AbcMapping
-from trafaret import catch_error, extract_error, ignore, DataError
+from trafaret import catch_error, extract_error, DataError
 from trafaret.extras import KeysSubset
 
 
 class TestAnyTrafaret(unittest.TestCase):
     def test_any(self):
+        obj = object()
         self.assertEqual(
-            (t.Any() >> ignore).check(object()),
-            None
+            t.Any().check(obj),
+            obj
         )
 
 
@@ -50,14 +51,14 @@ class TestCallTrafaret(unittest.TestCase):
 
 class TestCallableTrafaret(unittest.TestCase):
     def test_callable(self):
-        (t.Callable() >> t.ignore).check(lambda: 1)
+        t.Callable().check(lambda: 1)
         res = extract_error(t.Callable(), 1)
         self.assertEqual(res, 'value is not callable')
 
 
 class TestDictTrafaret(unittest.TestCase):
     def test_base(self):
-        trafaret = t.Dict(foo=t.Int, bar=t.String) >> t.ignore
+        trafaret = t.Dict(foo=t.Int, bar=t.String)
         trafaret.check({"foo": 1, "bar": "spam"})
         res = t.extract_error(trafaret, {"foo": 1, "bar": 2})
         self.assertEqual(res, {'bar': 'value is not a string'})
@@ -243,8 +244,8 @@ class TestEmailTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value is not a valid email address')
         res = str(t.Email().check('someone@пример.рф')) # try with `idna` encoding
         self.assertEqual(res, 'someone@xn--e1afmkfd.xn--p1ai')
-        res = (t.Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
-        self.assertEqual(res, 'example.net')
+        # res = (t.Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
+        # self.assertEqual(res, 'example.net')
         res = extract_error(t.Email(), 'foo')
         self.assertEqual(res, 'value is not a valid email address')
         res = extract_error(t.Email(), 'f' * 10000 + '@correct.domain.edu')
@@ -257,7 +258,7 @@ class TestEmailTrafaret(unittest.TestCase):
 
 class TestEnumTrafaret(unittest.TestCase):
     def test_enum(self):
-        trafaret = t.Enum("foo", "bar", 1) >> ignore
+        trafaret = t.Enum("foo", "bar", 1)
         self.assertEqual(repr(trafaret), "<Enum('foo', 'bar', 1)>")
         res = trafaret.check("foo")
         res = trafaret.check(1)
@@ -476,6 +477,25 @@ class TestAndTest(unittest.TestCase):
         self.assertEqual(res, 'other error')
 
 
+class TestContext(unittest.TestCase):
+    def test_context(self):
+        def check_context(value, context=None):
+            if value != context:
+                return t.DataError('have not context there')
+            return value
+        trafaret = (t.String() | t.IntRaw()) & t.Any & check_context
+        self.assertEqual(trafaret(123, context=123), 123)
+
+    def test_dict_context(self):
+        def check_context(value, context=None):
+            if value != context:
+                return t.DataError('have not context there')
+            return value
+        trafaret = t.Dict({
+            t.Key('b'): (t.String() | t.IntRaw()) & t.Any & check_context,
+        })
+        self.assertEqual(trafaret({'b': 123}, context=123), {'b': 123})
+
 
 class TestStrBoolTrafaret(unittest.TestCase):
 
@@ -522,10 +542,6 @@ class TestStringTrafaret(unittest.TestCase):
         self.assertEqual(res, '')
         res = extract_error(t.String(), 1)
         self.assertEqual(res, 'value is not a string')
-        res = t.String(regex='\w+').check('wqerwqer')
-        self.assertEqual(res, 'wqerwqer')
-        res = extract_error(t.String(regex='^\w+$'), 'wqe rwqer')
-        self.assertEqual(res, "value does not match pattern: '^\\\\w+$'")
         res = t.String(min_length=2, max_length=3).check('123')
         self.assertEqual(res, '123')
         res = extract_error(t.String(min_length=2, max_length=6), '1')

@@ -30,16 +30,13 @@ class MongoId(Trafaret):
     def __repr__(self):
         return "<MongoId(blank)>" if self.allow_blank else "<MongoId>"
 
-    def converter(self, value):
-        try:
-            return self.value_type(value)
-        except InvalidId as e:
-            self._failure(str(e))
-
     def check_and_return(self, value):
         if not self.allow_blank and value is None:
             self._failure("blank value is not allowed")
         if isinstance(value, self.convertable) or value is None:
-            return value
+            try:
+                return ObjectId(value)
+            except InvalidId as e:
+                self._failure(str(e))
 
         self._failure('value is not %s' % self.value_type.__name__)
