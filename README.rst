@@ -11,6 +11,19 @@ Trafaret
 Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
 or look to the docs/api/intro.rst for start.
 
+
+New
+---
+
+* converters and `convert=False` are deleted in favor of `And` and `&`
+* new `OnError` to customize error message
+* `context=something` argument for `__call__` and `check` Trafaret methods.
+  Supported by `Or`, `And`, `Forward` etc.
+* new customizable method `transform` like `change_and_return` but takes `context=` arg
+
+Doc
+---
+
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
 
