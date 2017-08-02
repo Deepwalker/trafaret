@@ -477,26 +477,6 @@ class TestAndTest(unittest.TestCase):
         self.assertEqual(res, 'other error')
 
 
-class TestContext(unittest.TestCase):
-    def test_context(self):
-        def check_context(value, context=None):
-            if value != context:
-                return t.DataError('have not context there')
-            return value
-        trafaret = (t.String() | t.IntRaw()) & t.Any & check_context
-        self.assertEqual(trafaret(123, context=123), 123)
-
-    def test_dict_context(self):
-        def check_context(value, context=None):
-            if value != context:
-                return t.DataError('have not context there')
-            return value
-        trafaret = t.Dict({
-            t.Key('b'): (t.String() | t.IntRaw()) & t.Any & check_context,
-        })
-        self.assertEqual(trafaret({'b': 123}, context=123), {'b': 123})
-
-
 class TestStrBoolTrafaret(unittest.TestCase):
 
     def test_str_bool(self):

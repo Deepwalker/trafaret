@@ -739,7 +739,7 @@ class List(Trafaret):
         self.min_length = min_length
         self.max_length = max_length
 
-    def check_and_return(self, value):
+    def transform(self, value, context=None):
         if not isinstance(value, list):
             self._failure("value is not a list", value=value)
         if len(value) < self.min_length:
@@ -750,7 +750,7 @@ class List(Trafaret):
         errors = {}
         for index, item in enumerate(value):
             try:
-                lst.append(self.trafaret.check(item))
+                lst.append(self.trafaret.check(item, context=context))
             except DataError as err:
                 errors[index] = err
         if errors:
@@ -790,7 +790,7 @@ class Tuple(Trafaret):
         self.trafarets = list(map(ensure_trafaret, args))
         self.length = len(self.trafarets)
 
-    def check_and_return(self, value):
+    def transform(self, value, context=None):
         try:
             value = tuple(value)
         except TypeError:
@@ -801,7 +801,7 @@ class Tuple(Trafaret):
         errors = {}
         for idx, (item, trafaret) in enumerate(zip(value, self.trafarets)):
             try:
-                result.append(trafaret.check(item))
+                result.append(trafaret.check(item, context=context))
             except DataError as err:
                 errors[idx] = err
         if errors:
@@ -1104,7 +1104,7 @@ class Mapping(Trafaret):
         self.key = ensure_trafaret(key)
         self.value = ensure_trafaret(value)
 
-    def check_and_return(self, mapping):
+    def transform(self, mapping, context=None):
         if not isinstance(mapping, dict):
             self._failure("value is not a dict", value=mapping)
         checked_mapping = {}
@@ -1112,11 +1112,11 @@ class Mapping(Trafaret):
         for key, value in mapping.items():
             pair_errors = {}
             try:
-                checked_key = self.key.check(key)
+                checked_key = self.key.check(key, context=context)
             except DataError as err:
                 pair_errors['key'] = err
             try:
-                checked_value = self.value.check(value)
+                checked_value = self.value.check(value, context=context)
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
