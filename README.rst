@@ -15,11 +15,12 @@ or look to the docs/api/intro.rst for start.
 New
 ---
 
-* converters and `convert=False` are deleted in favor of `And` and `&`
-* new `OnError` to customize error message
-* `context=something` argument for `__call__` and `check` Trafaret methods.
-  Supported by `Or`, `And`, `Forward` etc.
-* new customizable method `transform` like `change_and_return` but takes `context=` arg
+* converters and ``convert=False`` are deleted in favor of ``And`` and ``&``
+* new ``OnError`` to customize error message
+* ``context=something`` argument for ``__call__`` and ``check`` Trafaret methods.
+  Supported by ``Or``, ``And``, ``Forward`` etc.
+* new customizable method ``transform`` like ``change_and_return`` but takes ``context=`` arg
+* new ``trafaret_instance.async_check`` method that works with ``await``
 
 Doc
 ---
