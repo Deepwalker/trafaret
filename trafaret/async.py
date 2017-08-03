@@ -75,11 +75,11 @@ class MappingAsyncMixin:
         for key, value in mapping.items():
             pair_errors = {}
             try:
-                checked_key = await self.key.check_async(key, context=context)
+                checked_key = await self.key.async_check(key, context=context)
             except DataError as err:
                 pair_errors['key'] = err
             try:
-                checked_value = await self.value.check_async(value, context=context)
+                checked_value = await self.value.async_check(value, context=context)
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
@@ -154,7 +154,7 @@ class DictAsyncMixin:
                     errors[key] = DataError("%s key was shadowed" % key)
                 else:
                     try:
-                        collect[key] = await self.extras_trafaret.check_async(value[key])
+                        collect[key] = await self.extras_trafaret.async_check(value[key])
                     except DataError as de:
                         errors[key] = de
         if errors:

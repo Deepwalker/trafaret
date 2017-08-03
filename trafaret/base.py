@@ -100,7 +100,7 @@ class TrafaretMeta(type):
 
 
 @py3metafix
-class Trafaret(TrafaretAsyncMixin, object):
+class Trafaret(TrafaretAsyncMixin):
     """
     Base class for trafarets, provides only one method for
     trafaret validation failure reporting
