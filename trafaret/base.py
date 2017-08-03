@@ -8,7 +8,42 @@ import numbers
 import warnings
 from collections import Mapping as AbcMapping
 import types
-from .lib import py3, py3metafix
+from .lib import (
+    py3,
+    py3metafix,
+    getargspec,
+    call_with_context_if_support,
+    _empty,
+)
+from .dataerror import DataError
+
+
+if py3:
+    from .async import (
+        TrafaretAsyncMixin,
+        OrAsyncMixin,
+        AndAsyncMixin,
+        ListAsyncMixin,
+        TupleAsyncMixin,
+        MappingAsyncMixin,
+        CallAsyncMixin,
+        ForwardAsyncMixin,
+        DictAsyncMixin,
+        KeyAsyncMixin,
+    )
+else:
+    class EmptyMixin(object):
+        pass
+    TrafaretAsyncMixin = EmptyMixin
+    OrAsyncMixin = EmptyMixin
+    AndAsyncMixin = EmptyMixin
+    ListAsyncMixin = EmptyMixin
+    TupleAsyncMixin = EmptyMixin
+    MappingAsyncMixin = EmptyMixin
+    CallAsyncMixin = EmptyMixin
+    ForwardAsyncMixin = EmptyMixin
+    DictAsyncMixin = EmptyMixin
+    KeyAsyncMixin = EmptyMixin
 
 
 # Python3 support
@@ -16,7 +51,6 @@ if py3:
     str_types = (str, bytes)
     unicode = str
     BYTES_TYPE = bytes
-    getargspec = inspect.getfullargspec
 else:
     try:
         from future_builtins import map
@@ -25,7 +59,6 @@ else:
         from itertools import imap as map
     str_types = (basestring,)
     BYTES_TYPE = str
-    getargspec = inspect.getargspec
 
 def _dd(value):
     if not hasattr(value, 'items'):
@@ -37,54 +70,11 @@ def deprecated(message):
     warnings.warn(message, DeprecationWarning)
 
 
-def call_with_context_if_support(callble, value, context):
-    if not inspect.isfunction(callble) and hasattr(callble, '__call__'):
-        callble = callble.__call__
-    if 'context' in getargspec(callble).args:
-        return callble(value, context=context)
-    else:
-        return callble(value)
-
-
 """
 Trafaret is tiny library for data validation
 It provides several primitives to validate complex data structures
 Look at doctests for usage examples
 """
-
-_empty = object()
-
-
-class DataError(ValueError):
-    """
-    Error with data preserve
-    error can be a message or None if error raised in childs
-    data can be anything
-    """
-    __slots__ = ['error', 'name', 'value', 'trafaret']
-
-    def __init__(self, error=None, name=None, value=_empty, trafaret=None):
-        self.error = error
-        self.name = name
-        self.value = value
-        self.trafaret = trafaret
-
-    def __str__(self):
-        return str(self.error)
-
-    def __repr__(self):
-        return 'DataError(%s)' % str(self)
-
-    def as_dict(self, value=False):
-        def as_dict(dataerror):
-            if not isinstance(dataerror.error, dict):
-                if value and dataerror.value != _empty:
-                    return '%s, got %r' % (str(dataerror.error), dataerror.value)
-                else:
-                    return str(dataerror.error)
-            return dict((k, v.as_dict(value=value) if isinstance(v, DataError) else v)
-                        for k, v in dataerror.error.items())
-        return as_dict(self)
 
 
 class TrafaretMeta(type):
@@ -111,7 +101,7 @@ class TrafaretMeta(type):
 
 
 @py3metafix
-class Trafaret(object):
+class Trafaret(TrafaretAsyncMixin, object):
     """
     Base class for trafarets, provides only one method for
     trafaret validation failure reporting
@@ -283,7 +273,7 @@ class OrMeta(TrafaretMeta):
 
 
 @py3metafix
-class Or(Trafaret):
+class Or(Trafaret, OrAsyncMixin):
     """
     >>> nullString = Or(String, Null)
     >>> nullString
@@ -322,7 +312,7 @@ class Or(Trafaret):
         return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))
 
 
-class And(Trafaret):
+class And(Trafaret, AndAsyncMixin):
     """
     Will work over trafarets sequentially
     """
@@ -703,7 +693,7 @@ class SquareBracketsMeta(TrafaretMeta):
 
 
 @py3metafix
-class List(Trafaret):
+class List(Trafaret, ListAsyncMixin):
     """
     >>> List(Int)
     <List(<Int>)>
@@ -739,13 +729,16 @@ class List(Trafaret):
         self.min_length = min_length
         self.max_length = max_length
 
-    def transform(self, value, context=None):
+    def check_common(self, value):
         if not isinstance(value, list):
             self._failure("value is not a list", value=value)
         if len(value) < self.min_length:
             self._failure("list length is less than %s" % self.min_length, value=value)
         if self.max_length is not None and len(value) > self.max_length:
             self._failure("list length is greater than %s" % self.max_length, value=value)
+
+    def transform(self, value, context=None):
+        self.check_common(value)
         lst = []
         errors = {}
         for index, item in enumerate(value):
@@ -772,7 +765,7 @@ class List(Trafaret):
         return r
 
 
-class Tuple(Trafaret):
+class Tuple(Trafaret, TupleAsyncMixin):
     """
     Tuple checker can be used to check fixed tuples, like (Int, Int, String).
 
@@ -790,13 +783,16 @@ class Tuple(Trafaret):
         self.trafarets = list(map(ensure_trafaret, args))
         self.length = len(self.trafarets)
 
-    def transform(self, value, context=None):
+    def check_common(self, value):
         try:
             value = tuple(value)
         except TypeError:
             self._failure('value must be convertable to tuple', value=value)
         if len(value) != self.length:
             self._failure('value must contain %s items' % self.length, value=value)
+
+    def transform(self, value, context=None):
+        self.check_common(value)
         result = []
         errors = {}
         for idx, (item, trafaret) in enumerate(zip(value, self.trafarets)):
@@ -812,7 +808,7 @@ class Tuple(Trafaret):
         return '<Tuple(' + ', '.join(repr(t) for t in self.trafarets) + ')>'
 
 
-class Key(object):
+class Key(KeyAsyncMixin):
     """
     Helper class for Dict.
 
@@ -879,7 +875,7 @@ class Key(object):
            ' to "%s"' % self.to_name if getattr(self, 'to_name', False) else '')
 
 
-class Dict(Trafaret):
+class Dict(Trafaret, DictAsyncMixin):
     """
     >>> trafaret = Dict(foo=Int, bar=String) >> ignore
     >>> trafaret.check({"foo": 1, "bar": "spam"})
@@ -979,22 +975,14 @@ class Dict(Trafaret):
         errors = {}
         touched_names = []
         for key in self.keys:
-            if callable(key):
-                for k, v, names in call_with_context_if_support(key, value, context=context):
-                    if isinstance(v, DataError):
-                        errors[k] = v
-                    else:
-                        collect[k] = v
-                    touched_names.extend(names)
-            else:
-                deprecated('Old pop based Keys subclasses deprecated. See README')
-                value_keys = set(value.keys())
-                for k, v in key.pop(value):
-                    if isinstance(v, DataError):
-                        errors[k] = v
-                    else:
-                        collect[k] = v
-                touched_names.extend(value_keys - set(value.keys()))
+            if not callable(key):
+                raise ValueError('Non callable Keys are not supported')
+            for k, v, names in call_with_context_if_support(key, value, context=context):
+                if isinstance(v, DataError):
+                    errors[k] = v
+                else:
+                    collect[k] = v
+                touched_names.extend(names)
 
         if not self.ignore_any:
             for key in value:
@@ -1093,7 +1081,7 @@ def DictKeys(keys):
     return Dict(dict(req))
 
 
-class Mapping(Trafaret):
+class Mapping(Trafaret, MappingAsyncMixin):
     """
     Mapping gets two trafarets as arguments, one for key and one for value,
     like `Mapping(t.Int, t.List(t.Str))`.
@@ -1105,7 +1093,7 @@ class Mapping(Trafaret):
         self.value = ensure_trafaret(value)
 
     def transform(self, mapping, context=None):
-        if not isinstance(mapping, dict):
+        if not isinstance(mapping, AbcMapping):
             self._failure("value is not a dict", value=mapping)
         checked_mapping = {}
         errors = {}
@@ -1169,7 +1157,7 @@ class Callable(Trafaret):
         return "<Callable>"
 
 
-class Call(Trafaret):
+class Call(Trafaret, CallAsyncMixin):
     """
     >>> def validator(value):
     ...     if value != "foo":
@@ -1213,7 +1201,7 @@ class Call(Trafaret):
         return "<Call(%s)>" % self.fn.__name__
 
 
-class Forward(Trafaret):
+class Forward(Trafaret, ForwardAsyncMixin):
     """
     >>> node = Forward()
     >>> node << Dict(name=String, children=List[node])

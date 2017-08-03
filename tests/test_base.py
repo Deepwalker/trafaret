@@ -103,8 +103,8 @@ class TestDictTrafaret(unittest.TestCase):
         trafaret = t.Dict({
             OldKey(): t.Any
         })
-        res = trafaret.check({'testkey': 123})
-        self.assertEqual(res, {'testkey': 123})
+        with self.assertRaises(ValueError):
+            trafaret.check({'testkey': 123})
 
     def test_callable_key(self):
         def simple_key(value):
