@@ -13,13 +13,19 @@ else:
 
 MAX_EMAIL_LEN = 254
 
+
 EMAIL_REGEXP = re.compile(
-    r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"  # dot-atom
-    r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"' # quoted-string
-    r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'  # domain
-    r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$',  # literal form, ipv4 address (SMTP 4.1.3)
+    # dot-atom
+    r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"
+    # quoted-string
+    r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'
+    # domain
+    r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'
+    # literal form, ipv4 address (SMTP 4.1.3)
+    r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$',
     re.IGNORECASE,
 )
+
 
 def email_idna_encode(value):
     if '@' in value:
@@ -31,9 +37,10 @@ def email_idna_encode(value):
             pass
     return value
 
+
 email_regexp_trafaret = OnError(Regexp(EMAIL_REGEXP), 'value is not a valid email address')
 email_trafaret = email_regexp_trafaret | ((Bytes('utf-8') | String()) & email_idna_encode & email_regexp_trafaret)
-Email = lambda: String(allow_blank=True) & OnError(
+Email = String(allow_blank=True) & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
 )
@@ -52,17 +59,19 @@ URL_REGEXP = re.compile(
 URLRegexp = OnError(Regexp(URL_REGEXP), 'value is not URL')
 URLRegexp = Regexp(URL_REGEXP)
 
+
 def decode_url_idna(value):
     try:
         scheme, netloc, path, query, fragment = urlparse.urlsplit(value)
-        netloc = netloc.encode('idna').decode('ascii') # IDN -> ACE
-    except UnicodeError: # invalid domain part
+        netloc = netloc.encode('idna').decode('ascii')  # IDN -> ACE
+    except UnicodeError:  # invalid domain part
         pass
     else:
         return urlparse.urlunsplit((scheme, netloc, path, query, fragment))
     return value
 
-URL = lambda: OnError(
+
+URL = OnError(
     URLRegexp | ((Bytes('utf-8') | String()) & decode_url_idna & URLRegexp),
     'value is not URL',
 )
@@ -128,5 +137,6 @@ class IPv6(Regexp):
 
     def __repr__(self):
         return '<IPv6>'
+
 
 IP = OnError(IPv4 | IPv6, 'value is not IP address')

@@ -238,21 +238,21 @@ class TestDictKeys(unittest.TestCase):
 
 class TestEmailTrafaret(unittest.TestCase):
     def test_email(self):
-        res = t.Email().check('someone@example.net')
+        res = t.Email.check('someone@example.net')
         self.assertEqual(res, 'someone@example.net')
-        res = extract_error(t.Email(),'someone@example') # try without domain-part
+        res = extract_error(t.Email,'someone@example') # try without domain-part
         self.assertEqual(res, 'value is not a valid email address')
-        res = str(t.Email().check('someone@пример.рф')) # try with `idna` encoding
+        res = str(t.Email.check('someone@пример.рф')) # try with `idna` encoding
         self.assertEqual(res, 'someone@xn--e1afmkfd.xn--p1ai')
         # res = (t.Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
         # self.assertEqual(res, 'example.net')
-        res = extract_error(t.Email(), 'foo')
+        res = extract_error(t.Email, 'foo')
         self.assertEqual(res, 'value is not a valid email address')
-        res = extract_error(t.Email(), 'f' * 10000 + '@correct.domain.edu')
+        res = extract_error(t.Email, 'f' * 10000 + '@correct.domain.edu')
         self.assertEqual(res, 'value is not a valid email address')
-        res = extract_error(t.Email(), 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
+        res = extract_error(t.Email, 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
         self.assertEqual(res, True)
-        res = extract_error(t.Email(), 123)
+        res = extract_error(t.Email, 123)
         self.assertEqual(res, 'value is not a string')
 
 
@@ -607,22 +607,22 @@ class TestSubclassTrafaret(unittest.TestCase):
 class TestURLTrafaret(unittest.TestCase):
 
     def test_url(self):
-        res = t.URL().check('http://example.net/resource/?param=value#anchor')
+        res = t.URL.check('http://example.net/resource/?param=value#anchor')
         self.assertEqual(res, 'http://example.net/resource/?param=value#anchor')
 
-        res = str(t.URL().check('http://пример.рф/resource/?param=value#anchor'))
+        res = str(t.URL.check('http://пример.рф/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor')
 
-        res = t.URL().check('http://example_underscore.net/resource/?param=value#anchor')
+        res = t.URL.check('http://example_underscore.net/resource/?param=value#anchor')
         self.assertEqual(res, 'http://example_underscore.net/resource/?param=value#anchor')
 
-        res = str(t.URL().check('http://user@example.net/resource/?param=value#anchor'))
+        res = str(t.URL.check('http://user@example.net/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://user@example.net/resource/?param=value#anchor')
 
-        res = str(t.URL().check('http://user:@example.net/resource/?param=value#anchor'))
+        res = str(t.URL.check('http://user:@example.net/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://user:@example.net/resource/?param=value#anchor')
 
-        res = str(t.URL().check('http://user:password@example.net/resource/?param=value#anchor'))
+        res = str(t.URL.check('http://user:password@example.net/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
 

@@ -1,5 +1,6 @@
-""" This module is expirement. API and implementation are unstable.
-    Supposed to use with ``Request`` object or something like that.
+"""
+This module is expirement. API and implementation are unstable.
+Supposed to use with ``Request`` object or something like that.
 """
 from collections import Mapping
 from . import Trafaret, DataError, Key, catch_error, _empty
@@ -42,8 +43,13 @@ class DeepKey(Key):
 
     def pop(self, data):
         try:
-            yield self.get_name(), catch_error(self.trafaret,
-                    get_deep_attr(data, self.name.split('.')))
+            yield (
+                self.get_name(),
+                catch_error(
+                    self.trafaret,
+                    get_deep_attr(data, self.name.split('.')),
+                )
+            )
         except DataError as e:
             if self.default != _empty:
                 yield self.get_name(), self.default

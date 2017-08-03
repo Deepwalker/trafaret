@@ -1,5 +1,5 @@
 import trafaret as t
-from trafaret.lib import py3, py3metafix
+from trafaret.lib import py3metafix
 
 
 class ConstructMeta(type):

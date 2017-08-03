@@ -3,7 +3,7 @@ There will be small helpers to render forms with exist trafarets for DRY.
 """
 import collections
 from itertools import groupby
-from . import _dd
+from . import _dd  # noqa
 
 
 def recursive_unfold(data, prefix='', delimeter='__'):
@@ -97,7 +97,9 @@ def fold(data, prefix='', delimeter='__'):
             return [i[1] for i in sorted(collect.items())]
         return collect
 
-    data_ = [(split(key, delimeter), value)
-                 for key, value in sorted(data.items())]
+    data_ = [
+        (split(key, delimeter), value)
+        for key, value in sorted(data.items())
+    ]
     result = deep(data_)
     return result[prefix] if prefix else result
