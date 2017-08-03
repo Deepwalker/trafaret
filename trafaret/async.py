@@ -8,6 +8,7 @@ class TrafaretAsyncMixin:
             return (await self.async_transform(value, context=context))
         return self.check(value, context=context)
 
+
 class OrAsyncMixin:
     async def async_transform(value, context=None):
         errors = []
@@ -176,4 +177,3 @@ class KeyAsyncMixin:
 
         if not self.optional:
             yield self.name, DataError(error='is required'), (self.name,)
-
