@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import functools
 import inspect
 import itertools
 import numbers
 import warnings
 from collections import Mapping as AbcMapping
-import types
 from .lib import (
     py3,
     py3metafix,
@@ -57,8 +55,9 @@ else:
     except ImportError:
         # Support for GAE runner
         from itertools import imap as map
-    str_types = (basestring,)
+    str_types = (basestring,)  # noqa
     BYTES_TYPE = str
+
 
 def _dd(value):
     if not hasattr(value, 'items'):
@@ -137,7 +136,7 @@ class Trafaret(TrafaretAsyncMixin, object):
         """
         raise DataError(error=error, value=value, trafaret=self)
 
-    def append(self, converter):
+    def append(self, other):
         """
         Appends new converter to list.
         """
@@ -189,6 +188,7 @@ def ensure_trafaret(trafaret):
     else:
         raise RuntimeError("%r should be instance or subclass"
                            " of Trafaret" % trafaret)
+
 
 class TypeMeta(TrafaretMeta):
     def __getitem__(self, type_):
@@ -333,7 +333,6 @@ class And(Trafaret, AndAsyncMixin):
 
     def __repr__(self):
         return repr(self.trafaret)
-
 
 
 class Null(Trafaret):
@@ -681,14 +680,20 @@ class SquareBracketsMeta(TrafaretMeta):
         for arg in args:
             if isinstance(arg, slice):
                 slice_ = arg
-            elif isinstance(arg, Trafaret) or issubclass(arg, Trafaret) \
-                 or isinstance(arg, type):
+            elif (
+                isinstance(arg, Trafaret)
+                or issubclass(arg, Trafaret)
+                or isinstance(arg, type)
+            ):
                 trafaret = arg
         if not trafaret:
             raise RuntimeError("Trafaret is required for List initialization")
         if slice_:
-            return self(trafaret, min_length=slice_.start or 0,
-                                  max_length=slice_.stop)
+            return self(
+                trafaret,
+                min_length=slice_.start or 0,
+                max_length=slice_.stop,
+            )
         return self(trafaret)
 
 
@@ -871,8 +876,11 @@ class Key(KeyAsyncMixin):
         self.optional = True
 
     def __repr__(self):
-        return '<%s "%s"%s>' % (self.__class__.__name__, self.name,
-           ' to "%s"' % self.to_name if getattr(self, 'to_name', False) else '')
+        return '<%s "%s"%s>' % (
+            self.__class__.__name__,
+            self.name,
+            ' to "%s"' % self.to_name if getattr(self, 'to_name', False) else '',
+        )
 
 
 class Dict(Trafaret, DictAsyncMixin):
@@ -1048,14 +1056,16 @@ class Dict(Trafaret, DictAsyncMixin):
             ]
             other_keys = other
         if set(self.keys_names()) & set(other_keys_names):
-            raise ValueError('Merged dicts should have '
-                            'no interlapping keys')
+            raise ValueError(
+                'Merged dicts should have no interlapping keys'
+            )
         if (
             set(key.get_name() for key in self.keys)
             & set(key.get_name() for key in other_keys)
         ):
-            raise ValueError('Merged dicts should have '
-                            'no interlapping keys to names')
+            raise ValueError(
+                'Merged dicts should have no interlapping keys to names'
+            )
         new_trafaret = self.__class__()
         new_trafaret.keys = self.keys + other_keys
         return new_trafaret
@@ -1291,8 +1301,11 @@ def guard(trafaret=None, **kwargs):
     ...
     RuntimeError: trafaret should be instance of Dict or Forward
     """
-    if trafaret and not isinstance(trafaret, Dict) and \
-                    not isinstance(trafaret, Forward):
+    if (
+        trafaret
+        and not isinstance(trafaret, Dict)
+        and not isinstance(trafaret, Forward)
+    ):
         raise RuntimeError("trafaret should be instance of Dict or Forward")
     elif trafaret and kwargs:
         raise RuntimeError("choose one way of initialization,"
@@ -1358,6 +1371,7 @@ def catch(checker, *a, **kw):
     except DataError as error:
         return error
 
+
 catch_error = catch
 
 
@@ -1370,23 +1384,3 @@ def extract_error(checker, *a, **kw):
     if isinstance(res, DataError):
         return res.as_dict()
     return res
-
-
-class MissingContribModuleStub(types.ModuleType):
-    """
-    Preserves initial exception to be raised on module access
-    """
-
-    def __init__(self, entrypoint, orig):
-        self.orig = orig
-        self.entrypoint = entrypoint
-
-    def __getattr__(self, item):
-        raise self.orig
-
-    def __call__(self, *args, **kwargs):
-        raise self.orig
-
-    @property
-    def __name__(self):
-        return self.entrypoint.name.lstrip('.')

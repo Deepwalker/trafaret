@@ -1,5 +1,10 @@
 import inspect
+from collections import Mapping as AbcMapping
 from .dataerror import DataError
+from .lib import (
+    call_with_context_if_support,
+    _empty,
+)
 
 
 class TrafaretAsyncMixin:
@@ -10,7 +15,7 @@ class TrafaretAsyncMixin:
 
 
 class OrAsyncMixin:
-    async def async_transform(value, context=None):
+    async def async_transform(self, value, context=None):
         errors = []
         for trafaret in self.trafarets:
             try:
@@ -62,7 +67,7 @@ class TupleAsyncMixin:
 
 
 class MappingAsyncMixin:
-    async def async_transform(self, value, context=None):
+    async def async_transform(self, mapping, context=None):
         if not isinstance(mapping, AbcMapping):
             self._failure("value is not a dict", value=mapping)
         checked_mapping = {}

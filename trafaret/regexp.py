@@ -27,5 +27,3 @@ class RegexpRaw(Trafaret):
 class Regexp(RegexpRaw):
     def check_and_return(self, value):
         return super(Regexp, self).check_and_return(value).group()
-
-

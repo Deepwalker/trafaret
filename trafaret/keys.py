@@ -3,6 +3,7 @@ import trafaret as t
 
 def xor_key(first, second, trafaret):
     trafaret = t.Trafaret._trafaret(trafaret)
+
     def check_(value):
         if (first in value) ^ (second in value):
             key = first if first in value else second
@@ -13,6 +14,7 @@ def xor_key(first, second, trafaret):
         else:
             yield first, t.DataError(error=f'is required if {second} is not defined'), (first,)
             yield second, t.DataError(error=f'is required if {first} is not defined'), (second,)
+
     return check_
 
 

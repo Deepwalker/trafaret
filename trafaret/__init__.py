@@ -86,6 +86,13 @@ __all__ = (
     "IPv4",
     "IPv6",
     "IP",
+
+    "extract_error",
+    "ignore",
+    "_dd",
+    "catch",
+    "catch_error",
+    "str_types",
 )
 
 
