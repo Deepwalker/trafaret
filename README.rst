@@ -7,23 +7,7 @@ Trafaret
 
 -----
 
-
-Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
-or look to the docs/api/intro.rst for start.
-
-
-New
----
-
-* converters and ``convert=False`` are deleted in favor of ``And`` and ``&``
-* new ``OnError`` to customize error message
-* ``context=something`` argument for ``__call__`` and ``check`` Trafaret methods.
-  Supported by ``Or``, ``And``, ``Forward`` etc.
-* new customizable method ``transform`` like ``change_and_return`` but takes ``context=`` arg
-* new ``trafaret_instance.async_check`` method that works with ``await``
-
-Doc
----
+Ultimate transformation library that supports validation, contexts and ``aiohttp``.
 
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
@@ -47,6 +31,24 @@ It have shortcut syntax and ability to express anything that you can code:
       File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 1105, in check_and_return
         raise DataError(error=errors, trafaret=self)
     trafaret.DataError: {'b': DataError({1: DataError(value is not a string)})}
+
+
+Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
+or look to the docs/api/intro.rst for start.
+
+
+New
+---
+
+* converters and ``convert=False`` are deleted in favor of ``And`` and ``&``
+* new ``OnError`` to customize error message
+* ``context=something`` argument for ``__call__`` and ``check`` Trafaret methods.
+  Supported by ``Or``, ``And``, ``Forward`` etc.
+* new customizable method ``transform`` like ``change_and_return`` but takes ``context=`` arg
+* new ``trafaret_instance.async_check`` method that works with ``await``
+
+Doc
+---
 
 For simple example what can be done:
 
