@@ -31,6 +31,8 @@ from .base import (
     guard,
 
     # utils
+    OnError,
+    ensure_trafaret,
     extract_error,
     ignore,
     _dd,
@@ -87,6 +89,8 @@ __all__ = (
     "IPv6",
     "IP",
 
+    "OnError",
+    "ensure_trafaret",
     "extract_error",
     "ignore",
     "_dd",
@@ -96,4 +100,4 @@ __all__ = (
 )
 
 
-__VERSION__ = (0, 11, 'dev1')
+__VERSION__ = (0, 11, 'dev4')

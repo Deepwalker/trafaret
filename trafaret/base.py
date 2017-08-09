@@ -837,7 +837,7 @@ class Key(KeyAsyncMixin):
         self.to_name = to_name
         self.default = default
         self.optional = optional
-        self.trafaret = trafaret or Any()
+        self.trafaret = ensure_trafaret(trafaret) if trafaret else Any()
 
     def __call__(self, data, context=None):
         if self.name in data or self.default is not _empty:
