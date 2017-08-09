@@ -16,19 +16,10 @@ class DateTime(Trafaret):
     def __repr__(self):
         return "<Date(blank)>" if self.allow_blank else "<Date>"
 
-    def converter(self, value):
+    def check_and_return(self, value):
         if isinstance(value, datetime):
             return value
         try:
             return parse(value)
         except ValueError as e:
             self._failure(e.message)
-
-    def check_and_return(self, value):
-        if isinstance(value, str_types):
-            if len(value) > 0 or self.allow_blank:
-                return value
-        if isinstance(value, datetime):
-            return value
-
-        self._failure('value is not valid')
