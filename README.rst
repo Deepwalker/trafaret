@@ -41,6 +41,7 @@ New
 ---
 
 * converters and ``convert=False`` are deleted in favor of ``And`` and ``&``
+* ``String`` parameter ``regex`` deleted in favor of ``Regexp`` and ``RegexpRaw`` usage
 * new ``OnError`` to customize error message
 * ``context=something`` argument for ``__call__`` and ``check`` Trafaret methods.
   Supported by ``Or``, ``And``, ``Forward`` etc.
