@@ -6,6 +6,10 @@ machine:
   post:
     - pyenv local 3.6.0 2.7.10
 
+test:
+  override:
+    - tox
+
 dependencies:
   pre:
     - pip install pymongo
