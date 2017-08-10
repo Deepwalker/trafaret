@@ -8,6 +8,7 @@ import warnings
 from collections import Mapping as AbcMapping
 from .lib import (
     py3,
+    py36,
     py3metafix,
     getargspec,
     call_with_context_if_support,
@@ -16,7 +17,7 @@ from .lib import (
 from .dataerror import DataError
 
 
-if py3:
+if py36:
     from .async import (
         TrafaretAsyncMixin,
         OrAsyncMixin,

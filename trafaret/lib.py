@@ -3,6 +3,7 @@ import inspect
 
 
 py3 = sys.version_info[0] == 3
+py36 = sys.version_info >= (3, 6, 0)
 
 
 if py3:
