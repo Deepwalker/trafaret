@@ -1365,10 +1365,10 @@ def catch(checker, *a, **kw):
     """
 
     try:
-        if hasattr(checker, 'check'):
-            return checker.check(*a, **kw)
-        elif callable(checker):
+        if callable(checker):
             return checker(*a, **kw)
+        elif hasattr(checker, 'check'):
+            return checker.check(*a, **kw)
     except DataError as error:
         return error
 
