@@ -1363,12 +1363,8 @@ def catch(checker, *a, **kw):
     """
     Helper for tests - catch error and return it as dict
     """
-
     try:
-        if hasattr(checker, 'check'):
-            return checker.check(*a, **kw)
-        elif callable(checker):
-            return checker(*a, **kw)
+        return checker(*a, **kw)
     except DataError as error:
         return error
 
