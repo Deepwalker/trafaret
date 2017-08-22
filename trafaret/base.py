@@ -296,7 +296,7 @@ class Or(Trafaret, OrAsyncMixin):
         errors = []
         for trafaret in self.trafarets:
             try:
-                return trafaret.check(value, context=context)
+                return trafaret(value, context=context)
             except DataError as e:
                 errors.append(e)
         raise DataError(dict(enumerate(errors)), trafaret=self)
@@ -749,7 +749,7 @@ class List(Trafaret, ListAsyncMixin):
         errors = {}
         for index, item in enumerate(value):
             try:
-                lst.append(self.trafaret.check(item, context=context))
+                lst.append(self.trafaret(item, context=context))
             except DataError as err:
                 errors[index] = err
         if errors:
@@ -803,7 +803,7 @@ class Tuple(Trafaret, TupleAsyncMixin):
         errors = {}
         for idx, (item, trafaret) in enumerate(zip(value, self.trafarets)):
             try:
-                result.append(trafaret.check(item, context=context))
+                result.append(trafaret(item, context=context))
             except DataError as err:
                 errors[idx] = err
         if errors:
@@ -1111,11 +1111,11 @@ class Mapping(Trafaret, MappingAsyncMixin):
         for key, value in mapping.items():
             pair_errors = {}
             try:
-                checked_key = self.key.check(key, context=context)
+                checked_key = self.key(key, context=context)
             except DataError as err:
                 pair_errors['key'] = err
             try:
-                checked_value = self.value.check(value, context=context)
+                checked_value = self.value(value, context=context)
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
@@ -1248,7 +1248,7 @@ class Forward(Trafaret, ForwardAsyncMixin):
     def transform(self, value, context=None):
         if self.trafaret is None:
             self._failure('trafaret not set yet', value=value)
-        return self.trafaret.check(value, context=context)
+        return self.trafaret(value, context=context)
 
     def __repr__(self):
         # XXX not threadsafe
@@ -1339,7 +1339,7 @@ def guard(trafaret=None, **kwargs):
                                          reversed(argspec.defaults or ())):
                     if name not in call_args:
                         call_args[name] = default
-                converted = trafaret.check(call_args)
+                converted = trafaret(call_args)
             except DataError as err:
                 raise GuardError(error=err.error)
             return fn(obj, **converted) if obj else fn(**converted)
