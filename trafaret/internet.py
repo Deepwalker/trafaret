@@ -56,7 +56,6 @@ URL_REGEXP = re.compile(
     r'(?:/?|[/?]\S+)$',
     re.IGNORECASE,
 )
-URLRegexp = OnError(Regexp(URL_REGEXP), 'value is not URL')
 URLRegexp = Regexp(URL_REGEXP)
 
 
