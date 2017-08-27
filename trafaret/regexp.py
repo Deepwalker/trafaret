@@ -8,8 +8,8 @@ class RegexpRaw(Trafaret):
     """
     __slots__ = ('regexp', 'raw_regexp')
 
-    def __init__(self, regexp):
-        self.regexp = re.compile(regexp) if isinstance(regexp, str_types) else regexp
+    def __init__(self, regexp, re_flags=0):
+        self.regexp = re.compile(regexp, re_flags) if isinstance(regexp, str_types) else regexp
         self.raw_regexp = self.regexp.pattern if self.regexp else None
 
     def check_and_return(self, value):

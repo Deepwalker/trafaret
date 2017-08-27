@@ -2,7 +2,7 @@
 
 import re
 from .regexp import Regexp
-from .base import DataError, String, Bytes, OnError
+from .base import String, Bytes, OnError
 from .lib import py3
 
 if py3:
@@ -76,36 +76,16 @@ URL = OnError(
 )
 
 
-class IPv4(Regexp):
-    """
-    >>> IPv4().check('127.0.0.1')
-    '127.0.0.1'
-    """
-
-    regex = re.compile(
+IPv4 = OnError(
+    Regexp(
         r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',  # noqa
-    )
-
-    def __init__(self):
-        super(IPv4, self).__init__(self.regex)
-
-    def check_and_return(self, value):
-        try:
-            return super(IPv4, self).check_and_return(value)
-        except DataError:
-            self._failure('value is not IPv4 address')
-
-    def __repr__(self):
-        return '<IPv4>'
+    ),
+    'value is not IPv4 address',
+)
 
 
-class IPv6(Regexp):
-    """
-    >>> IPv6().check('2001:0db8:0000:0042:0000:8a2e:0370:7334')
-    '2001:0db8:0000:0042:0000:8a2e:0370:7334'
-    """
-
-    regex = re.compile(
+IPv6 = OnError(
+    Regexp(
         r'^('
         r'(::)|'
         r'(::[0-9a-f]{1,4})|'
@@ -123,19 +103,9 @@ class IPv6(Regexp):
         r'([0-9a-f]{1,4}:){1,4}:((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])'  # noqa
         r')$',
         re.IGNORECASE,
-    )
-
-    def __init__(self):
-        super(IPv6, self).__init__(self.regex)
-
-    def check_and_return(self, value):
-        try:
-            return super(IPv6, self).check_and_return(value)
-        except DataError:
-            self._failure('value is not IPv6 address')
-
-    def __repr__(self):
-        return '<IPv6>'
+    ),
+    'value is not IPv6 address',
+)
 
 
 IP = OnError(IPv4 | IPv6, 'value is not IP address')

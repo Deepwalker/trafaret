@@ -261,18 +261,6 @@ class Any(Trafaret):
         return "<Any>"
 
 
-class OrMeta(TrafaretMeta):
-    """
-    Allows to use "<<" operator on Or class
-
-    >>> Or << Int << String
-    <Or(<Int>, <String>)>
-    """
-
-    def __lshift__(cls, other):
-        return cls() << other
-
-
 @py3metafix
 class Or(Trafaret, OrAsyncMixin):
     """
@@ -286,7 +274,6 @@ class Or(Trafaret, OrAsyncMixin):
     {0: 'value is not a string', 1: 'value should be None'}
     """
 
-    __metaclass__ = OrMeta
     __slots__ = ['trafarets']
 
     def __init__(self, *trafarets):
@@ -300,14 +287,6 @@ class Or(Trafaret, OrAsyncMixin):
             except DataError as e:
                 errors.append(e)
         raise DataError(dict(enumerate(errors)), trafaret=self)
-
-    def __lshift__(self, trafaret):
-        self.trafarets.append(ensure_trafaret(trafaret))
-        return self
-
-    def __or__(self, trafaret):
-        self << trafaret
-        return self
 
     def __repr__(self):
         return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))

@@ -456,7 +456,7 @@ class TestOrNotToTest(unittest.TestCase):
         self.assertEqual(res, 'test')
         res = extract_error(nullString, 1)
         self.assertEqual(res, {0: 'value is not a string', 1: 'value should be None'})
-        res = t.Or << t.Int << t.String
+        res = t.Int | t.String
         self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
 
     def test_operator(self):
@@ -560,7 +560,7 @@ class TestTrafaretMeta(unittest.TestCase):
         res = t.Int | t.String
         self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
         res = t.Int | t.String | t.Null
-        self.assertEqual(repr(res), '<Or(<Int>, <String>, <Null>)>')
+        self.assertEqual(repr(res), '<Or(<Or(<Int>, <String>)>, <Null>)>')
         res = (t.Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
         self.assertEqual(res, 5)
 
@@ -641,7 +641,7 @@ class TestIPv4Trafaret(unittest.TestCase):
         )
 
     def test_ipv4(self):
-        ip = t.IPv4()
+        ip = t.IPv4
 
         for data in self.valid_ips:
             result = ip(data)
@@ -679,7 +679,7 @@ class TestIPv6Trafaret(unittest.TestCase):
         )
 
     def test_ipv6(self):
-        ip = t.IPv6()
+        ip = t.IPv6
 
         for data in self.valid_ips:
             result = ip(data)
