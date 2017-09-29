@@ -738,6 +738,29 @@ class TestDataError(unittest.TestCase):
         )
 
 
+class TestOnErrorTrafaret(unittest.TestCase):
+    def test_on_error(self):
+        trafaret = t.OnError(t.Bool(), message='Changed message')
+
+        res = trafaret(True)
+
+        self.assertEqual(res, True)
+
+    def test_on_error_ensured_trafaret(self):
+        trafaret = t.OnError(t.Bool, message='Changed message')
+
+        res = trafaret(False)
+
+        self.assertEqual(res, False)
+
+    def test_on_error_data_error(self):
+        trafaret = t.OnError(t.Bool, message='Changed message')
+
+        res = catch_error(trafaret, 'Trololo')
+
+        self.assertEqual(res.as_dict(), 'Changed message')
+
+
 # res = @guard(a=String, b=Int, c=String)
 #     def fn(a, b, c="default"):
 #         '''docstring'''

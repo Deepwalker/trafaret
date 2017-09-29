@@ -158,7 +158,7 @@ class Trafaret(TrafaretAsyncMixin):
 
 class OnError(Trafaret):
     def __init__(self, trafaret, message):
-        self.trafaret = trafaret
+        self.trafaret = ensure_trafaret(trafaret)
         self.message = message
 
     def transform(self, value, context=None):
