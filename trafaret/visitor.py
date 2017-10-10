@@ -3,7 +3,8 @@ This module is expirement. API and implementation are unstable.
 Supposed to use with ``Request`` object or something like that.
 """
 from collections import Mapping
-from . import Trafaret, DataError, Key, catch_error, _empty
+from . import Trafaret, DataError, Key, catch_error
+from .lib import _empty
 
 
 def get_deep_attr(obj, keys):
