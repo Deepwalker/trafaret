@@ -4,6 +4,7 @@ import trafaret as t
 from collections import Mapping as AbcMapping
 from trafaret import catch_error, extract_error, DataError
 from trafaret.extras import KeysSubset
+from trafaret.visitor import DeepKey
 
 
 class TestAnyTrafaret(unittest.TestCase):
@@ -850,3 +851,14 @@ class TestOnErrorTrafaret(unittest.TestCase):
 # self.assertEqual(res, {'B.a': DataError(Unexistent key)}
 # res = dict(DeepKey('c.B.d.a', to_name='B_a', trafaret=Int()).pop({'c': A}))
 # self.assertEqual(res, {'B_a': DataError(value can't be converted to int)}
+
+
+class TestDeepKey(unittest.TestCase):
+
+    def test_fetch_value_by_path(self):
+        class A(object):
+            class B(object):
+                d = {'a': 'word'}
+
+        res = dict((DeepKey('B.d.a') >> 'B_a').pop(A))
+        self.assertEqual(res, {'B_a': 'word'})
