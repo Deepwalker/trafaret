@@ -505,6 +505,10 @@ class TestStrBoolTrafaret(unittest.TestCase):
         self.assertEqual(res, True)
         res = t.StrBool().check(False)
         self.assertEqual(res, False)
+        res = t.StrBool().check('on')
+        self.assertEqual(res, True)
+        res = t.StrBool().check('off')
+        self.assertEqual(res, False)
 
 
 

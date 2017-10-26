@@ -380,7 +380,7 @@ class StrBool(Trafaret):
     False
     """
 
-    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on',
+    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on', 'off',
                    '1', '0', 'none')
 
     def check_and_return(self, value):
