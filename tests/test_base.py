@@ -57,6 +57,31 @@ class TestCallableTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value is not callable')
 
 
+class TestBasics(unittest.TestCase):
+    def test_callable(self):
+        import functools
+        to_int_10000 = functools.partial(int, '10000')
+        trafaret = t.Regexp('2|10|16') & t.Int & t.Call(to_int_10000)
+        self.assertEqual(trafaret('10'), 10000)
+
+    def test_auto_call(self):
+        import functools
+        to_int_10000 = functools.partial(int, '10000')
+        trafaret = t.Regexp('2|10|16') & t.Int & to_int_10000
+        self.assertEqual(trafaret('10'), 10000)
+
+    def test_class(self):
+        class Tttt:
+            def __call__(self, value, context=None):
+                return context(value)
+        trafaret = t.Int() & Tttt()
+        self.assertEqual(trafaret(123, context=lambda v: v + 123), 246)
+
+    def test_upper(self):
+        trafaret = t.Regexp('\w+-\w+') & str.upper
+        self.assertEqual(trafaret('abc-Abc'), 'ABC-ABC')
+
+
 class TestDictTrafaret(unittest.TestCase):
     def test_base(self):
         trafaret = t.Dict(foo=t.Int, bar=t.String)

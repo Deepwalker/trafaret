@@ -31,3 +31,13 @@ def call_with_context_if_support(callble, value, context):
         return callble(value, context=context)
     else:
         return callble(value)
+
+
+def get_callable_argspec(callble):
+    if inspect.isroutine(callble):
+        return getargspec(callble)
+    spec = getargspec(callble.__call__)
+    # check if callble is bound method
+    if hasattr(callble, '__self__'):
+        spec.args.pop(0)  # remove `self` from args
+    return spec

@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 
 import functools
-import inspect
 import itertools
 import numbers
 import warnings
@@ -11,6 +10,7 @@ from .lib import (
     py36,
     py3metafix,
     getargspec,
+    get_callable_argspec,
     call_with_context_if_support,
     _empty,
 )
@@ -175,17 +175,14 @@ def ensure_trafaret(trafaret):
     """
     if isinstance(trafaret, Trafaret):
         return trafaret
-    elif inspect.isroutine(trafaret):
-        if 'context' in getargspec(trafaret).args:
-            return trafaret
-        else:
-            return Call(trafaret)
     elif isinstance(trafaret, type):
         if issubclass(trafaret, Trafaret):
             return trafaret()
         # str, int, float are classes, but its appropriate to use them
         # as trafaret functions
         return Call(lambda val: trafaret(val))
+    elif callable(trafaret):
+        return Call(trafaret)
     else:
         raise RuntimeError("%r should be instance or subclass"
                            " of Trafaret" % trafaret)
@@ -1167,14 +1164,20 @@ class Call(Trafaret, CallAsyncMixin):
     def __init__(self, fn):
         if not callable(fn):
             raise RuntimeError("Call argument should be callable")
-        argspec = getargspec(fn)
+        try:
+            argspec = get_callable_argspec(fn)
+        except TypeError:
+            self.fn = fn
+            self.supports_context = False
+            return
         args = set(argspec.args)
         self.supports_context = 'context' in args
         if 'context' in args:
             args.remove('context')
-        if len(argspec.args) - len(argspec.defaults or []) > 1:
-            raise RuntimeError("Call argument should be"
-                               " one argument function")
+        # if len(argspec.args) - len(argspec.defaults or []) > 1:
+        #     raise RuntimeError(
+        #         "Call argument should be one argument function"
+        #     )
         self.fn = fn
 
     def transform(self, value, context=None):
@@ -1294,10 +1297,7 @@ def guard(trafaret=None, **kwargs):
         trafaret = Dict(**kwargs)
 
     def wrapper(fn):
-        if py3:
-            argspec = inspect.getfullargspec(fn)
-        else:
-            argspec = inspect.getargspec(fn)
+        argspec = getargspec(fn)
 
         @functools.wraps(fn)
         def decor(*args, **kwargs):
