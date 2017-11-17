@@ -130,7 +130,8 @@ class DictAsyncMixin:
             if inspect.isasyncgen(key_run):
                 async for k, v, names in key_run:
                     if isinstance(v, DataError):
-                        errors[k] = v
+                        key_name = names[0]
+                        errors[key_name] = v
                     else:
                         collect[k] = v
                     touched_names.extend(names)
