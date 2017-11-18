@@ -968,7 +968,8 @@ class Dict(Trafaret, DictAsyncMixin):
                 raise ValueError('Non callable Keys are not supported')
             for k, v, names in call_with_context_if_support(key, value, context=context):
                 if isinstance(v, DataError):
-                    errors[k] = v
+                    key_name = names[0]
+                    errors[key_name] = v
                 else:
                     collect[k] = v
                 touched_names.extend(names)
