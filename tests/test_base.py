@@ -375,6 +375,10 @@ class TestKey(unittest.TestCase):
         res = list(t.Key(name='test', optional=True)({}))
         self.assertEqual(res, [])
 
+    def test_key_return_original_name_on_error(self):
+        res = list(t.Key(name='test', to_name='tost', trafaret=t.Int())({'test': 'a'}))[0]
+        assert res[0] == 'test'  # must be original key name
+        assert isinstance(res[1], DataError)
 
 
 class TestList(unittest.TestCase):
