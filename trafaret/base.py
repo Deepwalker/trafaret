@@ -822,11 +822,15 @@ class Key(KeyAsyncMixin):
                 default = self.default()
             else:
                 default = self.default
-            yield (
-                self.get_name(),
-                catch_error(self.trafaret, self.get_data(data, default), context=context),
-                (self.name,)
-            )
+            error = None
+            try:
+                result = self.trafaret(self.get_data(data, default), context=context)
+            except DataError as de:
+                error = de
+            if error:
+                yield self.name, error, (self.name,)
+            else:
+                yield self.get_name(), result, (self.name,)
             return
 
         if not self.optional:
