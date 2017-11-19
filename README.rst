@@ -36,6 +36,9 @@ It have shortcut syntax and ability to express anything that you can code:
 Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
 or look to the docs/api/intro.rst for start.
 
+Trafaret can even generate Trafarets instances to build transformators from json,
+like in json schema implementation `Trafaret Schema <https://github.com/Deepwalker/trafaret_schema>`_
+
 
 New
 ---
