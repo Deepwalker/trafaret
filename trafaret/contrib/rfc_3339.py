@@ -21,5 +21,5 @@ class DateTime(Trafaret):
             return value
         try:
             return parse(value)
-        except ValueError as e:
-            self._failure(e.message)
+        except (ValueError, TypeError) as e:
+            self._failure(str(e))

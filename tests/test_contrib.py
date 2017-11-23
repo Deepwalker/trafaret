@@ -9,3 +9,7 @@ class TestDateTime(unittest.TestCase):
     def test_datetime(self):
         check = DateTime()
         assert check('2017-09-01 23:59') == datetime.datetime(2017, 9, 1, 23, 59)
+
+    def test_datetime_in_or(self):
+        nullable_datetime = t.Or(DateTime, t.Null)
+        assert nullable_datetime.check(None) is None
