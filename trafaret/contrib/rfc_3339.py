@@ -1,5 +1,5 @@
 from dateutil.parser import parse
-from datetime import datetime
+from datetime import datetime, date
 from .. import Trafaret, str_types
 
 
@@ -21,5 +21,27 @@ class DateTime(Trafaret):
             return value
         try:
             return parse(value)
+        except (ValueError, TypeError) as e:
+            self._failure(str(e))
+
+
+class Date(Trafaret):
+    """Class for support parsing dates in RFC3339 formats
+    via dateutil.parse helper
+    """
+    convertable = str_types + (date,)
+    value_type = date
+
+    def __init__(self, allow_blank=False):
+        self.allow_blank = allow_blank
+
+    def __repr__(self):
+        return "<Date(blank)>" if self.allow_blank else "<Date>"
+
+    def check_and_return(self, value):
+        if isinstance(value, date):
+            return value
+        try:
+            return parse(value).date()
         except (ValueError, TypeError) as e:
             self._failure(str(e))
