@@ -4,8 +4,8 @@ from .. import Trafaret, str_types
 
 
 class DateTime(Trafaret):
-    """ Class for support parsing date im RFC3339 formats
-        via dateutil.parse helper
+    """Class for support parsing date time in RFC3339 formats
+    via dateutil.parse helper
     """
     convertable = str_types + (datetime,)
     value_type = datetime
@@ -14,7 +14,7 @@ class DateTime(Trafaret):
         self.allow_blank = allow_blank
 
     def __repr__(self):
-        return "<Date(blank)>" if self.allow_blank else "<Date>"
+        return "<DateTime(blank)>" if self.allow_blank else "<DateTime>"
 
     def check_and_return(self, value):
         if isinstance(value, datetime):
