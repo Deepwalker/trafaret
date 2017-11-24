@@ -37,7 +37,8 @@ class TestDate(unittest.TestCase):
                       '29 July 1954',
                       '29.07.1954',
                       '29/07/1954',
-                      '07/29/1954'):
+                      '07/29/1954',
+                      datetime.datetime(1954, 7, 29, 23, 59)):
             self.assertEqual(check(value), result)
 
     def test_date_blank(self):

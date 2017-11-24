@@ -39,7 +39,9 @@ class Date(Trafaret):
         return "<Date(blank)>" if self.allow_blank else "<Date>"
 
     def check_and_return(self, value):
-        if isinstance(value, date):
+        if isinstance(value, datetime):
+            return value.date()
+        elif isinstance(value, date):
             return value
         try:
             return parse(value).date()
