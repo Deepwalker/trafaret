@@ -1,6 +1,19 @@
 Changelog
 =========
 
+1.0.1
+-----
+- ``Date`` catches ``TypeError`` in cases like ``None``
+
+
+1.0.0
+-----
+- ``Or`` is immutable now
+- fixes for ``OnError``, ``DeepKey``
+- default ``Key`` implementations for ``Dict`` will return original key name
+  in case of incorrect value
+
+
 2017-08-04
 ----------
 
