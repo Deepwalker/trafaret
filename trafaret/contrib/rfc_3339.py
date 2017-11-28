@@ -21,7 +21,7 @@ class DateTime(Trafaret):
             return value
         try:
             return parse(value)
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError, OverflowError) as e:
             self._failure(str(e))
 
 
@@ -45,5 +45,5 @@ class Date(Trafaret):
             return value
         try:
             return parse(value).date()
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError, OverflowError) as e:
             self._failure(str(e))
