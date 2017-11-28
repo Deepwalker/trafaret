@@ -1,6 +1,8 @@
 import unittest
 import datetime
 
+from dateutil.tz import tzutc, tzoffset
+
 import trafaret as t
 from trafaret import DataError
 from trafaret.contrib.rfc_3339 import DateTime, Date
@@ -11,6 +13,62 @@ class TestDateTime(unittest.TestCase):
         check = DateTime()
         self.assertEqual(check('2017-09-01 23:59'),
                          datetime.datetime(2017, 9, 1, 23, 59))
+        self.assertEqual(
+            check('Fri Sep 1 23:59:59 UTC 2017'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59, tzinfo=tzutc()))
+        self.assertEqual(
+            check('Fri Sep 1 23:59:59 2017'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59))
+        self.assertEqual(
+            check('Fri, 1 Sep 2017 23:59:59 -0300'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59,
+                              tzinfo=tzoffset(None, -10800)))
+        self.assertEqual(
+            check('2017-09-01T23:59:59.5-03:00'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59, 500000,
+                              tzinfo=tzoffset(None, -10800)))
+        self.assertEqual(
+            check('20170901T235959.5-0300'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59, 500000,
+                              tzinfo=tzoffset(None, -10800)))
+        self.assertEqual(
+            check('20170901T235959-0300'),
+            datetime.datetime(2017, 9, 1, 23, 59, 59,
+                              tzinfo=tzoffset(None, -10800)))
+        self.assertEqual(check('2017-09-01T23:59:59'),
+                         datetime.datetime(2017, 9, 1, 23, 59, 59))
+        self.assertEqual(check('20170901T235959'),
+                         datetime.datetime(2017, 9, 1, 23, 59, 59))
+        self.assertEqual(check('20170901235959'),
+                         datetime.datetime(2017, 9, 1, 23, 59, 59))
+        self.assertEqual(check('2017-09-01T23:59'),
+                         datetime.datetime(2017, 9, 1, 23, 59))
+        self.assertEqual(check('20170901T2359'),
+                         datetime.datetime(2017, 9, 1, 23, 59))
+        self.assertEqual(check('2017-09-01T23'),
+                         datetime.datetime(2017, 9, 1, 23))
+        self.assertEqual(check('20170901T23'),
+                         datetime.datetime(2017, 9, 1, 23))
+        self.assertEqual(check('2017-09-01'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('20170901'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('09-01-2017'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('09-01-17'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('2017.Sep.01'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('2017/09/01'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('2017 09 01'),
+                         datetime.datetime(2017, 9, 1))
+        self.assertEqual(check('1st of September 2017'),
+                         datetime.datetime(2017, 9, 1))
+
+        # Note: to equality here we need to pass extra params to parse() method
+        self.assertNotEqual(check('01-09-2017'),
+                            datetime.datetime(2017, 9, 1))
 
     def test_datetime_blank(self):
         check = DateTime(allow_blank=True)
