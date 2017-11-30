@@ -181,7 +181,7 @@ Here is some examples to make things clear::
 
     >>> t.String().check('werwerwer')
     'werwerwer'
-    >>> t.String(regex='^\s+$).check('   ')
+    >>> t.String(regex='^\s+$').check('   ')
     '   '
     >>> t.String(regex='^name=(\w+)$').check('name=Jeff')
     'Jeff'
