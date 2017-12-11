@@ -97,7 +97,7 @@ class TrafaretMeta(type):
         return cls() & other
 
     def __rshift__(cls, other):
-        return cls() >> other
+        return cls() & other
 
 
 @py3metafix
