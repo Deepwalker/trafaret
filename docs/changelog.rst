@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.3
+-----
+- new ``trafaret.keys`` dict key ``subdict`` from ``trafaret_schema``
+
 1.0.1
 -----
 - ``Date`` catches ``TypeError`` in cases like ``None``
