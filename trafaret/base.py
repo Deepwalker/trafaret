@@ -11,7 +11,7 @@ from .lib import (
     py3metafix,
     getargspec,
     get_callable_argspec,
-    call_with_context_if_support,
+    with_context_caller,
     _empty,
 )
 from .dataerror import DataError
@@ -839,9 +839,6 @@ class Key(KeyAsyncMixin):
     def get_data(self, data, default):
         return data.get(self.name, default)
 
-    def keys_names(self):
-        yield self.name
-
     def set_trafaret(self, trafaret):
         self.trafaret = ensure_trafaret(trafaret)
         return self
@@ -857,10 +854,11 @@ class Key(KeyAsyncMixin):
         self.optional = True
 
     def __repr__(self):
-        return '<%s "%s"%s>' % (
+        return '<%s "%s"%s %s>' % (
             self.__class__.__name__,
             self.name,
             ' to "%s"' % self.to_name if getattr(self, 'to_name', False) else '',
+            self.trafaret,
         )
 
 
@@ -927,11 +925,11 @@ class Dict(Trafaret, DictAsyncMixin):
         self.ignore_any = '*' in ignore_extra
         self.ignore = [name for name in ignore_extra if name != '*']
 
-        self.keys = list(args)
+        self.keys = [with_context_caller(key) for key in args]
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = Key(key) if isinstance(key, str_types) else key
             key_.set_trafaret(ensure_trafaret(trafaret))
-            self.keys.append(key_)
+            self.keys.append(with_context_caller(key_))
 
     def allow_extra(self, *names, **kw):
         trafaret = kw.get('trafaret', Any)
@@ -966,7 +964,7 @@ class Dict(Trafaret, DictAsyncMixin):
         for key in self.keys:
             if not callable(key):
                 raise ValueError('Non callable Keys are not supported')
-            for k, v, names in call_with_context_if_support(key, value, context=context):
+            for k, v, names in key(value, context=context):
                 if isinstance(v, DataError):
                     errors[k] = v
                 else:
@@ -992,11 +990,6 @@ class Dict(Trafaret, DictAsyncMixin):
             raise DataError(error=errors, trafaret=self)
         return collect
 
-    def keys_names(self):
-        for key in self.keys:
-            for k in key.keys_names():
-                yield k
-
     def __repr__(self):
         r = "<Dict("
         options = []
@@ -1010,8 +1003,8 @@ class Dict(Trafaret, DictAsyncMixin):
         if options:
             r += " | "
         options = []
-        for key in sorted(self.keys, key=lambda k: k.name):
-            options.append("%s=%r" % (key.name, key.trafaret))
+        for key in sorted(self.keys, key=lambda k: repr(k)):
+            options.append(repr(key))
         r += ", ".join(options)
         r += ")>"
         return r
@@ -1021,35 +1014,16 @@ class Dict(Trafaret, DictAsyncMixin):
         Extends one Dict with other Dict Key`s or Key`s list,
         or dict instance supposed for Dict
         """
-        if not isinstance(other, (Dict, list, dict)):
+        if isinstance(other, Dict):
+            other_keys = other.keys
+        elif isinstance(other, (list, tuple)):
+            other_keys = list(other)
+        elif isinstance(other, dict):
+            return self.__class__(other, *self.keys)
+        else:
             raise TypeError('You must merge Dict only with Dict'
                             ' or list of Keys')
-        if isinstance(other, dict):
-            other = Dict(other)
-        if isinstance(other, Dict):
-            other_keys_names = other.keys_names()
-            other_keys = other.keys
-        else:
-            other_keys_names = [
-                key_name
-                for key in other
-                for key_name in key.keys_names()
-            ]
-            other_keys = other
-        if set(self.keys_names()) & set(other_keys_names):
-            raise ValueError(
-                'Merged dicts should have no interlapping keys'
-            )
-        if (
-            set(key.get_name() for key in self.keys)
-            & set(key.get_name() for key in other_keys)
-        ):
-            raise ValueError(
-                'Merged dicts should have no interlapping keys to names'
-            )
-        new_trafaret = self.__class__()
-        new_trafaret.keys = self.keys + other_keys
-        return new_trafaret
+        return self.__class__(*(self.keys + other_keys))
 
     __add__ = merge
 

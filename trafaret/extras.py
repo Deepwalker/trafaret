@@ -1,4 +1,4 @@
-from . import Key, DataError, Any, catch_error, Dict
+from . import Key, DataError, Any, catch_error
 
 
 class KeysSubset(Key):
@@ -18,8 +18,6 @@ class KeysSubset(Key):
     >>> join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
     >>> Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
     {'name': 'Adam Smith'}
-    >>> Dict({KeysSubset(): Dict({'a': Any})}).check({'a': 3})
-    {'a': 3}
     """
 
     def __init__(self, *keys):
@@ -28,8 +26,8 @@ class KeysSubset(Key):
         self.trafaret = Any()
 
     def __call__(self, data):
-        subdict = dict((k, data.get(k)) for k in self.keys_names() if k in data)
-        keys_names = self.keys_names()
+        subdict = dict((k, data.get(k)) for k in self.keys if k in data)
+        keys_names = self.keys
         res = catch_error(self.trafaret, subdict)
         if isinstance(res, DataError):
             for k, e in res.error.items():
@@ -37,10 +35,3 @@ class KeysSubset(Key):
         else:
             for k, v in res.items():
                 yield k, v, keys_names
-
-    def keys_names(self):
-        if isinstance(self.trafaret, Dict):
-            for key in self.trafaret.keys_names():
-                yield key
-        for key in self.keys:
-            yield key

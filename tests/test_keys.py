@@ -10,7 +10,7 @@ class TestKey(unittest.TestCase):
     def test_key(self):
         default = lambda: 1
         res = t.Key(name='test', default=default)
-        self.assertEqual(repr(res), '<Key "test">')
+        self.assertEqual(repr(res), '<Key "test" <Any>>')
         res = next(t.Key(name='test', default=default)({}))
         self.assertEqual(res, ('test', 1, ('test',)))
         res = next(t.Key(name='test', default=2)({}))
@@ -49,9 +49,6 @@ class TestKeysSubset(unittest.TestCase):
         join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
         res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
         self.assertEqual(res, {'name': 'Adam Smith'})
-
-        res = t.Dict({KeysSubset(): t.Dict({'a': t.Any})}).check({'a': 3})
-        self.assertEqual(res, {'a': 3})
 
 
 class TestDeepKey(unittest.TestCase):

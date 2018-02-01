@@ -24,13 +24,35 @@ def py3metafix(cls):
         return newcls
 
 
-def call_with_context_if_support(callble, value, context):
+class WithContextCaller(object):
+    def __init__(self, func):
+        self.func = func
+        if hasattr(self.func, 'async_call'):
+            self.async_call = self.func.async_call
+
+    def __call__(self, value, context=None):
+        return self.func(value, context=context)
+
+    def __repr__(self):
+        return repr(self.func)
+
+
+class WithoutContextCaller(WithContextCaller):
+    def __call__(self, value, context=None):
+        return self.func(value)
+
+
+def with_context_caller(callble):
+    if isinstance(callble, WithContextCaller):
+        return callble
     if not inspect.isfunction(callble) and hasattr(callble, '__call__'):
-        callble = callble.__call__
-    if 'context' in getargspec(callble).args:
-        return callble(value, context=context)
+        args = getargspec(callble.__call__).args
     else:
-        return callble(value)
+        args = getargspec(callble).args
+    if 'context' in args:
+        return WithContextCaller(callble)
+    else:
+        return WithoutContextCaller(callble)
 
 
 def get_callable_argspec(callble):

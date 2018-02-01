@@ -2,7 +2,6 @@ import inspect
 from collections import Mapping as AbcMapping
 from .dataerror import DataError
 from .lib import (
-    call_with_context_if_support,
     _empty,
 )
 
@@ -122,8 +121,7 @@ class DictAsyncMixin:
         for key in self.keys:
             if not callable(key) and not hasattr(key, 'async_call'):
                 raise ValueError('Non callable Keys are not supported')
-            key_run = call_with_context_if_support(
-                getattr(key, 'async_call', key),
+            key_run = getattr(key, 'async_call', key)(
                 value,
                 context=context,
             )

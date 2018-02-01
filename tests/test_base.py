@@ -91,7 +91,7 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
         self.assertEqual(res, {'eggs': 'eggs is not allowed key'})
         res = trafaret.allow_extra("eggs")
-        self.assertEqual(repr(res), '<Dict(extras=(eggs) | bar=<String>, foo=<Int>)>')
+        self.assertEqual(repr(res), '<Dict(extras=(eggs) | <Key "bar" <String>>, <Key "foo" <Int>>)>')
         trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
         trafaret.check({"foo": 1, "bar": "spam"})
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
@@ -115,20 +115,6 @@ class TestDictTrafaret(unittest.TestCase):
         trafaret.check({"foo": 1})
         with self.assertRaises(t.DataError):
             trafaret.check({"foo": 2, "marmalade": 5})
-
-    def test_old_keys(self):
-        class OldKey(object):
-            def pop(self, value):
-                data = value.pop('testkey')
-                yield 'testkey', data
-
-            def set_trafaret(self, trafaret):
-                pass
-        trafaret = t.Dict({
-            OldKey(): t.Any
-        })
-        with self.assertRaises(ValueError):
-            trafaret.check({'testkey': 123})
 
     def test_callable_key(self):
         def simple_key(value):
@@ -194,8 +180,8 @@ class TestDictTrafaret(unittest.TestCase):
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz1': t.String},
             foo=t.Int)
-        with self.assertRaises(ValueError):
-            first + second
+        # will not raise any errors
+        first + second
 
     def test_bad_add_to_names(self):
         first = t.Dict({
@@ -204,8 +190,8 @@ class TestDictTrafaret(unittest.TestCase):
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz': t.String},
             foo1=t.Int)
-        with self.assertRaises(ValueError):
-            first + second
+        # will not raise any errors
+        first + second
 
     def test_add_to_names_list_of_keys(self):
         dct = t.Dict(key1=t.String)
@@ -327,7 +313,10 @@ class TestForwardTrafaret(unittest.TestCase):
     def test_forward(self):
         node = t.Forward()
         node << t.Dict(name=t.String, children=t.List[node])
-        self.assertEqual(repr(node), '<Forward(<Dict(children=<List(<recur>)>, name=<String>)>)>')
+        self.assertEqual(
+            repr(node),
+            '<Forward(<Dict(<Key "children" <List(<recur>)>>, <Key "name" <String>>)>)>',
+        )
         res = node.check({"name": "foo", "children": []}) == {'children': [], 'name': 'foo'}
         self.assertEqual(res, True)
         res = extract_error(node, {"name": "foo", "children": [1]})
