@@ -1,11 +1,7 @@
 Trafaret
 ========
 
------
-
 |circleci_build| |gitter_chat| |pypi_version| |pypi_license|
-
------
 
 Ultimate transformation library that supports validation, contexts and ``aiohttp``.
 

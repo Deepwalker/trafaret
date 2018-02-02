@@ -100,4 +100,4 @@ __all__ = (
 )
 
 
-__VERSION__ = (1, 0, '4-alpha.01')
+__VERSION__ = (1, 0, '4-alpha.02')
