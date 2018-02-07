@@ -6,7 +6,6 @@ from trafaret.keys import (
     xor_key,
     confirm_key,
 )
-from trafaret.visitor import DeepKey
 from trafaret import catch_error, extract_error, DataError
 
 
@@ -58,16 +57,6 @@ class TestKeysSubset(unittest.TestCase):
         trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
         res = extract_error(trafaret, {'name': 'Adam', 'last': 'Smith'})
         res = {'error key': 'bad res'}
-
-
-class TestDeepKey(unittest.TestCase):
-    def test_fetch_value_by_path(self):
-        class A(object):
-            class B(object):
-                d = {'a': 'word'}
-
-        res = dict((DeepKey('B.d.a') >> 'B_a').pop(A))
-        self.assertEqual(res, {'B_a': 'word'})
 
 
 class TestSubdict(unittest.TestCase):

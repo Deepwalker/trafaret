@@ -567,7 +567,6 @@ class TestRegexpTrafaret(unittest.TestCase):
         assert repr(t.RegexpRaw('.*(cat).*')) == '<Regexp ".*(cat).*">'
 
 
-
 class TestTrafaretMeta(unittest.TestCase):
     def test_meta(self):
         res = (t.Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
