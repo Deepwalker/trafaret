@@ -269,8 +269,6 @@ class TestDictTrafaret(unittest.TestCase):
         self.assertEqual(res, {'bar': "value can't be converted to float"})
 
 
-
-
 class TestDictKeys(unittest.TestCase):
 
     def test_dict_keys(self):
