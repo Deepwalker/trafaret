@@ -90,13 +90,13 @@ class TestDictTrafaret(unittest.TestCase):
         self.assertEqual(res, {'bar': 'is required'})
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
         self.assertEqual(res, {'eggs': 'eggs is not allowed key'})
-        res = trafaret.allow_extra("eggs")
-        self.assertEqual(repr(res), '<Dict(extras=(eggs) | <Key "bar" <String>>, <Key "foo" <Int>>)>')
+        trafaret = trafaret.allow_extra("eggs")
+        self.assertEqual(repr(trafaret), '<Dict(extras=(eggs) | <Key "bar" <String>>, <Key "foo" <Int>>)>')
         trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
         trafaret.check({"foo": 1, "bar": "spam"})
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
         self.assertEqual(res, {'ham': 'ham is not allowed key'})
-        trafaret.allow_extra("*")
+        trafaret = trafaret.allow_extra("*")
         trafaret.check({"foo": 1, "bar": "spam", "ham": 100})
         trafaret.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
         res = extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
@@ -167,7 +167,7 @@ class TestDictTrafaret(unittest.TestCase):
 
     def test_base2(self):
         trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.Int)
-        trafaret.allow_extra('*')
+        trafaret = trafaret.allow_extra('*')
         res = trafaret.check({"foo": 1, "ham": 100, "baz": None})
         self.assertEqual(res, {'baz': None, 'foo': 1, 'ham': 100})
         res = extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None})
@@ -180,21 +180,21 @@ class TestDictTrafaret(unittest.TestCase):
         res = trafaret.check({'foo': 4})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
 
-        trafaret.allow_extra('*')
+        trafaret = trafaret.allow_extra('*')
         res = extract_error(trafaret, {'baz': 'spam', 'foo': 4})
         self.assertEqual(res, {'baz': 'baz key was shadowed'})
 
-        trafaret.allow_extra('*', trafaret=t.String)
+        trafaret = trafaret.allow_extra('*', trafaret=t.String)
         res = extract_error(trafaret, {'baaz': 5, 'foo': 4})
         self.assertEqual(res, {'baaz': 'value is not a string'})
         res = trafaret({'baaz': 'strstr', 'foo':4})
         self.assertEqual(res, {'baaz': 'strstr', 'foo':4, 'baz': 'nyanya'})
 
-        trafaret.ignore_extra('fooz')
+        trafaret = trafaret.ignore_extra('fooz')
         res = trafaret.check({'foo': 4, 'fooz': 5})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
 
-        trafaret.ignore_extra('*')
+        trafaret = trafaret.ignore_extra('*')
         res = trafaret.check({'foo': 4, 'foor': 5})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
 
