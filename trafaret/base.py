@@ -937,7 +937,11 @@ class Dict(Trafaret, DictAsyncMixin):
             key_.set_trafaret(trafaret)
             self.keys.append(key_)
         # optimized version without runtime check for context arg
-        self._keys = [with_context_caller(key) for key in self.keys]
+        self._keys = []
+        for key in self.keys:
+            if not callable(key) and not hasattr(key, 'async_call'):
+                raise ValueError('Non callable Keys are not supported')
+            self._keys.append(with_context_caller(key))
 
     def _clone_args(self):
         """ return args to create new Dict clone
@@ -998,8 +1002,6 @@ class Dict(Trafaret, DictAsyncMixin):
         errors = {}
         touched_names = []
         for key in self._keys:
-            if not callable(key):
-                raise ValueError('Non callable Keys are not supported')
             for k, v, names in key(value, context=context):
                 if isinstance(v, DataError):
                     errors[k] = v

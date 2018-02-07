@@ -27,11 +27,7 @@ class OrAsyncMixin:
 class AndAsyncMixin:
     async def async_transform(self, value, context=None):
         res = await self.trafaret.async_check(value, context=context)
-        if isinstance(res, DataError):
-            raise DataError
         res = await self.other.async_check(res, context=context)
-        if isinstance(res, DataError):
-            raise res
         return res
 
 
@@ -119,8 +115,6 @@ class DictAsyncMixin:
         errors = {}
         touched_names = []
         for key in self._keys:
-            if not callable(key) and not hasattr(key, 'async_call'):
-                raise ValueError('Non callable Keys are not supported')
             key_run = getattr(key, 'async_call', key)(
                 value,
                 context=context,
@@ -147,9 +141,10 @@ class DictAsyncMixin:
                 if key in self.ignore:
                     continue
                 if not self.allow_any and key not in self.extras:
-                    errors[key] = DataError("%s is not allowed key" % key)
-                elif key in collect:
-                    errors[key] = DataError("%s key was shadowed" % key)
+                    if key in collect:
+                        errors[key] = DataError("%s key was shadowed" % key)
+                    else:
+                        errors[key] = DataError("%s is not allowed key" % key)
                 else:
                     try:
                         collect[key] = await self.extras_trafaret.async_check(value[key])
