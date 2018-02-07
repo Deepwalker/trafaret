@@ -3,11 +3,9 @@ There will be small helpers to render forms with exist trafarets for DRY.
 """
 import collections
 from itertools import groupby
-from . import _dd  # noqa
 
 
 def recursive_unfold(data, prefix='', delimeter='__'):
-
     def concat(prefix, value, delimeter):
         return (prefix + delimeter if prefix else '') + str(value)
 

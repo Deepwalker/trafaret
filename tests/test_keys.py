@@ -1,8 +1,12 @@
 import unittest
 import trafaret as t
-from trafaret.extras import KeysSubset
+from trafaret.keys import (
+    KeysSubset,
+    subdict,
+    xor_key,
+    confirm_key,
+)
 from trafaret.visitor import DeepKey
-from trafaret.keys import subdict, xor_key, confirm_key
 from trafaret import catch_error, extract_error, DataError
 
 
@@ -49,6 +53,11 @@ class TestKeysSubset(unittest.TestCase):
         join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
         res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
         self.assertEqual(res, {'name': 'Adam Smith'})
+
+        bad_res = lambda d: t.DataError({'error key': 'bad res'})
+        trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
+        res = extract_error(trafaret, {'name': 'Adam', 'last': 'Smith'})
+        res = {'error key': 'bad res'}
 
 
 class TestDeepKey(unittest.TestCase):

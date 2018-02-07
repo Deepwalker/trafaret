@@ -5,7 +5,7 @@ from decimal import Decimal
 
 import trafaret as t
 from trafaret import extract_error, ignore, DataError
-from trafaret.extras import KeysSubset
+from trafaret.keys import KeysSubset
 from trafaret.constructor import construct, C
 
 

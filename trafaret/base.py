@@ -60,12 +60,6 @@ else:
     BYTES_TYPE = str
 
 
-def _dd(value):
-    if not hasattr(value, 'items'):
-        return repr(value)
-    return r"{%s}" % ', '.join("%r: %s" % (x[0], _dd(x[1])) for x in sorted(value.items(), key=lambda x: x[0]))
-
-
 def deprecated(message):
     warnings.warn(message, DeprecationWarning)
 
@@ -1080,13 +1074,6 @@ def DictKeys(keys):
 
     :param keys:
     :type keys:
-
-    >>> _dd(DictKeys(['a','b']).check({'a':1,'b':2,}))
-    "{'a': 1, 'b': 2}"
-    >>> extract_error(DictKeys(['a','b']), {'a':1,'b':2,'c':3,})
-    {'c': 'c is not allowed key'}
-    >>> extract_error(DictKeys(['key','key2']), {'key':'val'})
-    {'key2': 'is required'}
     """
     req = [(Key(key), Any) for key in keys]
     return Dict(dict(req))
