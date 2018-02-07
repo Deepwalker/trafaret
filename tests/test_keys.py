@@ -2,7 +2,7 @@ import unittest
 import trafaret as t
 from trafaret.extras import KeysSubset
 from trafaret.visitor import DeepKey
-from trafaret.keys import subdict
+from trafaret.keys import subdict, xor_key, confirm_key
 from trafaret import catch_error, extract_error, DataError
 
 
@@ -89,3 +89,39 @@ class TestSubdict(unittest.TestCase):
 
         res = catch_error(signup_trafaret, {'email': 'me@gmail.com', 'password': 'qwerty'})
         assert res.as_dict() == {'password_confirm': 'is required'}
+
+
+class TestXorKey(unittest.TestCase):
+    def test_xor_key(self):
+        trafaret = t.Dict(xor_key('name', 'nick', t.String()))
+
+        res = trafaret({'name': 'Nickolay'})
+        assert res == {'name': 'Nickolay'}
+
+        res = catch_error(trafaret, {'name': 'Nickolay', 'nick': 'Sveta'})
+        assert res.as_dict() == {
+            'name': 'correct only if nick is not defined',
+            'nick': 'correct only if name is not defined',
+        }
+        res = catch_error(trafaret, {})
+        assert res.as_dict() == {
+            'name': 'is required if nick is not defined',
+            'nick': 'is required if name is not defined',
+        }
+
+
+class TestConfirmKey(unittest.TestCase):
+    def test_confirm_key(self):
+        trafaret = t.Dict(confirm_key('password', 'password_confirm', t.String()))
+
+        res = trafaret({'password': 'qwerty', 'password_confirm': 'qwerty'})
+        assert res == {'password': 'qwerty', 'password_confirm': 'qwerty'}
+
+        res = catch_error(trafaret, {'password_confirm': 'qwerty'})
+        assert res.as_dict() == {'password': 'is required'}
+
+        res = catch_error(trafaret, {'password': 'qwerty'})
+        assert res.as_dict() == {'password_confirm': 'is required'}
+
+        res = catch_error(trafaret, {'password': 'qwerty', 'password_confirm': 'not qwerty'})
+        assert res.as_dict() == {'password_confirm': 'must be equal to password'}

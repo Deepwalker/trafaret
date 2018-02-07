@@ -59,7 +59,7 @@ def xor_key(first, second, trafaret):
 
     Then checks key value against trafaret.
     """
-    trafaret = t.Trafaret._trafaret(trafaret)
+    trafaret = t.ensure_trafaret(trafaret)
 
     def check_(value):
         if (first in value) ^ (second in value):
@@ -69,8 +69,8 @@ def xor_key(first, second, trafaret):
             yield first, t.DataError(error='correct only if {} is not defined'.format(second)), (first,)
             yield second, t.DataError(error='correct only if {} is not defined'.format(first)), (second,)
         else:
-            yield first, t.DataError(error='is required if {} is not defined'.format('second')), (first,)
-            yield second, t.DataError(error='is required if {} is not defined'.format('first')), (second,)
+            yield first, t.DataError(error='is required if {} is not defined'.format(second)), (first,)
+            yield second, t.DataError(error='is required if {} is not defined'.format(first)), (second,)
 
     return check_
 
@@ -86,16 +86,16 @@ def confirm_key(name, confirm_name, trafaret):
         first, second = None, None
         if name in value:
             first = value[name]
+            yield name, t.catch_error(trafaret, first), (name,)
         else:
             yield name, t.DataError('is required'), (name,)
         if confirm_name in value:
             second = value[confirm_name]
+            yield confirm_name, t.catch_error(trafaret, second), (confirm_name,)
         else:
             yield confirm_name, t.DataError('is required'), (confirm_name,)
         if not (first and second):
             return
-        yield name, t.catch_error(trafaret, first), (name,)
-        yield confirm_name, t.catch_error(trafaret, second), (confirm_name,)
         if first != second:
             yield confirm_name, t.DataError('must be equal to {}'.format(name)), (confirm_name,)
     return check_
