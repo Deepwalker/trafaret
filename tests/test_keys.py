@@ -83,3 +83,9 @@ class TestSubdict(unittest.TestCase):
 
         res = signup_trafaret({'email': 'me@gmail.com', 'password': 'qwerty', 'password_confirm': 'qwerty'})
         assert res == {'email': 'me@gmail.com', 'password': 'qwerty'}
+
+        res = catch_error(signup_trafaret, {'email': 'me@gmail.com', 'password': 'qwerty', 'password_confirm': 'not qwerty'})
+        assert res.as_dict() == {'password': 'Passwords are not equal'}
+
+        res = catch_error(signup_trafaret, {'email': 'me@gmail.com', 'password': 'qwerty'})
+        assert res.as_dict() == {'password_confirm': 'is required'}
