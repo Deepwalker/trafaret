@@ -85,6 +85,10 @@ class TestDateTime(unittest.TestCase):
         self.assertEqual(nullable_datetime.check('2017-09-01 23:59'),
                          datetime.datetime(2017, 9, 1, 23, 59))
 
+    def test_repr(self):
+        self.assertEqual(repr(DateTime()), '<DateTime>')
+        self.assertEqual(repr(DateTime(allow_blank=True)), '<DateTime(blank)>')
+
 
 class TestDate(unittest.TestCase):
     def test_date(self):
@@ -120,3 +124,7 @@ class TestDate(unittest.TestCase):
                          datetime.date(1954, 7, 29))
         self.assertEqual(nullable_date.check('1954-07-29'),
                          datetime.date(1954, 7, 29))
+
+    def test_repr(self):
+        self.assertEqual(repr(Date()), '<Date>')
+        self.assertEqual(repr(Date(allow_blank=True)), '<Date(blank)>')

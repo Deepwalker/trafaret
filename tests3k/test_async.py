@@ -67,6 +67,10 @@ async def test_dict():
     with pytest.raises(t.DataError) as res:
         await trafaret.async_check(None)
     assert res.value.as_dict() == "value is not a dict"
+    # missed key
+    with pytest.raises(t.DataError) as res:
+        await trafaret.async_check({})
+    assert res.value.as_dict() == {'b': 'is required'}
 
 
 async def test_sync_key():
@@ -110,6 +114,20 @@ async def test_dict_extra_and_ignore():
     with pytest.raises(t.DataError) as res:
         await trafaret.async_check({'a': 's', 'one_extra': 5})
     assert res.value.as_dict() == {'one_extra': 'value is not a string'}
+
+    # shadowing with allow_extra='*'
+    trafaret = trafaret.allow_extra('*')
+    with pytest.raises(t.DataError) as res:
+        await trafaret.async_check({'a': 's', 'A': 's'})
+    assert res.value.as_dict() == {'A': 'A key was shadowed'}
+
+
+async def test_key_with_callable_default():
+    trafaret = t.Dict(
+        t.Key('a', default=lambda: 123, trafaret=t.Int),
+    )
+    res = await trafaret.async_check({})
+    assert res == {'a': 123}
 
 
 async def test_list():

@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 import unittest
-import trafaret as t
 from collections import Mapping as AbcMapping
+from decimal import Decimal
+
+import trafaret as t
 from trafaret import extract_error, ignore, DataError
 from trafaret.extras import KeysSubset
 from trafaret.constructor import construct, C
@@ -20,6 +22,9 @@ class TestConstruct(unittest.TestCase):
             construct(str).check('blabla'),
             'blabla'
         )
+
+    def test_unknown(self):
+        self.assertEqual(construct(123), 123)
 
 
 class TestComplexConstruct(unittest.TestCase):
@@ -44,12 +49,29 @@ class TestDictConstruct(unittest.TestCase):
     def test_dict(self):
         tt = construct({
             'a': int,
-            'b': [str],
-            'c': (str, str),
+            'b': [str],  # test List
+            'c': (str, str, 'atom string'),  # test Tuple
+            'f': float,  # test float
+            't': Decimal,  # test Type
+            t.Key('k'): int,  # test Key
         })
         self.assertEqual(
-            tt({'a': 5, 'b': ['a'], 'c': ['v', 'w']}),
-            {'a': 5, 'b': ['a'], 'c': ('v', 'w')}
+            tt({
+                'a': 5,
+                'b': ['a'],
+                'c': ['v', 'w', 'atom string'],
+                'f': 0.1,
+                't': Decimal('100'),
+                'k': 100,
+            }),
+            {
+                'a': 5,
+                'b': ['a'],
+                'c': ('v', 'w', 'atom string'),
+                'f': 0.1,
+                't': Decimal('100'),
+                'k': 100,
+            }
         )
 
     def test_optional_key(self):
@@ -64,6 +86,11 @@ class TestDictConstruct(unittest.TestCase):
         tt = construct(C | int | str)
         self.assertEqual(tt(5), 5)
         self.assertEqual(tt('a'), 'a')
+
+    def test_bad_key(self):
+        # 123 can not be constructed to Key
+        with self.assertRaises(ValueError):
+            construct({123: t.String})
 
 
 class TestCall(unittest.TestCase):

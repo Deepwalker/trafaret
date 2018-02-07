@@ -145,6 +145,8 @@ class DictAsyncMixin:
                         errors[key] = DataError("%s key was shadowed" % key)
                     else:
                         errors[key] = DataError("%s is not allowed key" % key)
+                elif key in collect:
+                    errors[key] = DataError("%s key was shadowed" % key)
                 else:
                     try:
                         collect[key] = await self.extras_trafaret.async_check(value[key])
