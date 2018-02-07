@@ -956,22 +956,30 @@ class Dict(Trafaret, DictAsyncMixin):
         return keys, kw
 
     def allow_extra(self, *names, **kw):
-        trafaret = kw.get('trafaret', Any)
-        for name in names:
-            if name == "*":
-                self.allow_any = True
-            else:
-                self.extras.append(name)
-        self.extras_trafaret = ensure_trafaret(trafaret)
-        return self
+        """ multi arguments that represents attribute names or `*`.
+        Will allow unconsumed by other keys attributes for given names
+        or all if includes `*`.
+        Also you can pass `trafaret` keyword argument to set `Trafaret`
+        instance for this extra args, or it will be `Any`.
+        Method creates `Dict` clone.
+        """
+        keys, dictkw = self._clone_args()
+        allow_extra = dictkw.setdefault('allow_extra', [])
+        allow_extra.extend(names)
+        if 'trafaret' in kw:
+            dictkw['allow_extra_trafaret'] = kw['trafaret']
+        return self.__class__(*keys, **dictkw)
 
     def ignore_extra(self, *names):
-        for name in names:
-            if name == "*":
-                self.ignore_any = True
-            else:
-                self.ignore.append(name)
-        return self
+        """ multi arguments that represents attribute names or `*`.
+        Will ignore unconsumed by other keys attribute names for given names
+        or all if includes `*`.
+        Method creates `Dict` clone.
+        """
+        keys, kw = self._clone_args()
+        ignore_extra = kw.setdefault('ignore_extra', [])
+        ignore_extra.extend(names)
+        return self.__class__(*keys, **kw)
 
     def make_optional(self, *args):
         """ Deprecated. will change in-place keys for given args
