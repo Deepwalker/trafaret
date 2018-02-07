@@ -1,6 +1,6 @@
 
 import unittest
-from trafaret.utils import fold, split
+from trafaret.utils import fold, split, unfold
 
 
 class TestUtils(unittest.TestCase):
@@ -30,3 +30,21 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'), {'a': {'a': 4, 'b': 5}})
         self.assertEqual(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'), {'a': {'a': [4, 7], 'b': 5}})
         self.assertEqual(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'), [{'a': [4, 7]}, {'b': 5}])
+
+    def test_unfold(self):
+        self.assertEqual(
+            unfold({'a': 4, 'b': 5}),
+            {'a': 4, 'b': 5}
+        )
+        self.assertEqual(
+            unfold({'a': [1, 2, 3]}),
+            {'a__0': 1, 'a__1': 2, 'a__2': 3},
+        )
+        self.assertEqual(
+            unfold({'a': {'a': 4, 'b': 5}}),
+            {'a__a': 4, 'a__b': 5},
+        )
+        self.assertEqual(
+            unfold({'a': {'a': 4, 'b': 5}}, 'form'),
+            {'form__a__a': 4, 'form__a__b': 5},
+        )

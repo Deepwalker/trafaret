@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import unittest
 import trafaret as t
 from trafaret import extract_error
