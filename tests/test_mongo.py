@@ -29,3 +29,9 @@ class TestMongoIdTrafaret(unittest.TestCase):
         self.assertIsInstance(c.check(None), ObjectId)
 
 
+    def test_bad_id(self):
+        c = MongoId(allow_blank=True)
+        res = extract_error(c, 123)
+        self.assertEqual(res, "value is not ObjectId")
+
+        self.assertIsInstance(c.check(None), ObjectId)

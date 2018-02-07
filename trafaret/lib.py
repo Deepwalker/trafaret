@@ -33,9 +33,6 @@ class WithContextCaller(object):
     def __call__(self, value, context=None):
         return self.func(value, context=context)
 
-    def __repr__(self):
-        return repr(self.func)
-
 
 class WithoutContextCaller(WithContextCaller):
     def __call__(self, value, context=None):

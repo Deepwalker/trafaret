@@ -9,3 +9,6 @@ dist/
 .idea/
 .coverage
 .tox/
+.cache
+.pytest_cache
+.python-version

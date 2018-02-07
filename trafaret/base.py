@@ -1016,7 +1016,10 @@ class Dict(Trafaret, DictAsyncMixin):
                 if key in self.ignore:
                     continue
                 if not self.allow_any and key not in self.extras:
-                    errors[key] = DataError("%s is not allowed key" % key)
+                    if key in collect:
+                        errors[key] = DataError("%s key was shadowed" % key)
+                    else:
+                        errors[key] = DataError("%s is not allowed key" % key)
                 elif key in collect:
                     errors[key] = DataError("%s key was shadowed" % key)
                 else:
