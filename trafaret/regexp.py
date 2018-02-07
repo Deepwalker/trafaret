@@ -21,7 +21,7 @@ class RegexpRaw(Trafaret):
         return match
 
     def __repr__(self):
-        return '<Regexp>'
+        return '<Regexp "%s">' % self.raw_regexp
 
 
 class Regexp(RegexpRaw):

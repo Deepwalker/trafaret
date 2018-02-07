@@ -560,6 +560,13 @@ class TestRegexpTrafaret(unittest.TestCase):
         res = catch_error(trafaret, 'dog')
         self.assertEqual(res.as_dict(value=True), 'does not match pattern cat, got \'dog\'')
 
+        res = extract_error(trafaret, None)
+        self.assertEqual(res, 'value is not a string')
+
+    def test_repr(self):
+        assert repr(t.RegexpRaw('.*(cat).*')) == '<Regexp ".*(cat).*">'
+
+
 
 class TestTrafaretMeta(unittest.TestCase):
     def test_meta(self):
