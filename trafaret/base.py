@@ -796,7 +796,7 @@ class Key(KeyAsyncMixin):
 
     It gets ``name``, and provides method ``extract(data)`` that extract key value
     from data through mapping ``get`` method.
-    Key `__call__` method yields ``(key name, Maybe(DataError), [touched keys])`` triples.
+    Key `__call__` method yields ``(key name, result or DataError, [touched keys])`` triples.
 
     You can redefine ``get_data(data, default)`` method in subclassed ``Key`` if you want to use something other
     then ``.get(...)`` method.
@@ -863,47 +863,53 @@ class Key(KeyAsyncMixin):
 
 
 class Dict(Trafaret, DictAsyncMixin):
+    """ Dict is a most complex trafaret that going with this library.
+    The main difference from other common validation libs is that `Dict`
+    trafaret does not know anything about actual keys. Every key that Dict works
+    with knows itself how to get value from given mapping and if this will be one value
+    or two or multi values.
+
+    So `Dict` cannot make any assumptions about whats going on other then contract with
+    a `key` implementation. And we need to note, that any callable can be `key`, not
+    only `Key` subclasses.
+    So we need to look at the `key` contract:
+
+        key_instance(data: Mapping) -> Sequence[
+            name_to_store,
+            result or DataError,
+            Sequence[touched keys],
+        ]
+
+    It is a bit complex, so let me explain it to you. Every key instance get this data that
+    `Dict` trying to check. Then `key` will return one or multiple results and it is
+    common for `key` to be generator.
+
+    Every result is three component tuple
+        1. Key for the result dict. For standard `Key` it is result key in case of successful check
+        or original key name if there was an error
+        2. Result if keys trafaret check was successful or DataError instance otherwise
+        3. An iterable with all keys of original mapping that this `key` touched
+
+    With this tricky interface `key` in our lib can do anything you can imagine. Like work
+    with MultiDicts, compare keys, get subdicts and check them independently from main one.
+
+    Why we need this third extra iterable with touched names? Because our Dict can check that
+    all keys were consumed and what to do with extras.
+
+    Arguments:
+
+    * Dict accepts keys as *args
+    * if first argument to Dict is a `dict` then its keys will be merged with args keys and
+    this `dict` values must be trafarets. If key of this `dict` is a str, then Dict will create
+    `Key` instance with this key as Key name and value as its trafaret. If `key` is a `Key` instance
+    then Dict will call this key `set_trafaret` method.
+
+    `allow_extra` argument can be a list of keys, or `'*'` for any, that will be checked against
+    `allow_extra_trafaret` or `Any`.
+
+    `ignore_extra` argument can be a list of keys, or `'*'` for any, that will be ignored.
     """
-    >>> trafaret = Dict(foo=Int, bar=String) >> ignore
-    >>> trafaret.check({"foo": 1, "bar": "spam"})
-    >>> extract_error(trafaret, {"foo": 1, "bar": 2})
-    {'bar': 'value is not a string'}
-    >>> extract_error(trafaret, {"foo": 1})
-    {'bar': 'is required'}
-    >>> extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
-    {'eggs': 'eggs is not allowed key'}
-    >>> trafaret.allow_extra("eggs")
-    <Dict(extras=(eggs) | bar=<String>, foo=<Int>)>
-    >>> trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
-    >>> trafaret.check({"foo": 1, "bar": "spam"})
-    >>> extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
-    {'ham': 'ham is not allowed key'}
-    >>> trafaret.allow_extra("*")
-    <Dict(any, extras=(eggs) | bar=<String>, foo=<Int>)>
-    >>> trafaret.check({"foo": 1, "bar": "spam", "ham": 100})
-    >>> trafaret.check({"foo": 1, "bar": "spam", "ham": 100, "baz": None})
-    >>> extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
-    {'bar': 'is required'}
-    >>> trafaret = Dict({Key('bar', optional=True): String}, foo=Int)
-    >>> trafaret.allow_extra("*")
-    <Dict(any | bar=<String>, foo=<Int>)>
-    >>> _dd(trafaret.check({"foo": 1, "ham": 100, "baz": None}))
-    "{'baz': None, 'foo': 1, 'ham': 100}"
-    >>> _dd(extract_error(trafaret, {"bar": 1, "ham": 100, "baz": None}))
-    "{'bar': 'value is not a string', 'foo': 'is required'}"
-    >>> extract_error(trafaret, {"foo": 1, "bar": 1, "ham": 100, "baz": None})
-    {'bar': 'value is not a string'}
-    >>> trafaret = Dict({Key('bar', default='nyanya') >> 'baz': String}, foo=Int)
-    >>> _dd(trafaret.check({'foo': 4}))
-    "{'baz': 'nyanya', 'foo': 4}"
-    >>> _ = trafaret.ignore_extra('fooz')
-    >>> _dd(trafaret.check({'foo': 4, 'fooz': 5}))
-    "{'baz': 'nyanya', 'foo': 4}"
-    >>> _ = trafaret.ignore_extra('*')
-    >>> _dd(trafaret.check({'foo': 4, 'foor': 5}))
-    "{'baz': 'nyanya', 'foo': 4}"
-    """
-    __slots__ = ['extras', 'extras_trafaret', 'allow_any', 'ignore', 'ignore_any', 'keys']
+    __slots__ = ['extras', 'extras_trafaret', 'allow_any', 'ignore', 'ignore_any', 'keys', '_keys']
 
     def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
@@ -925,11 +931,29 @@ class Dict(Trafaret, DictAsyncMixin):
         self.ignore_any = '*' in ignore_extra
         self.ignore = [name for name in ignore_extra if name != '*']
 
-        self.keys = [with_context_caller(key) for key in args]
+        self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = Key(key) if isinstance(key, str_types) else key
             key_.set_trafaret(ensure_trafaret(trafaret))
-            self.keys.append(with_context_caller(key_))
+            self.keys.append(key_)
+        # optimized version without runtime check for context arg
+        self._keys = [with_context_caller(key) for key in self.keys]
+
+    def _clone_args(self):
+        """ return args to create new Dict clone
+        """
+        keys = list(self.keys)
+        kw = {}
+        if self.allow_any or self.extras:
+            kw['allow_extra'] = list(self.extras)
+            if self.allow_any:
+                kw['allow_extra'].append('*')
+            kw['allow_extra_trafaret'] = self.extras_trafaret
+        if self.ignore_any or self.ignore:
+            kw['ignore_extra'] = list(self.ignore)
+            if self.ignore_any:
+                kw['ignore_any'].append('*')
+        return keys, kw
 
     def allow_extra(self, *names, **kw):
         trafaret = kw.get('trafaret', Any)
@@ -950,6 +974,10 @@ class Dict(Trafaret, DictAsyncMixin):
         return self
 
     def make_optional(self, *args):
+        """ Deprecated. will change in-place keys for given args
+        or all keys if `*` in args.
+        """
+        deprecated('This method is deprecated. You can not change keys instances.')
         for key in self.keys:
             if key.name in args or '*' in args:
                 key.make_optional()
@@ -961,7 +989,7 @@ class Dict(Trafaret, DictAsyncMixin):
         collect = {}
         errors = {}
         touched_names = []
-        for key in self.keys:
+        for key in self._keys:
             if not callable(key):
                 raise ValueError('Non callable Keys are not supported')
             for k, v, names in key(value, context=context):

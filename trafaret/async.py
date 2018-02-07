@@ -118,7 +118,7 @@ class DictAsyncMixin:
         collect = {}
         errors = {}
         touched_names = []
-        for key in self.keys:
+        for key in self._keys:
             if not callable(key) and not hasattr(key, 'async_call'):
                 raise ValueError('Non callable Keys are not supported')
             key_run = getattr(key, 'async_call', key)(
