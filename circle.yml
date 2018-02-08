@@ -4,9 +4,9 @@ machine:
     version:
       3.6.2
   pre:
-    - pyenv install 3.7.0b1
+    - pyenv install 3.7.0a3
   post:
-    - pyenv local 3.6.2 3.5.2 2.7.10 3.7.0b1
+    - pyenv local 3.6.2 3.5.2 2.7.10 3.7.0a3
 
 test:
   override:
