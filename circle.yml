@@ -1,0 +1,17 @@
+## Customize the test machine
+machine:
+  python:
+    version:
+      3.6.2
+  pre:
+    - pyenv install 3.7.0b1
+  post:
+    - pyenv local 3.6.2 3.5.2 2.7.10 3.7.0b1
+
+test:
+  override:
+    - tox
+
+dependencies:
+  pre:
+    - pip install pymongo
