@@ -1,7 +1,9 @@
-import asyncio
 import pytest
 import trafaret as t
-from trafaret.lib import py3
+
+
+# All test coroutines will be treated as marked.
+pytestmark = pytest.mark.asyncio
 
 
 async def check_int(value):
@@ -16,7 +18,7 @@ async def check_int_context(value, context=None):
 
 async def test_async_check():
     trafaret = t.Int & int
-    res = yield trafaret.async_check('5')
+    res = await trafaret.async_check('5')
     assert res == 5
 
 
