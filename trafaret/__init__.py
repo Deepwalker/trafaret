@@ -16,6 +16,7 @@ from .base import (
 
     Atom,
     String,
+    Bytes,
     Float,
     FloatRaw,
     Int,
@@ -66,6 +67,7 @@ __all__ = (
 
     "Atom",
     "String",
+    "Bytes",
     "Float",
     "FloatRaw",
     "Int",

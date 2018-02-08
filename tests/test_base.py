@@ -5,6 +5,21 @@ from collections import Mapping as AbcMapping
 from trafaret import catch_error, extract_error, DataError, guard
 
 
+class TestTrafaret(unittest.TestCase):
+    def test_any(self):
+        obj = {}
+        trafaret = t.Trafaret()
+        with self.assertRaises(NotImplementedError):
+            self.assertEqual(
+                trafaret.check(obj),
+                obj
+            )
+
+    def test_ensure(self):
+        with self.assertRaises(RuntimeError):
+            t.ensure_trafaret(123)
+
+
 class TestAnyTrafaret(unittest.TestCase):
     def test_any(self):
         obj = object()
@@ -545,6 +560,22 @@ class TestStringTrafaret(unittest.TestCase):
         #     AssertionError: Either allow_blank or min_length should be specified, not both
         res = t.String(min_length=0, max_length=6, allow_blank=True).check('123')
         self.assertEqual(res, '123')
+
+
+class TestBytesTrafaret(unittest.TestCase):
+
+    def test_bytes(self):
+        res = t.Bytes()
+        self.assertEqual(repr(res), '<Bytes>')
+        res = t.Bytes().check(b"foo")
+        self.assertEqual(res, 'foo')
+        res = t.Bytes()(b"")
+        self.assertEqual(res, '')
+        res = t.Bytes().check(b"")
+        self.assertEqual(res, '')
+        res = extract_error(t.Bytes(), 1)
+        self.assertEqual(res, 'value is not a bytes')
+
 
 class TestRegexpTrafaret(unittest.TestCase):
     def test_regexp(self):
