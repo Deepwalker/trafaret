@@ -4,7 +4,10 @@ import functools
 import itertools
 import numbers
 import warnings
-from collections import Mapping as AbcMapping
+from collections import (
+    Mapping as AbcMapping,
+    Iterable,
+)
 from .lib import (
     py3,
     py36,
@@ -706,7 +709,7 @@ class List(Trafaret, ListAsyncMixin):
         self.max_length = max_length
 
     def check_common(self, value):
-        if not isinstance(value, list):
+        if not isinstance(value, Iterable):
             self._failure("value is not a list", value=value)
         if len(value) < self.min_length:
             self._failure("list length is less than %s" % self.min_length, value=value)
