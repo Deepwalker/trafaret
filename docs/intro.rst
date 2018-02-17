@@ -168,7 +168,7 @@ String, Email, URL
 
 Basicaly just check that argument is a string.
 
-Argument ``allow_blank`` indicates if string can be blank ot not.
+Argument ``allow_blank`` indicates if string can be blank or not.
 
 If you provide a ``regex`` parameter - it will return ``re`` match
 object.  Default converter will return ``match.group()`` result.
