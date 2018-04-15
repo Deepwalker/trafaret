@@ -804,8 +804,8 @@ class Key(KeyAsyncMixin):
     Like this for the aiohttp MultiDict::
 
         class MDKey(t.Key):
-            def get_data(data, default):
-                return data.get_all(self.name, default)
+            def get_data(self, data, default):
+                return data.getall(self.name, default)
     """
     __slots__ = ['name', 'to_name', 'default', 'optional', 'trafaret']
 
