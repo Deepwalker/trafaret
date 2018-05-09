@@ -103,16 +103,16 @@ Related projects
 
 .. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
     :target: https://circleci.com/gh/Deepwalker/trafaret
-    :alt: Build status
+    :alt: Build status @ Circle CI
 
 .. |gitter_chat| image:: https://badges.gitter.im/Deepwalker/trafaret.png
     :target: https://gitter.im/Deepwalker/trafaret
-    :alt: Gitter
+    :alt: Gitter Chat
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/trafaret.svg?style=flat-square
-    :target: https://pypi.python.org/pypi/trafaret
-    :alt: Downloads
+    :target: https://pypi.org/p/trafaret
+    :alt: Latest release
 
 .. |pypi_license| image:: https://img.shields.io/pypi/l/trafaret.svg?style=flat-square
     :target: https://pypi.python.org/pypi/trafaret
-    :alt: Downloads
+    :alt: BSD license
