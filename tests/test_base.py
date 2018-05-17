@@ -265,6 +265,9 @@ class TestEmailTrafaret(unittest.TestCase):
         res = extract_error(t.Email, 123)
         self.assertEqual(res, 'value is not a string')
 
+    def test_with_cyrillic_C_in_contact(self):
+        res = t.Email.check(u'contaсt@kmgaszbut.104.ua')
+        self.assertEqual(res, u'contaсt@kmgaszbut.104.ua')
 
 class TestEnumTrafaret(unittest.TestCase):
     def test_enum(self):

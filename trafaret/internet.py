@@ -13,17 +13,19 @@ else:
 
 MAX_EMAIL_LEN = 254
 
+ATEXT = r"-!#$%&'*+/=?^_`{}|~0-9A-Z"
+ATEXT_UTF8 = ATEXT + u"\u0080-\U0010FFFF"
 
 EMAIL_REGEXP = re.compile(
     # dot-atom
-    r"(?P<name>^[-!#$%&'*+/=?^_`{}|~0-9A-Z]+(\.[-!#$%&'*+/=?^_`{}|~0-9A-Z]+)*"
+    r"(?P<name>^[" + ATEXT_UTF8 + "]+(\.[" + ATEXT_UTF8 + "]+)*"
     # quoted-string
     r'|^"([\001-\010\013\014\016-\037!#-\[\]-\177]|\\[\001-011\013\014\016-\177])*"'
     # domain
     r')@(?P<domain>(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)$)'
     # literal form, ipv4 address (SMTP 4.1.3)
     r'|\[(25[0-5]|2[0-4]\d|[0-1]?\d?\d)(\.(25[0-5]|2[0-4]\d|[0-1]?\d?\d)){3}\]$',
-    re.IGNORECASE,
+    re.IGNORECASE | re.UNICODE,
 )
 
 
