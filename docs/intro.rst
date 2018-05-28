@@ -29,9 +29,9 @@ Trafaret has very handy features, read below some samples.
 Regexp
 ......
 
-``RegexpRow`` can work with regular expressions::
+``RegexpRaw`` can work with regular expressions::
 
-    >>> c = t.RegexpRow(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
+    >>> c = t.RegexpRaw(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
 
