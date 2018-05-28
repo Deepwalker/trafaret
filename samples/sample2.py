@@ -49,5 +49,5 @@ print(c.check({'uNJ': 'Adam'}))
 
 
 ### Regex String
-c = t.String(regex=r'name=(\w+)') >> (lambda m: m.groups()[0])
+c = t.RegexpRaw(r'name=(\w+)') >> (lambda m: m.group(1))
 print(c.check('name=Jeff'))

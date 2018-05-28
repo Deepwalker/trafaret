@@ -64,7 +64,7 @@ Work with regex:
 
 .. code-block:: python
 
-    >>> c = t.String(regex=r'^name=(\w+)$') >> (lambda m: m.groups()[0])
+    >>> c = t.RegexpRaw(r'^name=(\w+)$') >> (lambda m: m.group(1))
     >>> c.check('name=Jeff')
     'Jeff'
 
