@@ -17,7 +17,7 @@ you disable default converter with your own.
 
 This does not mean that ``Int`` will not convert numbers to integers,
 this mean that some checkers, like ``String`` with regular expression,
-have special converters applied them and can be overriden.
+have special converters applied them and can be overridden.
 
 Converters can be chained. You can raise ``DataError`` in converters.
 
@@ -76,7 +76,7 @@ string. For nested structures it will be `dict` instance.
 Trafaret
 --------
 
-Base class for checkers. Use it to create new checkers.  In derrived
+Base class for checkers. Use it to create new checkers.  In derived
 classes you need to implement `_check` or `_check_val`
 methods. `_check_val` must return a value, `_check` must return `None`
 on success.
@@ -99,8 +99,8 @@ to do this.  Check library code for samples.
 Type
 ----
 
-Checks that data is instance of given class.  Just instantitate it
-with any class, like `int`, `float`, `str`.  For instancce::
+Checks that data is instance of given class.  Just instantiate it
+with any class, like `int`, `float`, `str`.  For instance::
 
     >>> t.Type(int).check(4)
     4
@@ -166,7 +166,7 @@ enumerations.
 String, Email, URL
 ------------------
 
-Basicaly just check that argument is a string.
+Basically just check that argument is a string.
 
 Argument ``allow_blank`` indicates if string can be blank or not.
 
