@@ -29,8 +29,8 @@ It have shortcut syntax and ability to express anything that you can code:
     trafaret.DataError: {'b': DataError({1: DataError(value is not a string)})}
 
 
-Read The Docs hosted documentation <http://trafaret.readthedocs.org/en/latest/>
-or look to the docs/api/intro.rst for start.
+Read The Docs hosted documentation http://trafaret.readthedocs.org/en/latest/
+or look to the `docs/intro.rst`_ for start.
 
 Trafaret can even generate Trafarets instances to build transformators from json,
 like in json schema implementation `Trafaret Schema <https://github.com/Deepwalker/trafaret_schema>`_
@@ -64,7 +64,7 @@ Work with regex:
 
 .. code-block:: python
 
-    >>> c = t.String(regex=r'^name=(\w+)$') >> (lambda m: m.groups()[0])
+    >>> c = t.RegexpRaw(r'^name=(\w+)$') >> (lambda m: m.group(1))
     >>> c.check('name=Jeff')
     'Jeff'
 
@@ -98,6 +98,8 @@ Related projects
 
 `Trafaret Validator <https://github.com/Lex0ne/trafaret_validator>`_
 
+
+.. _docs/intro.rst: docs/intro.rst
 
 .. |circleci_build| image:: https://circleci.com/gh/Deepwalker/trafaret.svg?style=shield
     :target: https://circleci.com/gh/Deepwalker/trafaret

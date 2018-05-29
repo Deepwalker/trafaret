@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import trafaret as t
 import datetime
 
@@ -9,6 +11,6 @@ task = t.Dict({
 })
 
 try:
-    print task.check({'key': 'foo', 'timestamp': {'year': 2012, 'month': 1, 'day': 12}})
+    print(task.check({'key': 'foo', 'timestamp': {'year': 2012, 'month': 1, 'day': 12}}))
 except t.DataError as e:
-    print e
+    print(e)
