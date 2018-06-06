@@ -39,23 +39,23 @@ class TestKeysSubset(unittest.TestCase):
         cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal')}
         d = t.Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': t.String})
 
-        res = d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
-        self.assertEqual(list(sorted(res)), ['key1', 'pwd'])
+        res = d.check({'pwd': u'a', 'pwd1': u'a', 'key1': u'b'}).keys()
+        self.assertEqual(list(sorted(res)), [u'key1', u'pwd'])
 
-        res = extract_error(d.check, {'pwd': 'a', 'pwd1': 'c', 'key1': 'b'})
+        res = extract_error(d.check, {'pwd': u'a', 'pwd1': u'c', 'key1': u'b'})
         self.assertEqual(res, {'pwd': 'Not equal'})
 
-        res = extract_error(d.check, {'pwd': 'a', 'pwd1': None, 'key1': 'b'})
+        res = extract_error(d.check, {'pwd': u'a', 'pwd1': None, 'key1': u'b'})
         self.assertEqual(res, {'pwd': 'Not equal'})
 
         get_values = (lambda d, keys: [d[k] for k in keys if k in d])
-        join = (lambda d: {'name': ' '.join(get_values(d, ['name', 'last']))})
-        res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': 'Adam', 'last': 'Smith'})
-        self.assertEqual(res, {'name': 'Adam Smith'})
+        join = (lambda d: {'name': u' '.join(get_values(d, ['name', 'last']))})
+        res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': u'Adam', 'last': u'Smith'})
+        self.assertEqual(res, {'name': u'Adam Smith'})
 
-        bad_res = lambda d: t.DataError({'error key': 'bad res'})
+        bad_res = lambda d: t.DataError({'error key': u'bad res'})
         trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
-        res = extract_error(trafaret, {'name': 'Adam', 'last': 'Smith'})
+        res = extract_error(trafaret, {'name': u'Adam', 'last': u'Smith'})
         res = {'error key': 'bad res'}
 
 
@@ -79,13 +79,13 @@ class TestSubdict(unittest.TestCase):
             passwords_key,
         )
 
-        res = signup_trafaret({'email': 'me@gmail.com', 'password': 'qwerty', 'password_confirm': 'qwerty'})
-        assert res == {'email': 'me@gmail.com', 'password': 'qwerty'}
+        res = signup_trafaret({'email': u'me@gmail.com', 'password': u'qwerty', 'password_confirm': u'qwerty'})
+        assert res == {'email': u'me@gmail.com', 'password': u'qwerty'}
 
-        res = catch_error(signup_trafaret, {'email': 'me@gmail.com', 'password': 'qwerty', 'password_confirm': 'not qwerty'})
+        res = catch_error(signup_trafaret, {'email': u'me@gmail.com', 'password': u'qwerty', 'password_confirm': u'not qwerty'})
         assert res.as_dict() == {'password': 'Passwords are not equal'}
 
-        res = catch_error(signup_trafaret, {'email': 'me@gmail.com', 'password': 'qwerty'})
+        res = catch_error(signup_trafaret, {'email': u'me@gmail.com', 'password': u'qwerty'})
         assert res.as_dict() == {'password_confirm': 'is required'}
 
 
@@ -93,10 +93,10 @@ class TestXorKey(unittest.TestCase):
     def test_xor_key(self):
         trafaret = t.Dict(xor_key('name', 'nick', t.String()))
 
-        res = trafaret({'name': 'Nickolay'})
-        assert res == {'name': 'Nickolay'}
+        res = trafaret({'name': u'Nickolay'})
+        assert res == {'name': u'Nickolay'}
 
-        res = catch_error(trafaret, {'name': 'Nickolay', 'nick': 'Sveta'})
+        res = catch_error(trafaret, {'name': u'Nickolay', 'nick': u'Sveta'})
         assert res.as_dict() == {
             'name': 'correct only if nick is not defined',
             'nick': 'correct only if name is not defined',
@@ -112,14 +112,14 @@ class TestConfirmKey(unittest.TestCase):
     def test_confirm_key(self):
         trafaret = t.Dict(confirm_key('password', 'password_confirm', t.String()))
 
-        res = trafaret({'password': 'qwerty', 'password_confirm': 'qwerty'})
-        assert res == {'password': 'qwerty', 'password_confirm': 'qwerty'}
+        res = trafaret({'password': u'qwerty', 'password_confirm': u'qwerty'})
+        assert res == {'password': u'qwerty', 'password_confirm': u'qwerty'}
 
-        res = catch_error(trafaret, {'password_confirm': 'qwerty'})
+        res = catch_error(trafaret, {'password_confirm': u'qwerty'})
         assert res.as_dict() == {'password': 'is required'}
 
-        res = catch_error(trafaret, {'password': 'qwerty'})
+        res = catch_error(trafaret, {'password': u'qwerty'})
         assert res.as_dict() == {'password_confirm': 'is required'}
 
-        res = catch_error(trafaret, {'password': 'qwerty', 'password_confirm': 'not qwerty'})
+        res = catch_error(trafaret, {'password': u'qwerty', 'password_confirm': u'not qwerty'})
         assert res.as_dict() == {'password_confirm': 'must be equal to password'}

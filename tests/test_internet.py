@@ -26,7 +26,8 @@ class TestURLTrafaret(unittest.TestCase):
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
     def test_bad_str(self):
-        res = t.URL.check(b'http://\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
+        with self.assertRaises(t.DataError) as context:
+            t.URL.check(b'http://\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
 
 
 class TestIPv4Trafaret(unittest.TestCase):

@@ -19,8 +19,8 @@ class TestConstruct(unittest.TestCase):
 
     def test_str(self):
         self.assertEqual(
-            construct(str).check('blabla'),
-            'blabla'
+            construct(str).check(u'blabla'),
+            u'blabla'
         )
 
     def test_unknown(self):
@@ -58,8 +58,8 @@ class TestDictConstruct(unittest.TestCase):
         self.assertEqual(
             tt({
                 'a': 5,
-                'b': ['a'],
-                'c': ['v', 'w', 'atom string'],
+                'b': [u'a'],
+                'c': [u'v', u'w', 'atom string'],
                 'f': 0.1,
                 't': Decimal('100'),
                 'k': 100,
@@ -67,7 +67,7 @@ class TestDictConstruct(unittest.TestCase):
             {
                 'a': 5,
                 'b': ['a'],
-                'c': ('v', 'w', 'atom string'),
+                'c': (u'v', u'w', 'atom string'),
                 'f': 0.1,
                 't': Decimal('100'),
                 'k': 100,

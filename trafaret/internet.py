@@ -38,9 +38,12 @@ def email_idna_encode(value):
     return value
 
 
-email_regexp_trafaret = OnError(Regexp(EMAIL_REGEXP), 'value is not a valid email address')
-email_trafaret = email_regexp_trafaret | ((Bytes('utf-8') | String()) & email_idna_encode & email_regexp_trafaret)
-Email = String(allow_blank=True) & OnError(
+to_str = OnError(Bytes('utf-8') | String(), 'value is not a string')
+
+
+email_regexp_trafaret = OnError(to_str & Regexp(EMAIL_REGEXP), 'value is not a valid email address')
+email_trafaret = (email_regexp_trafaret | (to_str & email_idna_encode & email_regexp_trafaret))
+Email = to_str & String(allow_blank=True) & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
 )
@@ -56,7 +59,7 @@ URL_REGEXP = re.compile(
     r'(?:/?|[/?]\S+)$',
     re.IGNORECASE,
 )
-URLRegexp = Regexp(URL_REGEXP)
+URLRegexp = to_str & Regexp(URL_REGEXP)
 
 
 def decode_url_idna(value):
@@ -71,7 +74,7 @@ def decode_url_idna(value):
 
 
 URL = OnError(
-    URLRegexp | ((Bytes('utf-8') | String()) & decode_url_idna & URLRegexp),
+    URLRegexp | (to_str & decode_url_idna & URLRegexp),
     'value is not URL',
 )
 
