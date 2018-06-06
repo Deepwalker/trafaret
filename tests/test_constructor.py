@@ -76,8 +76,8 @@ class TestDictConstruct(unittest.TestCase):
 
     def test_optional_key(self):
         tt = construct({'a': int, 'b?': bool})
-        self.assertEqual(tt({'a': '5'}), {'a': 5})
-        self.assertEqual(tt({'a': '5', 'b': True}), {'a': 5, 'b': True})
+        self.assertEqual(tt({'a': '5'}), {'a': '5'})
+        self.assertEqual(tt({'a': '5', 'b': True}), {'a': '5', 'b': True})
 
     def test_c(self):
         tt = construct({'a': C & int & float})

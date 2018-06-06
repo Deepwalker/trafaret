@@ -8,7 +8,7 @@ def check_context(value, context=None):
     return value
 
 
-CONTEXT_TRAFARET = (t.String() | t.IntRaw()) & t.Any & check_context
+CONTEXT_TRAFARET = (t.String() | t.Int()) & t.Any & check_context
 
 
 class TestContext(unittest.TestCase):

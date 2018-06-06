@@ -7,13 +7,16 @@ class DataError(ValueError):
     error can be a message or None if error raised in childs
     data can be anything
     """
-    __slots__ = ['error', 'name', 'value', 'trafaret']
+    __slots__ = ['error', 'name', 'value', 'trafaret', 'code']
 
-    def __init__(self, error=None, name=None, value=_empty, trafaret=None):
+    error_code = 'unknown'
+
+    def __init__(self, error=None, name=None, value=_empty, trafaret=None, code=None):
         self.error = error
         self.name = name
         self.value = value
         self.trafaret = trafaret
+        self.code = code or self.__class__.error_code
 
     def __str__(self):
         return str(self.error)

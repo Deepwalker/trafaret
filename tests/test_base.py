@@ -74,20 +74,20 @@ class TestBasics(unittest.TestCase):
     def test_callable(self):
         import functools
         to_int_10000 = functools.partial(int, '10000')
-        trafaret = t.Regexp('2|10|16') & t.Int & t.Call(to_int_10000)
+        trafaret = t.Regexp('2|10|16') & t.ToInt & t.Call(to_int_10000)
         self.assertEqual(trafaret('10'), 10000)
 
     def test_auto_call(self):
         import functools
         to_int_10000 = functools.partial(int, '10000')
-        trafaret = t.Regexp('2|10|16') & t.Int & to_int_10000
+        trafaret = t.Regexp('2|10|16') & t.ToInt & to_int_10000
         self.assertEqual(trafaret('10'), 10000)
 
     def test_class(self):
         class Tttt:
             def __call__(self, value, context=None):
                 return context(value)
-        trafaret = t.Int() & Tttt()
+        trafaret = t.ToInt() & Tttt()
         self.assertEqual(trafaret(123, context=lambda v: v + 123), 246)
 
     def test_upper(self):
@@ -97,7 +97,7 @@ class TestBasics(unittest.TestCase):
 
 class TestDictTrafaret(unittest.TestCase):
     def test_base(self):
-        trafaret = t.Dict(foo=t.Int, bar=t.String)
+        trafaret = t.Dict(foo=t.ToInt, bar=t.String)
         trafaret.check({"foo": 1, "bar": "spam"})
         res = t.extract_error(trafaret, {"foo": 1, "bar": 2})
         self.assertEqual(res, {'bar': 'value is not a string'})
@@ -106,7 +106,7 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "eggs": None})
         self.assertEqual(res, {'eggs': 'eggs is not allowed key'})
         trafaret = trafaret.allow_extra("eggs")
-        self.assertEqual(repr(trafaret), '<Dict(extras=(eggs) | <Key "bar" <String>>, <Key "foo" <Int>>)>')
+        self.assertEqual(repr(trafaret), '<Dict(extras=(eggs) | <Key "bar" <String>>, <Key "foo" <ToInt>>)>')
         trafaret.check({"foo": 1, "bar": "spam", "eggs": None})
         trafaret.check({"foo": 1, "bar": "spam"})
         res = extract_error(trafaret, {"foo": 1, "bar": "spam", "ham": 100})
@@ -118,14 +118,14 @@ class TestDictTrafaret(unittest.TestCase):
         self.assertEqual(res, {'bar': 'is required'})
 
     def test_kwargs_extra(self):
-        trafaret = t.Dict(t.Key('foo', trafaret=t.Int()), allow_extra=['eggs'])
+        trafaret = t.Dict(t.Key('foo', trafaret=t.ToInt()), allow_extra=['eggs'])
         trafaret.check({"foo": 1, "eggs": None})
         trafaret.check({"foo": 1})
         with self.assertRaises(t.DataError):
             trafaret.check({"foo": 2, "marmalade": 5})
 
     def test_kwargs_ignore(self):
-        trafaret = t.Dict(t.Key('foo', trafaret=t.Int()), ignore_extra=['eggs'])
+        trafaret = t.Dict(t.Key('foo', trafaret=t.ToInt()), ignore_extra=['eggs'])
         trafaret.check({"foo": 1, "eggs": None})
         trafaret.check({"foo": 1})
         with self.assertRaises(t.DataError):
@@ -181,7 +181,7 @@ class TestDictTrafaret(unittest.TestCase):
 
 
     def test_base2(self):
-        trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.Int)
+        trafaret = t.Dict({t.Key('bar', optional=True): t.String}, foo=t.ToInt)
         trafaret = trafaret.allow_extra('*')
         res = trafaret.check({"foo": 1, "ham": 100, "baz": None})
         self.assertEqual(res, {'baz': None, 'foo': 1, 'ham': 100})
@@ -191,7 +191,7 @@ class TestDictTrafaret(unittest.TestCase):
         self.assertEqual(res, {'bar': 'value is not a string'})
 
     def test_base3(self):
-        trafaret = t.Dict({t.Key('bar', default='nyanya') >> 'baz': t.String}, foo=t.Int)
+        trafaret = t.Dict({t.Key('bar', default='nyanya') >> 'baz': t.String}, foo=t.ToInt)
         res = trafaret.check({'foo': 4})
         self.assertEqual(res, {'baz': 'nyanya', 'foo': 4})
 
@@ -216,10 +216,10 @@ class TestDictTrafaret(unittest.TestCase):
     def test_add(self):
         first = t.Dict({
             t.Key('bar', default='nyanya') >> 'baz': t.String},
-            foo=t.Int)
+            foo=t.ToInt)
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz1': t.String},
-            foo1=t.Int)
+            foo1=t.ToInt)
         third = first + second
         res = third.check({'foo': 4, 'foo1': 41})
         self.assertEqual(res, {'baz': 'nyanya', 'baz1': 'nyanya', 'foo': 4, 'foo1': 41})
@@ -227,20 +227,20 @@ class TestDictTrafaret(unittest.TestCase):
     def test_bad_add_names(self):
         first = t.Dict({
             t.Key('bar', default='nyanya') >> 'baz': t.String},
-            foo=t.Int)
+            foo=t.ToInt)
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz1': t.String},
-            foo=t.Int)
+            foo=t.ToInt)
         # will not raise any errors
         first + second
 
     def test_bad_add_to_names(self):
         first = t.Dict({
             t.Key('bar', default='nyanya') >> 'baz': t.String},
-            foo=t.Int)
+            foo=t.ToInt)
         second = t.Dict({
             t.Key('bar1', default='nyanya') >> 'baz': t.String},
-            foo1=t.Int)
+            foo1=t.ToInt)
         # will not raise any errors
         first + second
 
@@ -253,7 +253,7 @@ class TestDictTrafaret(unittest.TestCase):
         dct + {'a': t.String}
 
     def test_mapping_interface(self):
-        trafaret = t.Dict({t.Key("foo"): t.String, t.Key("bar"): t.Float})
+        trafaret = t.Dict({t.Key("foo"): t.String, t.Key("bar"): t.ToFloat})
 
         # class with mapping interface but not subclass of dict
         class Map(AbcMapping):
@@ -306,33 +306,33 @@ class TestEnumTrafaret(unittest.TestCase):
 
 
 
-class TestFloat(unittest.TestCase):
+class TestToFloat(unittest.TestCase):
     def test_float_repr(self):
-        res = t.Float()
-        self.assertEqual(repr(res), '<Float>')
-        res = t.Float(gte=1)
-        self.assertEqual(repr(res), '<Float(gte=1)>')
-        res = t.Float(lte=10)
-        self.assertEqual(repr(res), '<Float(lte=10)>')
-        res = t.Float(gte=1, lte=10)
-        self.assertEqual(repr(res), '<Float(gte=1, lte=10)>')
+        res = t.ToFloat()
+        self.assertEqual(repr(res), '<ToFloat>')
+        res = t.ToFloat(gte=1)
+        self.assertEqual(repr(res), '<ToFloat(gte=1)>')
+        res = t.ToFloat(lte=10)
+        self.assertEqual(repr(res), '<ToFloat(lte=10)>')
+        res = t.ToFloat(gte=1, lte=10)
+        self.assertEqual(repr(res), '<ToFloat(gte=1, lte=10)>')
 
     def test_float(self):
-        res = t.Float().check(1.0)
+        res = t.ToFloat().check(1.0)
         self.assertEqual(res, 1.0)
-        res = extract_error(t.Float(), 1 + 3j)
+        res = extract_error(t.ToFloat(), 1 + 3j)
         self.assertEqual(res, 'value is not float')
-        res = extract_error(t.Float(), 1)
+        res = extract_error(t.ToFloat(), 1)
         self.assertEqual(res, 1.0)
-        res = t.Float(gte=2).check(3.0)
+        res = t.ToFloat(gte=2).check(3.0)
         self.assertEqual(res, 3.0)
-        res = extract_error(t.Float(gte=2), 1.0)
+        res = extract_error(t.ToFloat(gte=2), 1.0)
         self.assertEqual(res, 'value is less than 2')
-        res = t.Float(lte=10).check(5.0)
+        res = t.ToFloat(lte=10).check(5.0)
         self.assertEqual(res, 5.0)
-        res = extract_error(t.Float(lte=3), 5.0)
+        res = extract_error(t.ToFloat(lte=3), 5.0)
         self.assertEqual(res, 'value is greater than 3')
-        res = t.Float().check("5.0")
+        res = t.ToFloat().check("5.0")
         self.assertEqual(res, 5.0)
 
 
@@ -359,56 +359,56 @@ class TestForwardTrafaret(unittest.TestCase):
 
 
 
-class TestIntTrafaret(unittest.TestCase):
+class TestToIntTrafaret(unittest.TestCase):
 
     def test_int(self):
-        res = repr(t.Int())
-        self.assertEqual(res, '<Int>')
-        res = t.Int().check(5)
+        res = repr(t.ToInt())
+        self.assertEqual(res, '<ToInt>')
+        res = t.ToInt().check(5)
         self.assertEqual(res, 5)
-        res = extract_error(t.Int(), 1.1)
+        res = extract_error(t.ToInt(), 1.1)
         self.assertEqual(res, 'value is not int')
-        res = extract_error(t.Int(), 1 + 1j)
+        res = extract_error(t.ToInt(), 1 + 1j)
         self.assertEqual(res, 'value is not int')
 
 
 class TestList(unittest.TestCase):
 
     def test_list_repr(self):
-        res = t.List(t.Int)
-        self.assertEqual(repr(res), '<List(<Int>)>')
-        res = t.List(t.Int, min_length=1)
-        self.assertEqual(repr(res), '<List(min_length=1 | <Int>)>')
-        res = t.List(t.Int, min_length=1, max_length=10)
-        self.assertEqual(repr(res), '<List(min_length=1, max_length=10 | <Int>)>')
+        res = t.List(t.ToInt)
+        self.assertEqual(repr(res), '<List(<ToInt>)>')
+        res = t.List(t.ToInt, min_length=1)
+        self.assertEqual(repr(res), '<List(min_length=1 | <ToInt>)>')
+        res = t.List(t.ToInt, min_length=1, max_length=10)
+        self.assertEqual(repr(res), '<List(min_length=1, max_length=10 | <ToInt>)>')
 
     def test_list(self):
-        res = extract_error(t.List(t.Int), 1)
+        res = extract_error(t.List(t.ToInt), 1)
         self.assertEqual(res, 'value is not a list')
-        res = t.List(t.Int).check([1, 2, 3])
+        res = t.List(t.ToInt).check([1, 2, 3])
         self.assertEqual(res, [1, 2, 3])
         res = t.List(t.String).check(["foo", "bar", "spam"])
         self.assertEqual(res, ['foo', 'bar', 'spam'])
-        res = extract_error(t.List(t.Int), [1, 2, 1 + 3j])
+        res = extract_error(t.List(t.ToInt), [1, 2, 1 + 3j])
         self.assertEqual(res, {2: 'value is not int'})
-        res = t.List(t.Int, min_length=1).check([1, 2, 3])
+        res = t.List(t.ToInt, min_length=1).check([1, 2, 3])
         self.assertEqual(res, [1, 2, 3])
-        res = extract_error(t.List(t.Int, min_length=1), [])
+        res = extract_error(t.List(t.ToInt, min_length=1), [])
         self.assertEqual(res, 'list length is less than 1')
-        res = t.List(t.Int, max_length=2).check([1, 2])
+        res = t.List(t.ToInt, max_length=2).check([1, 2])
         self.assertEqual(res, [1, 2])
-        res = extract_error(t.List(t.Int, max_length=2), [1, 2, 3])
+        res = extract_error(t.List(t.ToInt, max_length=2), [1, 2, 3])
         self.assertEqual(res, 'list length is greater than 2')
-        res = extract_error(t.List(t.Int), ["a"])
+        res = extract_error(t.List(t.ToInt), ["a"])
         self.assertEqual(res, {0: "value can't be converted to int"})
 
     def test_list_meta(self):
-        res = t.List[t.Int]
-        self.assertEqual(repr(res), '<List(<Int>)>')
-        res = t.List[t.Int, 1:]
-        self.assertEqual(repr(res), '<List(min_length=1 | <Int>)>')
-        res = t.List[:10, t.Int]
-        self.assertEqual(repr(res), '<List(max_length=10 | <Int>)>')
+        res = t.List[t.ToInt]
+        self.assertEqual(repr(res), '<List(<ToInt>)>')
+        res = t.List[t.ToInt, 1:]
+        self.assertEqual(repr(res), '<List(min_length=1 | <ToInt>)>')
+        res = t.List[:10, t.ToInt]
+        self.assertEqual(repr(res), '<List(max_length=10 | <ToInt>)>')
         # TODO
         # res = t.List[1:10]
         # self.assertEqual(res, Traceback (most recent call last):
@@ -419,8 +419,8 @@ class TestList(unittest.TestCase):
 class TestMappingTrafaret(unittest.TestCase):
 
     def test_mapping(self):
-        trafaret = t.Mapping(t.String, t.Int)
-        self.assertEqual(repr(trafaret), '<Mapping(<String> => <Int>)>')
+        trafaret = t.Mapping(t.String, t.ToInt)
+        self.assertEqual(repr(trafaret), '<Mapping(<String> => <ToInt>)>')
         res = trafaret.check({"foo": 1, "bar": 2})
         self.assertEqual(res, {'bar': 2, 'foo': 1})
         res = extract_error(trafaret, {"foo": 1, "bar": None})
@@ -444,27 +444,27 @@ class TestNullTrafaret(unittest.TestCase):
 class TestNumMeta(unittest.TestCase):
 
     def test_num_meta_repr(self):
-        res = t.Int[1:]
-        self.assertEqual(repr(res), '<Int(gte=1)>')
-        res = t.Int[1:10]
-        self.assertEqual(repr(res), '<Int(gte=1, lte=10)>')
-        res = t.Int[:10]
-        self.assertEqual(repr(res), '<Int(lte=10)>')
-        res = t.Float[1:]
-        self.assertEqual(repr(res), '<Float(gte=1)>')
-        res = t.Int > 3
-        self.assertEqual(repr(res), '<Int(gt=3)>')
-        res = 1 < (t.Float < 10)
-        self.assertEqual(repr(res), '<Float(gt=1, lt=10)>')
+        res = t.ToInt[1:]
+        self.assertEqual(repr(res), '<ToInt(gte=1)>')
+        res = t.ToInt[1:10]
+        self.assertEqual(repr(res), '<ToInt(gte=1, lte=10)>')
+        res = t.ToInt[:10]
+        self.assertEqual(repr(res), '<ToInt(lte=10)>')
+        res = t.ToFloat[1:]
+        self.assertEqual(repr(res), '<ToFloat(gte=1)>')
+        res = t.ToInt > 3
+        self.assertEqual(repr(res), '<ToInt(gt=3)>')
+        res = 1 < (t.ToFloat < 10)
+        self.assertEqual(repr(res), '<ToFloat(gt=1, lt=10)>')
 
     def test_meta_res(self):
-        res = (t.Int > 5).check(10)
+        res = (t.ToInt > 5).check(10)
         self.assertEqual(res, 10)
-        res = extract_error(t.Int > 5, 1)
+        res = extract_error(t.ToInt > 5, 1)
         self.assertEqual(res, 'value should be greater than 5')
-        res = (t.Int < 3).check(1)
+        res = (t.ToInt < 3).check(1)
         self.assertEqual(res, 1)
-        res = extract_error(t.Int < 3, 3)
+        res = extract_error(t.ToInt < 3, 3)
         self.assertEqual(res, 'value should be less than 3')
 
 
@@ -477,11 +477,11 @@ class TestOrNotToTest(unittest.TestCase):
         self.assertEqual(res, 'test')
         res = extract_error(nullString, 1)
         self.assertEqual(res, {0: 'value is not a string', 1: 'value should be None'})
-        res = t.Int | t.String
-        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
+        res = t.ToInt | t.String
+        self.assertEqual(repr(res), '<Or(<ToInt>, <String>)>')
 
     def test_operator(self):
-        check = t.String | t.Int
+        check = t.String | t.ToInt
         self.assertEqual(check('a'), 'a')
         self.assertEqual(check(5), 5)
 
@@ -600,23 +600,23 @@ class TestRegexpTrafaret(unittest.TestCase):
 
 class TestTrafaretMeta(unittest.TestCase):
     def test_meta(self):
-        res = (t.Int() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
+        res = (t.ToInt() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
         self.assertEqual(res, 6)
-        res = (t.Int() >> float >> str).check(4)
+        res = (t.ToInt() >> float >> str).check(4)
         self.assertEqual(res, '4.0')
-        res = t.Int | t.String
-        self.assertEqual(repr(res), '<Or(<Int>, <String>)>')
-        res = t.Int | t.String | t.Null
-        self.assertEqual(repr(res), '<Or(<Or(<Int>, <String>)>, <Null>)>')
-        res = (t.Int >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
+        res = t.ToInt | t.String
+        self.assertEqual(repr(res), '<Or(<ToInt>, <String>)>')
+        res = t.ToInt | t.String | t.Null
+        self.assertEqual(repr(res), '<Or(<Or(<ToInt>, <String>)>, <Null>)>')
+        res = (t.ToInt >> (lambda v: v if v ** 2 > 15 else 0)).check(5)
         self.assertEqual(res, 5)
 
 
 
 class TestTupleTrafaret(unittest.TestCase):
     def test_tuple(self):
-        tup = t.Tuple(t.Int, t.Int, t.String)
-        self.assertEqual(repr(tup), '<Tuple(<Int>, <Int>, <String>)>')
+        tup = t.Tuple(t.ToInt, t.ToInt, t.String)
+        self.assertEqual(repr(tup), '<Tuple(<ToInt>, <ToInt>, <String>)>')
         res = tup.check([3, 4, '5'])
         self.assertEqual(res, (3, 4, '5'))
         res = extract_error(tup, [3, 4, 5])
@@ -700,82 +700,7 @@ class TestOnErrorTrafaret(unittest.TestCase):
 
 class TestGuard(unittest.TestCase):
     def test_keywords_only(self):
-        @guard(a=t.Int)
+        @guard(a=t.ToInt)
         def fn(**kw):
             return kw
         self.assertEqual(fn(a='123'), {'a': 123})
-
-
-# res = @guard(a=String, b=Int, c=String)
-#     def fn(a, b, c="default"):
-#         '''docstring'''
-#         return (a, b, c)
-# res = fn.__module__ = None
-# res = help(fn)
-# self.assertEqual(res, Help on function fn:
-#     <BLANKLINE>
-#     fn(*args, **kwargs)
-#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
-#     <BLANKLINE>
-#         docstring
-#     <BLANKLINE>
-# **********************************************************************
-# File "/Users/mkrivushin/w/trafaret/trafaret/__init__.py", line 1260, in trafaret.guard
-# Failed example:
-#     help(fn)
-# Expected:
-#     Help on function fn:
-#     <BLANKLINE>
-#     fn(*args, **kwargs)
-#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
-#     <BLANKLINE>
-#         docstring
-#     <BLANKLINE>
-# Got:
-#     Help on function fn:
-#     <BLANKLINE>
-#     fn(a, b, c='default')
-#         guarded with <Dict(a=<String>, b=<Int>, c=<String>)>
-#     <BLANKLINE>
-#         docstring
-#     <BLANKLINE>
-# res = fn("foo", 1)
-# self.assertEqual(res, ('foo', 1, 'default')
-# res = extract_error(fn, "foo", 1, 2)
-# self.assertEqual(res, {'c': 'value is not a string'}
-# res = extract_error(fn, "foo")
-# self.assertEqual(res, {'b': 'is required'}
-# res = g = guard(Dict())
-# res = c = Forward()
-# res = c << Dict(name=str, children=List[c])
-# res = g = guard(c)
-# res = g = guard(Int())
-# self.assertEqual(res, Traceback (most recent call last):
-#     ...
-#     RuntimeError: trafaret should be instance of Dict or Forward
-# res = a = Int >> ignore
-# res = a.check(7)
-# ***Test Failed*** 2 failures.
-
-
-
-# res = _dd(fold({'a__a': 4}))
-# self.assertEqual(res, "{'a': {'a': 4}}"
-# res = _dd(fold({'a__a': 4, 'a__b': 5}))
-# self.assertEqual(res, "{'a': {'a': 4, 'b': 5}}"
-# res = _dd(fold({'a__1': 2, 'a__0': 1, 'a__2': 3}))
-# self.assertEqual(res, "{'a': [1, 2, 3]}"
-# res = _dd(fold({'form__a__b': 5, 'form__a__a': 4}, 'form'))
-# self.assertEqual(res, "{'a': {'a': 4, 'b': 5}}"
-# res = _dd(fold({'form__a__b': 5, 'form__a__a__0': 4, 'form__a__a__1': 7}, 'form'))
-# self.assertEqual(res, "{'a': {'a': [4, 7], 'b': 5}}"
-# res = repr(fold({'form__1__b': 5, 'form__0__a__0': 4, 'form__0__a__1': 7}, 'form'))
-# self.assertEqual(res, "[{'a': [4, 7]}, {'b': 5}]"
-# res = _dd(unfold({'a': 4, 'b': 5}))
-# self.assertEqual(res, "{'a': 4, 'b': 5}"
-# res = _dd(unfold({'a': [1, 2, 3]}))
-# self.assertEqual(res, "{'a__0': 1, 'a__1': 2, 'a__2': 3}"
-# res = _dd(unfold({'a': {'a': 4, 'b': 5}}))
-# self.assertEqual(res, "{'a__a': 4, 'a__b': 5}"
-# res = _dd(unfold({'a': {'a': 4, 'b': 5}}, 'form'))
-# self.assertEqual(res, "{'form__a__a': 4, 'form__a__b': 5}"
