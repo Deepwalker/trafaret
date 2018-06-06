@@ -53,6 +53,7 @@ if py3:
     str_types = (str, bytes)
     unicode = str
     BYTES_TYPE = bytes
+    STR_TYPE = str
 else:
     try:
         from future_builtins import map
@@ -61,6 +62,7 @@ else:
         from itertools import imap as map
     str_types = (basestring,)  # noqa
     BYTES_TYPE = str
+    STR_TYPE = unicode
 
 
 def deprecated(message):
@@ -128,11 +130,11 @@ class Trafaret(TrafaretAsyncMixin):
                 " check_and_return methods '%s'" % cls
             )
 
-    def _failure(self, error=None, value=_empty):
+    def _failure(self, error=None, value=_empty, code=None):
         """
         Shortcut method for raising validation error
         """
-        raise DataError(error=error, value=value, trafaret=self)
+        raise DataError(error=error, value=value, trafaret=self, code=None)
 
     def __or__(self, other):
         return Or(self, other)
@@ -195,7 +197,11 @@ class TypingTrafaret(Trafaret):
 
     def check_value(self, value):
         if not self.typing_checker(value, self.type_):
-            self._failure(self.failure_message % self.type_.__name__, value=value)
+            self._failure(
+                self.failure_message % self.type_.__name__,
+                value=value,
+                code=self.code,
+            )
 
     def __repr__(self):
         return "<%s(%s)>" % (self.__class__.__name__, self.type_.__name__)
@@ -216,6 +222,7 @@ class Subclass(TypingTrafaret):
 
     typing_checker = issubclass
     failure_message = "value is not subclass of %s"
+    code = "is_not_subclass"
 
 
 class Type(TypingTrafaret):
@@ -233,6 +240,7 @@ class Type(TypingTrafaret):
 
     typing_checker = isinstance
     failure_message = "value is not %s"
+    code = "is_not_instance"
 
 
 class Any(Trafaret):
@@ -314,7 +322,7 @@ class Null(Trafaret):
 
     def check_value(self, value):
         if value is not None:
-            self._failure("value should be None", value=value)
+            self._failure("value should be None", value=value, code="is_not_null")
 
     def __repr__(self):
         return "<Null>"
@@ -334,7 +342,7 @@ class Bool(Trafaret):
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False", value=value)
+            self._failure("value should be True or False", value=value, code="is_not_bool")
 
     def __repr__(self):
         return "<Bool>"
@@ -586,6 +594,7 @@ class String(Trafaret):
     >>> String(min_length=0, max_length=6, allow_blank=True).check('123')
     '123'
     """
+    str_type = STR_TYPE
 
     def __init__(self, allow_blank=False, min_length=None, max_length=None):
         assert not (allow_blank and min_length), \
@@ -595,20 +604,32 @@ class String(Trafaret):
         self.max_length = max_length
 
     def check_and_return(self, value):
-        if not isinstance(value, str_types):
-            self._failure("value is not a string", value=value)
+        if not isinstance(value, self.str_type):
+            self._failure("value is not a string", value=value, code="is_not_string")
         if not self.allow_blank and len(value) == 0:
-            self._failure("blank value is not allowed", value=value)
+            self._failure("blank value is not allowed", value=value, code="empty_string")
         elif self.allow_blank and len(value) == 0:
             return value
         if self.min_length is not None and len(value) < self.min_length:
-            self._failure('String is shorter than %s characters' % self.min_length, value=value)
+            self._failure(
+                'String is shorter than %s characters' % self.min_length,
+                value=value,
+                code="short_string",
+            )
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure('String is longer than %s characters' % self.max_length, value=value)
+            self._failure(
+                'String is longer than %s characters' % self.max_length,
+                value=value,
+                code="long_string",
+            )
         return value
 
     def __repr__(self):
         return "<String(blank)>" if self.allow_blank else "<String>"
+
+
+class AnyString(String):
+    str_type = (BYTES_TYPE, STR_TYPE)
 
 
 class Bytes(Trafaret):
