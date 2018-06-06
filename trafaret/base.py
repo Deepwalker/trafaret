@@ -419,7 +419,7 @@ class NumberMeta(TrafaretMeta):
 
 
 @py3metafix
-class FloatRaw(Trafaret):
+class Float(Trafaret):
     """
     Tests that value is a float or a string that is convertable to float.
 
@@ -508,7 +508,7 @@ class FloatRaw(Trafaret):
         return r
 
 
-class Float(FloatRaw):
+class ToFloat(Float):
     """Checks that value is a float.
     Or if value is a string converts this string to float
     """
@@ -516,7 +516,7 @@ class Float(FloatRaw):
         return self._check(data)
 
 
-class IntRaw(FloatRaw):
+class Int(Float):
     """
     >>> Int()
     <Int>
@@ -534,10 +534,10 @@ class IntRaw(FloatRaw):
         if isinstance(value, float):
             if not value.is_integer():
                 self._failure('value is not int', value=value)
-        return super(IntRaw, self)._converter(value)
+        return super(Int, self)._converter(value)
 
 
-class Int(IntRaw):
+class ToInt(Int):
     def check_and_return(self, data):
         return self._check(data)
 

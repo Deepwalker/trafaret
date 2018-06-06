@@ -23,7 +23,7 @@ async def test_async_check():
 
 
 async def test_async_and():
-    trafaret = t.Int & check_int_context
+    trafaret = t.ToInt & check_int_context
     await trafaret.async_check(3)  # will not fail
     # not int
     with pytest.raises(t.DataError) as res:
@@ -37,7 +37,7 @@ async def test_async_and():
 
 
 async def test_async_or():
-    trafaret = t.Int | t.Null
+    trafaret = t.ToInt | t.Null
     res = await trafaret.async_check(None)
     assert res is None
     res = await trafaret.async_check('5')
@@ -50,14 +50,14 @@ async def test_async_or():
     }
 
 async def test_async_call():
-    trafaret = t.Int & int & check_int
+    trafaret = t.ToInt & int & check_int
     res = await (trafaret.async_check('5'))
     assert res == 5
 
 
 async def test_dict():
     trafaret = t.Dict({
-        t.Key('b'): t.Int & check_int,
+        t.Key('b'): t.ToInt & check_int,
     })
     res = await trafaret.async_check({'b': '5'})
     assert res == {'b': 5}
@@ -126,14 +126,14 @@ async def test_dict_extra_and_ignore():
 
 async def test_key_with_callable_default():
     trafaret = t.Dict(
-        t.Key('a', default=lambda: 123, trafaret=t.Int),
+        t.Key('a', default=lambda: 123, trafaret=t.ToInt),
     )
     res = await trafaret.async_check({})
     assert res == {'a': 123}
 
 
 async def test_list():
-    trafaret = t.List(t.Int & check_int)
+    trafaret = t.List(t.ToInt & check_int)
     res = await (trafaret.async_check(['5']))
     assert res == [5]
     with pytest.raises(t.DataError) as res:
@@ -142,7 +142,7 @@ async def test_list():
 
 
 async def test_tuple():
-    trafaret = t.Tuple(t.Null, t.Int & check_int)
+    trafaret = t.Tuple(t.Null, t.ToInt & check_int)
     res = await (trafaret.async_check([None, '5']))
     assert res == (None, 5)
     with pytest.raises(t.DataError) as res:
@@ -151,7 +151,7 @@ async def test_tuple():
 
 
 async def test_mapping():
-    trafaret = t.Mapping(t.String, t.Int & check_int)
+    trafaret = t.Mapping(t.String, t.ToInt & check_int)
     res = await (trafaret.async_check({'a': '5'}))
     assert res == {'a': 5}
     # bad key
@@ -170,7 +170,7 @@ async def test_mapping():
 
 async def test_forward():
     trafaret = t.Forward()
-    trafaret << t.List(t.Int & check_int)
+    trafaret << t.List(t.ToInt & check_int)
     res = await (trafaret.async_check(['5']))
     assert res == [5]
 
