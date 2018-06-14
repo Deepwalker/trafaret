@@ -2,7 +2,7 @@
 import unittest
 import trafaret as t
 from collections import Mapping as AbcMapping
-from trafaret import catch_error, extract_error, DataError
+from trafaret import catch_error, extract_error, DataError, guard
 
 
 class TestAnyTrafaret(unittest.TestCase):
@@ -732,6 +732,14 @@ class TestOnErrorTrafaret(unittest.TestCase):
         res = catch_error(trafaret, 'Trololo')
 
         self.assertEqual(res.as_dict(), 'Changed message')
+
+
+class TestGuard(unittest.TestCase):
+    def test_keywords_only(self):
+        @guard(a=t.Int)
+        def fn(**kw):
+            return kw
+        self.assertEqual(fn(a='123'), {'a': 123})
 
 
 # res = @guard(a=String, b=Int, c=String)
