@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import unittest
+import pytest
 import trafaret as t
 from collections import Mapping as AbcMapping
 from trafaret import catch_error, extract_error, DataError, guard
+from trafaret.base import deprecated
 
 
 class TestTrafaret(unittest.TestCase):
@@ -48,6 +50,9 @@ class TestBoolTrafaret(unittest.TestCase):
 
         err = extract_error(t.Bool(), 1)
         self.assertEqual(err, 'value should be True or False')
+
+    def test_repr(self):
+        assert repr(t.Bool()) == '<Bool>'
 
 
 class TestCallTrafaret(unittest.TestCase):
@@ -283,6 +288,16 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, Map({"foo": u"xxx", "bar": u'str'}))
         self.assertEqual(res, {'bar': "value can't be converted to float"})
 
+    def test_keys_must_be_callable(self):
+        with pytest.raises(RuntimeError) as exc_info:
+            t.Dict(5)
+        assert exc_info.value.args[0] == 'Keys in single attributes must be callables'
+
+        with pytest.raises(RuntimeError) as exc_info:
+            t.Dict({5: t.String})
+        assert exc_info.value.args[0] == 'Non callable Keys are not supported'
+
+
 
 class TestDictKeys(unittest.TestCase):
 
@@ -334,6 +349,12 @@ class TestToFloat(unittest.TestCase):
         self.assertEqual(res, 'value is greater than 3')
         res = t.ToFloat().check("5.0")
         self.assertEqual(res, 5.0)
+
+    def test_meta(self):
+        assert repr(t.ToFloat() > 10) == '<ToFloat(gt=10)>'
+        assert repr(t.ToFloat() >= 10) == '<ToFloat(gte=10)>'
+        assert repr(t.ToFloat() < 10) == '<ToFloat(lt=10)>'
+        assert repr(t.ToFloat() <= 10) == '<ToFloat(lte=10)>'
 
 
 
@@ -409,11 +430,9 @@ class TestList(unittest.TestCase):
         self.assertEqual(repr(res), '<List(min_length=1 | <ToInt>)>')
         res = t.List[:10, t.ToInt]
         self.assertEqual(repr(res), '<List(max_length=10 | <ToInt>)>')
-        # TODO
-        # res = t.List[1:10]
-        # self.assertEqual(res, Traceback (most recent call last):
-        #     ...
-        #     RuntimeError: Trafaret is required for List initialization
+        with pytest.raises(RuntimeError) as exc_info:
+            t.List[1:10]
+        assert exc_info.value.args[0] == 'Trafaret is required for List initialization'
 
 
 class TestMappingTrafaret(unittest.TestCase):
@@ -497,6 +516,13 @@ class TestAndTest(unittest.TestCase):
         res = extract_error(fail_other, 'a')
         self.assertEqual(res, 'other error')
 
+        ttt = t.And(other, t.Any)
+        res = extract_error(ttt, 45)
+        self.assertEqual(res, 'other error')
+
+    def test_repr(self):
+        assert repr(t.Bool & t.Null) == '<And(<Bool>, <Null>)>'
+
 
 class TestStrBoolTrafaret(unittest.TestCase):
 
@@ -529,6 +555,9 @@ class TestStrBoolTrafaret(unittest.TestCase):
         self.assertEqual(res, True)
         res = t.StrBool().check('off')
         self.assertEqual(res, False)
+
+    def test_bool(self):
+        assert repr(t.StrBool()) == '<StrBool>'
 
 
 
@@ -621,6 +650,10 @@ class TestTupleTrafaret(unittest.TestCase):
         self.assertEqual(res, (3, 4, u'5'))
         res = extract_error(tup, [3, 4, 5])
         self.assertEqual(res, {2: 'value is not a string'})
+        res = extract_error(tup, 5)
+        self.assertEqual(res, 'value must be convertable to tuple')
+        res = extract_error(tup, [5])
+        self.assertEqual(res, 'value must contain 3 items')
 
 
 class TestTypeTrafaret(unittest.TestCase):
@@ -678,24 +711,23 @@ class TestDataError(unittest.TestCase):
 class TestOnErrorTrafaret(unittest.TestCase):
     def test_on_error(self):
         trafaret = t.OnError(t.Bool(), message='Changed message')
-
         res = trafaret(True)
-
         self.assertEqual(res, True)
 
     def test_on_error_ensured_trafaret(self):
         trafaret = t.OnError(t.Bool, message='Changed message')
-
         res = trafaret(False)
-
         self.assertEqual(res, False)
 
     def test_on_error_data_error(self):
         trafaret = t.OnError(t.Bool, message='Changed message')
-
         res = catch_error(trafaret, 'Trololo')
-
         self.assertEqual(res.as_dict(), 'Changed message')
+
+
+def test_with_repr():
+    ttt = t.WithRepr(t.String, '<Ttt>')
+    assert repr(ttt) == '<Ttt>'
 
 
 class TestGuard(unittest.TestCase):
@@ -704,3 +736,11 @@ class TestGuard(unittest.TestCase):
         def fn(**kw):
             return kw
         self.assertEqual(fn(a='123'), {'a': 123})
+
+
+def test_ignore():
+    assert t.ignore(5) == None
+
+
+def test_deprecated():
+    deprecated('blabla')

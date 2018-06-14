@@ -2,7 +2,7 @@
 
 import re
 from .regexp import Regexp
-from .base import String, Bytes, OnError
+from .base import String, Bytes, OnError, WithRepr
 from .lib import py3
 
 if py3:
@@ -47,6 +47,7 @@ Email = to_str & String(allow_blank=True) & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
 )
+Email = WithRepr(Email, '<Email>')
 
 
 URL_REGEXP = re.compile(
@@ -77,6 +78,7 @@ URL = OnError(
     URLRegexp | (to_str & decode_url_idna & URLRegexp),
     'value is not URL',
 )
+URL = WithRepr(URL, '<URL>')
 
 
 IPv4 = OnError(
@@ -85,6 +87,7 @@ IPv4 = OnError(
     ),
     'value is not IPv4 address',
 )
+IPv4 = WithRepr(IPv4, '<IPv4>')
 
 
 IPv6 = OnError(
@@ -109,6 +112,8 @@ IPv6 = OnError(
     ),
     'value is not IPv6 address',
 )
+IPv6 = WithRepr(IPv6, '<IPv6>')
 
 
 IP = OnError(IPv4 | IPv6, 'value is not IP address')
+IP = WithRepr(IP, '<IP>')
