@@ -34,7 +34,7 @@ if py36:
         DictAsyncMixin,
         KeyAsyncMixin,
     )
-else:
+else:  # pragma: no cover
     class EmptyMixin(object):
         pass
     TrafaretAsyncMixin = EmptyMixin
@@ -55,7 +55,7 @@ if py3:
     unicode = str
     BYTES_TYPE = bytes
     STR_TYPE = str
-else:
+else:  # pragma: no cover
     try:
         from future_builtins import map
     except ImportError:
@@ -160,6 +160,18 @@ class OnError(Trafaret):
             return self.trafaret(value, context=context)
         except DataError:
             raise DataError(self.message, value=value)
+
+
+class WithRepr(Trafaret):
+    def __init__(self, trafaret, representation):
+        self.trafaret = ensure_trafaret(trafaret)
+        self.representation = representation
+
+    def transform(self, value, context=None):
+        return self.trafaret(value, context=context)
+
+    def __repr__(self):
+        return self.representation
 
 
 def ensure_trafaret(trafaret):
@@ -300,16 +312,15 @@ class And(Trafaret, AndAsyncMixin):
         self.other = ensure_trafaret(other)
 
     def transform(self, value, context=None):
+        # it will raise in case of error
         res = self.trafaret(value, context=context)
-        if isinstance(res, DataError):
-            raise DataError
-        res = self.other(res, context=context)
-        if isinstance(res, DataError):
-            raise res
-        return res
+        return self.other(res, context=context)
 
     def __repr__(self):
-        return repr(self.trafaret)
+        return "<And(%s, %s)>" % (
+            repr(self.trafaret),
+            repr(self.other),
+        )
 
 
 class Null(Trafaret):
@@ -502,8 +513,14 @@ class Float(Trafaret):
     def __lt__(self, lt):
         return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
 
+    def __le__(self, lte):
+        return type(self)(gte=self.gte, lte=lte, gt=self.gt, lt=self.lt)
+
     def __gt__(self, gt):
         return type(self)(gte=self.gte, lte=self.lte, gt=gt, lt=self.lt)
+
+    def __ge__(self, gte):
+        return type(self)(gte=gte, lte=self.lte, gt=self.gt, lt=self.lt)
 
     def __repr__(self):
         r = "<%s" % type(self).__name__
@@ -869,9 +886,6 @@ class Key(KeyAsyncMixin):
     def get_name(self):
         return self.to_name or self.name
 
-    def make_optional(self):
-        self.optional = True
-
     def __repr__(self):
         return '<%s "%s"%s %s>' % (
             self.__class__.__name__,
@@ -953,13 +967,13 @@ class Dict(Trafaret, DictAsyncMixin):
         self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = Key(key) if isinstance(key, str_types) else key
-            key_.set_trafaret(trafaret)
+            if not callable(key_) and not hasattr(key_, 'async_call'):
+                raise RuntimeError('Non callable Keys are not supported')
+            key_.set_trafaret(ensure_trafaret(trafaret))
             self.keys.append(key_)
         # optimized version without runtime check for context arg
         self._keys = []
         for key in self.keys:
-            if not callable(key) and not hasattr(key, 'async_call'):
-                raise ValueError('Non callable Keys are not supported')
             self._keys.append(with_context_caller(key))
 
     def _clone_args(self):
@@ -1003,16 +1017,6 @@ class Dict(Trafaret, DictAsyncMixin):
         ignore_extra = kw.setdefault('ignore_extra', [])
         ignore_extra.extend(names)
         return self.__class__(*keys, **kw)
-
-    def make_optional(self, *args):
-        """ Deprecated. will change in-place keys for given args
-        or all keys if `*` in args.
-        """
-        deprecated('This method is deprecated. You can not change keys instances.')
-        for key in self.keys:
-            if key.name in args or '*' in args:
-                key.make_optional()
-        return self
 
     def transform(self, value, context=None):
         if not isinstance(value, AbcMapping):

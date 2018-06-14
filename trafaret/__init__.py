@@ -34,6 +34,7 @@ from .base import (
 
     # utils
     OnError,
+    WithRepr,
     ensure_trafaret,
     extract_error,
     ignore,
@@ -93,6 +94,7 @@ __all__ = (
     "IP",
 
     "OnError",
+    "WithRepr",
     "ensure_trafaret",
     "extract_error",
     "ignore",
