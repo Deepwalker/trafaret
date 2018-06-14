@@ -1308,7 +1308,7 @@ def guard(trafaret=None, **kwargs):
         @functools.wraps(fn)
         def decor(*args, **kwargs):
             fnargs = argspec.args
-            if fnargs[0] in ['self', 'cls']:
+            if fnargs and fnargs[0] in ['self', 'cls']:
                 obj = args[0]
                 fnargs = fnargs[1:]
                 checkargs = args[1:]
