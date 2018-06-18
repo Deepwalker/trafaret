@@ -32,6 +32,7 @@ class DataError(ValueError):
         return 'DataError(%r)' % str(self)
 
     def as_dict(self, value=False):
+        # TODO FIXME to provide consisitence results
         if not isinstance(self.error, dict):
             if value and self.value != _empty:
                 return '%s, got %r' % (str(self.error), self.value)
