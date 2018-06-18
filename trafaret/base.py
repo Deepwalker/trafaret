@@ -163,7 +163,7 @@ class OnError(Trafaret):
                 self.message,
                 value=value,
                 trafaret=self.trafaret,
-                code=code or de.code,
+                code=self.code or de.code,
             )
 
 
