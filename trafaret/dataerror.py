@@ -12,6 +12,13 @@ class DataError(ValueError):
     error_code = 'unknown'
 
     def __init__(self, error=None, name=None, value=_empty, trafaret=None, code=None):
+        """
+        :attribute error: can be a string, a list of dataerrors, a dict[string, dataerror]
+        :attribute name:
+        :attribute value: validated value that leads to this error
+        :attribute trafaret: trafaret raised error
+        :attribute code: code for error, like `value_is_to_big`
+        """
         self.error = error
         self.name = name
         self.value = value
@@ -22,15 +29,13 @@ class DataError(ValueError):
         return str(self.error)
 
     def __repr__(self):
-        return 'DataError(%s)' % str(self)
+        return 'DataError(%r)' % str(self)
 
     def as_dict(self, value=False):
-        def as_dict(dataerror):
-            if not isinstance(dataerror.error, dict):
-                if value and dataerror.value != _empty:
-                    return '%s, got %r' % (str(dataerror.error), dataerror.value)
-                else:
-                    return str(dataerror.error)
-            return dict((k, v.as_dict(value=value) if isinstance(v, DataError) else v)
-                        for k, v in dataerror.error.items())
-        return as_dict(self)
+        if not isinstance(self.error, dict):
+            if value and self.value != _empty:
+                return '%s, got %r' % (str(self.error), self.value)
+            else:
+                return str(self.error)
+        return dict((k, v.as_dict(value=value) if isinstance(v, DataError) else v)
+                    for k, v in self.error.items())

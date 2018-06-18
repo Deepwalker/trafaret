@@ -150,15 +150,21 @@ class Trafaret(TrafaretAsyncMixin):
 
 
 class OnError(Trafaret):
-    def __init__(self, trafaret, message):
+    def __init__(self, trafaret, message, code=None):
         self.trafaret = ensure_trafaret(trafaret)
         self.message = message
+        self.code = code
 
     def transform(self, value, context=None):
         try:
             return self.trafaret(value, context=context)
-        except DataError:
-            raise DataError(self.message, value=value)
+        except DataError as de:
+            raise DataError(
+                self.message,
+                value=value,
+                trafaret=self.trafaret,
+                code=code or de.code,
+            )
 
 
 class WithRepr(Trafaret):
