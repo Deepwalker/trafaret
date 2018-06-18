@@ -1,6 +1,15 @@
 Changelog
 =========
 
+2.0.0
+-----
+
+– ``WithRepr``
+– strip a lot from dict, like keys
+– trafarets are not mutable
+– DataError has new ``code`` attribute
+
+
 1.0.3
 -----
 - new ``trafaret.keys`` dict key ``subdict`` from ``trafaret_schema``
