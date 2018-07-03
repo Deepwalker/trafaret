@@ -18,7 +18,7 @@ from .dataerror import DataError
 
 
 if py36:
-    from .async import (
+    from .async_mixins import (
         TrafaretAsyncMixin,
         OrAsyncMixin,
         AndAsyncMixin,
