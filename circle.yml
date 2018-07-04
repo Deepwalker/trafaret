@@ -2,9 +2,9 @@
 machine:
   python:
     version:
-      3.6.2
+      3.6.4
   post:
-    - pyenv local 3.6.2 3.5.2 2.7.10
+    - pyenv local 3.7.0 3.6.4 3.5.2 2.7.13
 
 test:
   override:
