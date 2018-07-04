@@ -21,7 +21,7 @@ jobs:
         - save_cache:
             key: pip_cache_{{ checksum "setup.py" }}
             paths:
-              - "~/.tox"
+              - "~/project/.tox"
   toxify3.7:
       docker:
         - image: circleci/python:3.7-rc
