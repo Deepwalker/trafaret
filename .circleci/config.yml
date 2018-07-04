@@ -1,0 +1,38 @@
+version: 2
+
+jobs:
+  # using tox
+  toxify:
+      docker:
+        - image: circleci/python:3.6.6
+      environment:
+        TOXENV: py27,py35,py36
+      steps: &toxsteps
+        - checkout
+        - restore_cache:
+           keys:
+             - pip_cache_{{ checksum "setup.py" }}
+        - run:
+            name: Install utils
+            command: |
+              sudo pip install tox wheel
+        - run:
+            command: tox
+        - save_cache:
+            key: pip_cache_{{ checksum "setup.py" }}
+            paths:
+              - "~/project/.tox"
+  toxify3.7:
+      docker:
+        - image: circleci/python:3.7-rc
+      environment:
+        TOXENV: py37
+      steps: *toxsteps
+
+workflows:
+  version: 2
+
+  build:
+    jobs:
+      - toxify
+      - toxify3.7
