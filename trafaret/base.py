@@ -13,7 +13,7 @@ from .lib import (
     py36,
     py3metafix,
     getargspec,
-    get_callable_argspec,
+    get_callable_args,
     with_context_caller,
     _empty,
 )
@@ -291,7 +291,7 @@ class Or(Trafaret, OrAsyncMixin):
     __slots__ = ['trafarets']
 
     def __init__(self, *trafarets):
-        self.trafarets = list(map(ensure_trafaret, trafarets))
+        self.trafarets = [ensure_trafaret(t) for t in trafarets]
 
     def transform(self, value, context=None):
         errors = []
@@ -303,7 +303,7 @@ class Or(Trafaret, OrAsyncMixin):
         raise DataError(dict(enumerate(errors)), trafaret=self)
 
     def __repr__(self):
-        return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))
+        return "<Or(%s)>" % (", ".join(repr(t) for t in self.trafarets))
 
 
 class And(Trafaret, AndAsyncMixin):
@@ -1209,20 +1209,8 @@ class Call(Trafaret, CallAsyncMixin):
     def __init__(self, fn):
         if not callable(fn):
             raise RuntimeError("Call argument should be callable")
-        try:
-            argspec = get_callable_argspec(fn)
-        except TypeError:
-            self.fn = fn
-            self.supports_context = False
-            return
-        args = set(argspec.args)
+        args = set(get_callable_args(fn))
         self.supports_context = 'context' in args
-        if 'context' in args:
-            args.remove('context')
-        # if len(argspec.args) - len(argspec.defaults or []) > 1:
-        #     raise RuntimeError(
-        #         "Call argument should be one argument function"
-        #     )
         self.fn = fn
 
     def transform(self, value, context=None):
