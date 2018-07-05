@@ -52,11 +52,20 @@ def with_context_caller(callble):
         return WithoutContextCaller(callble)
 
 
-def get_callable_argspec(callble):
-    if inspect.isroutine(callble):
-        return getargspec(callble)
-    spec = getargspec(callble.__call__)
+def get_callable_args(fn):
+    if inspect.isfunction(fn) or inspect.ismethod(fn):
+        inspectable = fn
+    elif inspect.isclass(fn):
+        inspectable = fn.__init__
+    elif hasattr(fn, '__call__'):
+        inspectable = fn.__call__
+    else:
+        inspectable = fn
+    try:
+        spec = getargspec(inspectable)
+    except TypeError:
+        return ()
     # check if callble is bound method
-    if hasattr(callble, '__self__'):
+    if hasattr(fn, '__self__'):
         spec.args.pop(0)  # remove `self` from args
-    return spec
+    return spec.args

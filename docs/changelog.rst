@@ -7,7 +7,12 @@ Changelog
 – ``WithRepr``
 – strip a lot from dict, like keys
 – trafarets are not mutable
-– DataError has new ``code`` attribute
+– DataError has new ``code`` attribute, self.failure has ``code`` attribute
+– String, AnyString, Bytes
+– Int, ToInt, Float, ToFloat
+– visitor deleted
+
+– test coverage
 
 
 1.0.3
