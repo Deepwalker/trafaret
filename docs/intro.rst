@@ -29,11 +29,23 @@ Trafaret has very handy features, read below some samples.
 Regexp
 ......
 
+::
+
+    >>> t.Regexp(regexp='^\s+$').check('   ')
+    '   '
+
 ``RegexpRaw`` can work with regular expressions::
 
     >>> c = t.RegexpRaw(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
     >>> c.check('name=Jeff')
     'Jeff'
+
+And one wild sample::
+
+    >>> todt = lambda  m: datetime(*[int(i) for i in m.groups()])
+    >>> (t.RegexpRaw(regexp='^year=(\d+),month=(\d+),day=(\d+)$') >> todt).check('year=2011,month=07,day=23')
+    datetime.datetime(2011, 7, 23, 0, 0)
+
 
 You can use all ``re.match`` power to extract from strings dicts and
 other higher level datastructures.
@@ -170,9 +182,6 @@ Basically just check that argument is a string.
 
 Argument ``allow_blank`` indicates if string can be blank or not.
 
-If you provide a ``regex`` parameter - it will return ``re`` match
-object.  Default converter will return ``match.group()`` result.
-
 ``Email`` and ``URL`` just provide regular expressions and a bit of
 logic for IDNA domains.  Default converters return email and domain,
 but you will get ``re`` match object in converter.
@@ -181,16 +190,6 @@ Here is some examples to make things clear::
 
     >>> t.String().check('werwerwer')
     'werwerwer'
-    >>> t.String(regex='^\s+$').check('   ')
-    '   '
-    >>> t.String(regex='^name=(\w+)$').check('name=Jeff')
-    'Jeff'
-
-And one wild sample::
-
-    >>> todt = lambda  m: datetime(*[int(i) for i in m.groups()])
-    >>> (t.String(regex='^year=(\d+),month=(\d+),day=(\d+)$') >> todt).check('year=2011,month=07,day=23')
-    datetime.datetime(2011, 7, 23, 0, 0)
 
 List
 ----
@@ -240,7 +239,7 @@ Special class to create dict keys. Parameters are:
 - `to_name` - allows to rename the key
 
 You can provide ``to_name`` with ``>>`` operation::
-  
+
     Key('javaStyleData') >> 'plain_cool_data'
 
 It provides method ``__call__(self, data)`` that extract key value
