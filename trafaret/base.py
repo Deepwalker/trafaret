@@ -2,7 +2,6 @@
 
 import functools
 import itertools
-import numbers
 import warnings
 try:
     from collections.abc import Mapping as AbcMapping
@@ -17,8 +16,10 @@ from .lib import (
     get_callable_args,
     with_context_caller,
     _empty,
+    STR_TYPES,
 )
 from .dataerror import DataError
+from . import codes
 
 
 if py36:
@@ -51,17 +52,10 @@ else:  # pragma: no cover
 
 # Python3 support
 if py3:
-    str_types = (str, bytes)
     unicode = str
     BYTES_TYPE = bytes
     STR_TYPE = str
 else:  # pragma: no cover
-    try:
-        from future_builtins import map
-    except ImportError:
-        # Support for GAE runner
-        from itertools import imap as map
-    str_types = (basestring,)  # noqa
     BYTES_TYPE = str
     STR_TYPE = unicode
 
@@ -340,7 +334,7 @@ class Null(Trafaret):
 
     def check_value(self, value):
         if value is not None:
-            self._failure("value should be None", value=value, code="is_not_null")
+            self._failure("value should be None", value=value, code=codes.IS_NOT_NULL)
 
     def __repr__(self):
         return "<Null>"
@@ -360,7 +354,7 @@ class Bool(Trafaret):
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False", value=value, code="is_not_bool")
+            self._failure("value should be True or False", value=value, code=codes.IS_NOT_BOOL)
 
     def __repr__(self):
         return "<Bool>"
@@ -394,184 +388,22 @@ class StrBool(Trafaret):
     False
     """
 
-    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on', 'off',
-                   '1', '0', 'none')
+    true_values = ('t', 'true', 'y', 'yes', 'on', '1')
+    false_values = ('false', 'n', 'no', 'off', '0', 'none')
+    convertable = true_values + false_values
 
     def check_and_return(self, value):
         _value = str(value).strip().lower()
         if _value not in self.convertable:
-            self._failure("value can't be converted to Bool", value=value)
+            self._failure(
+                "value can't be converted to Bool",
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_BOOL,
+            )
         return _value in ('t', 'true', 'y', 'yes', 'on', '1')
 
     def __repr__(self):
         return "<StrBool>"
-
-
-class NumberMeta(TrafaretMeta):
-    """
-    Allows slicing syntax for min and max arguments for
-    number trafarets
-
-    >>> Int[1:]
-    <Int(gte=1)>
-    >>> Int[1:10]
-    <Int(gte=1, lte=10)>
-    >>> Int[:10]
-    <Int(lte=10)>
-    >>> Float[1:]
-    <Float(gte=1)>
-    >>> Int > 3
-    <Int(gt=3)>
-    >>> 1 < (Float < 10)
-    <Float(gt=1, lt=10)>
-    >>> (Int > 5).check(10)
-    10
-    >>> extract_error(Int > 5, 1)
-    'value should be greater than 5'
-    >>> (Int < 3).check(1)
-    1
-    >>> extract_error(Int < 3, 3)
-    'value should be less than 3'
-    """
-
-    def __getitem__(cls, slice_):
-        return cls(gte=slice_.start, lte=slice_.stop)
-
-    def __lt__(cls, lt):
-        return cls(lt=lt)
-
-    def __gt__(cls, gt):
-        return cls(gt=gt)
-
-
-@py3metafix
-class Float(Trafaret):
-    """
-    Tests that value is a float or a string that is convertable to float.
-
-    >>> Float()
-    <Float>
-    >>> Float(gte=1)
-    <Float(gte=1)>
-    >>> Float(lte=10)
-    <Float(lte=10)>
-    >>> Float(gte=1, lte=10)
-    <Float(gte=1, lte=10)>
-    >>> Float().check(1.0)
-    1.0
-    >>> extract_error(Float(), 1 + 3j)
-    'value is not float'
-    >>> extract_error(Float(), 1)
-    1.0
-    >>> Float(gte=2).check(3.0)
-    3.0
-    >>> extract_error(Float(gte=2), 1.0)
-    'value is less than 2'
-    >>> Float(lte=10).check(5.0)
-    5.0
-    >>> extract_error(Float(lte=3), 5.0)
-    'value is greater than 3'
-    >>> Float().check("5.0")
-    5.0
-    """
-
-    __metaclass__ = NumberMeta
-
-    convertable = str_types + (numbers.Real,)
-    value_type = float
-
-    def __init__(self, gte=None, lte=None, gt=None, lt=None):
-        self.gte = gte
-        self.lte = lte
-        self.gt = gt
-        self.lt = lt
-
-    def _converter(self, value):
-        if not isinstance(value, self.convertable):
-            self._failure('value is not %s' % self.value_type.__name__, value=value)
-        try:
-            return self.value_type(value)
-        except ValueError:
-            self._failure(
-                "value can't be converted to %s" % self.value_type.__name__,
-                value=value
-            )
-
-    def _check(self, data):
-        if not isinstance(data, self.value_type):
-            value = self._converter(data)
-        else:
-            value = data
-        if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte, value=data)
-        if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte, value=data)
-        if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt, value=data)
-        if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt, value=data)
-        return value
-
-    def check_and_return(self, data):
-        self._check(data)
-        return data
-
-    def __lt__(self, lt):
-        return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
-
-    def __le__(self, lte):
-        return type(self)(gte=self.gte, lte=lte, gt=self.gt, lt=self.lt)
-
-    def __gt__(self, gt):
-        return type(self)(gte=self.gte, lte=self.lte, gt=gt, lt=self.lt)
-
-    def __ge__(self, gte):
-        return type(self)(gte=gte, lte=self.lte, gt=self.gt, lt=self.lt)
-
-    def __repr__(self):
-        r = "<%s" % type(self).__name__
-        options = []
-        for param in ("gte", "lte", "gt", "lt"):
-            if getattr(self, param) is not None:
-                options.append("%s=%s" % (param, getattr(self, param)))
-        if options:
-            r += "(%s)" % (", ".join(options))
-        r += ">"
-        return r
-
-
-class ToFloat(Float):
-    """Checks that value is a float.
-    Or if value is a string converts this string to float
-    """
-    def check_and_return(self, data):
-        return self._check(data)
-
-
-class Int(Float):
-    """
-    >>> Int()
-    <Int>
-    >>> Int().check(5)
-    5
-    >>> extract_error(Int(), 1.1)
-    'value is not int'
-    >>> extract_error(Int(), 1 + 1j)
-    'value is not int'
-    """
-
-    value_type = int
-
-    def _converter(self, value):
-        if isinstance(value, float):
-            if not value.is_integer():
-                self._failure('value is not int', value=value)
-        return super(Int, self)._converter(value)
-
-
-class ToInt(Int):
-    def check_and_return(self, data):
-        return self._check(data)
 
 
 class Atom(Trafaret):
@@ -588,7 +420,11 @@ class Atom(Trafaret):
 
     def check_value(self, value):
         if self.value != value:
-            self._failure("value is not exactly '%s'" % self.value, value=value)
+            self._failure(
+                "value is not exactly '%s'" % self.value,
+                value=value,
+                code=codes.IS_NOT_EXACTLY,
+            )
 
 
 class String(Trafaret):
@@ -629,22 +465,22 @@ class String(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, self.str_type):
-            self._failure("value is not a string", value=value, code="is_not_string")
+            self._failure("value is not a string", value=value, code=codes.IS_NOT_A_STRING)
         if not self.allow_blank and len(value) == 0:
-            self._failure("blank value is not allowed", value=value, code="empty_string")
+            self._failure("blank value is not allowed", value=value, code=codes.EMPTY_STRING)
         elif self.allow_blank and len(value) == 0:
             return value
         if self.min_length is not None and len(value) < self.min_length:
             self._failure(
                 'String is shorter than %s characters' % self.min_length,
                 value=value,
-                code="short_string",
+                code=codes.SHORT_STRING,
             )
         if self.max_length is not None and len(value) > self.max_length:
             self._failure(
                 'String is longer than %s characters' % self.max_length,
                 value=value,
-                code="long_string",
+                code=codes.LONG_STRING,
             )
         return value
 
@@ -665,11 +501,19 @@ class Bytes(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, BYTES_TYPE):
-            self._failure('value is not a bytes', value=value)
+            self._failure(
+                'value is not a bytes',
+                value=value,
+                code=codes.IS_NOT_BYTES,
+            )
         try:
             return value.decode(self.encoding)
         except UnicodeError:
-            raise self._failure('value cannot be decoded with %s encoding' % self.encoding)
+            raise self._failure(
+                'value cannot be decoded with %s encoding' % self.encoding,
+                value=value,
+                code=codes.CANNOT_BE_DECODED,
+            )
 
     def __repr__(self):
         return "<Bytes>"
@@ -755,11 +599,23 @@ class List(Trafaret, ListAsyncMixin):
 
     def check_common(self, value):
         if not isinstance(value, Iterable):
-            self._failure("value is not a list", value=value)
+            self._failure(
+                "value is not a list",
+                value=value,
+                code=codes.IS_NOT_LIST,
+            )
         if len(value) < self.min_length:
-            self._failure("list length is less than %s" % self.min_length, value=value)
+            self._failure(
+                "list length is less than %s" % self.min_length,
+                value=value,
+                code=codes.TOO_SHORT,
+            )
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure("list length is greater than %s" % self.max_length, value=value)
+            self._failure(
+                "list length is greater than %s" % self.max_length,
+                value=value,
+                code=codes.TOO_LONG,
+            )
 
     def transform(self, value, context=None):
         self.check_common(value)
@@ -771,7 +627,7 @@ class List(Trafaret, ListAsyncMixin):
             except DataError as err:
                 errors[index] = err
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            raise self._failure(errors)
         return lst
 
     def __repr__(self):
@@ -804,7 +660,7 @@ class Tuple(Trafaret, TupleAsyncMixin):
     __slots__ = ['trafarets', 'length']
 
     def __init__(self, *args):
-        self.trafarets = list(map(ensure_trafaret, args))
+        self.trafarets = [ensure_trafaret(t) for t in args]
         self.length = len(self.trafarets)
 
     def check_common(self, value):
@@ -972,7 +828,7 @@ class Dict(Trafaret, DictAsyncMixin):
 
         self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
-            key_ = Key(key) if isinstance(key, str_types) else key
+            key_ = Key(key) if isinstance(key, STR_TYPES) else key
             if not callable(key_) and not hasattr(key_, 'async_call'):
                 raise RuntimeError('Non callable Keys are not supported')
             key_.set_trafaret(ensure_trafaret(trafaret))
@@ -1057,7 +913,7 @@ class Dict(Trafaret, DictAsyncMixin):
                     except DataError as de:
                         errors[key] = de
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors)
         return collect
 
     def __repr__(self):
@@ -1145,7 +1001,7 @@ class Mapping(Trafaret, MappingAsyncMixin):
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(errors)
         return checked_mapping
 
     def __repr__(self):
@@ -1172,7 +1028,7 @@ class Enum(Trafaret):
             self._failure("value doesn't match any variant", value=value)
 
     def __repr__(self):
-        return "<Enum(%s)>" % (", ".join(map(repr, self.variants)))
+        return "<Enum(%s)>" % (", ".join(repr(v) for v in self.variants))
 
 
 class Callable(Trafaret):

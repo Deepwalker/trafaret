@@ -1,7 +1,8 @@
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
-from .. import Trafaret, str_types
+from .. import Trafaret
+from ..lib import STR_TYPES
 
 
 class MongoId(Trafaret):
@@ -20,7 +21,7 @@ class MongoId(Trafaret):
     "'just_id' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string"
     """
 
-    convertable = str_types + (ObjectId,)
+    convertable = STR_TYPES + (ObjectId,)
     value_type = ObjectId
     allow_blank = False
 

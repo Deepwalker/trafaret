@@ -1,4 +1,4 @@
-from .lib import _empty
+from .lib import _empty, STR_TYPES
 
 
 class DataError(ValueError):
@@ -19,6 +19,8 @@ class DataError(ValueError):
         :attribute trafaret: trafaret raised error
         :attribute code: code for error, like `value_is_to_big`
         """
+        if not isinstance(error, STR_TYPES + (dict, )):
+            raise RuntimeError('Only str or dict is supported, got %r' % error)
         self.error = error
         self.name = name
         self.value = value
