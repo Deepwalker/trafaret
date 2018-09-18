@@ -8,8 +8,10 @@ py36 = sys.version_info >= (3, 6, 0)
 
 if py3:
     getargspec = inspect.getfullargspec
+    STR_TYPES = (str, bytes)
 else:
     getargspec = inspect.getargspec
+    STR_TYPES = (basestring,)  # noqa
 
 
 _empty = object()

@@ -1,5 +1,6 @@
 import re
-from .base import Trafaret, str_types
+from .base import Trafaret
+from .lib import STR_TYPES
 
 
 class RegexpRaw(Trafaret):
@@ -9,11 +10,11 @@ class RegexpRaw(Trafaret):
     __slots__ = ('regexp', 'raw_regexp')
 
     def __init__(self, regexp, re_flags=0):
-        self.regexp = re.compile(regexp, re_flags) if isinstance(regexp, str_types) else regexp
+        self.regexp = re.compile(regexp, re_flags) if isinstance(regexp, STR_TYPES) else regexp
         self.raw_regexp = self.regexp.pattern if self.regexp else None
 
     def check_and_return(self, value):
-        if not isinstance(value, str_types):
+        if not isinstance(value, STR_TYPES):
             self._failure("value is not a string", value=value)
         match = self.regexp.match(value)
         if not match:

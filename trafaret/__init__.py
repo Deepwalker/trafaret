@@ -18,10 +18,6 @@ from .base import (
     String,
     AnyString,
     Bytes,
-    Float,
-    ToFloat,
-    Int,
-    ToInt,
     Callable,
     Bool,
     Type,
@@ -40,7 +36,13 @@ from .base import (
     ignore,
     catch,
     catch_error,
-    str_types,
+)
+from .numeric import (
+    Float,
+    ToFloat,
+    Int,
+    ToInt,
+    ToDecimal,
 )
 from .regexp import Regexp, RegexpRaw
 from .internet import (
@@ -75,6 +77,7 @@ __all__ = (
     "ToFloat",
     "Int",
     "ToInt",
+    "ToDecimal",
     "Callable",
     "Bool",
     "Type",
@@ -100,7 +103,6 @@ __all__ = (
     "ignore",
     "catch",
     "catch_error",
-    "str_types",
 )
 
 

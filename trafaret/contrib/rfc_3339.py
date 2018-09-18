@@ -1,13 +1,14 @@
 from dateutil.parser import parse
 from datetime import datetime, date
-from .. import Trafaret, str_types
+from .. import Trafaret
+from ..lib import STR_TYPES
 
 
 class DateTime(Trafaret):
     """Class for support parsing date time in RFC3339 formats
     via dateutil.parse helper
     """
-    convertable = str_types + (datetime,)
+    convertable = STR_TYPES + (datetime,)
     value_type = datetime
 
     def __init__(self, allow_blank=False):
@@ -29,7 +30,7 @@ class Date(Trafaret):
     """Class for support parsing dates in RFC3339 formats
     via dateutil.parse helper
     """
-    convertable = str_types + (date,)
+    convertable = STR_TYPES + (date,)
     value_type = date
 
     def __init__(self, allow_blank=False):

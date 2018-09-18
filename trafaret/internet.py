@@ -4,6 +4,7 @@ import re
 from .regexp import Regexp
 from .base import String, Bytes, OnError, WithRepr
 from .lib import py3
+from . import codes
 
 if py3:
     import urllib.parse as urlparse
@@ -38,7 +39,7 @@ def email_idna_encode(value):
     return value
 
 
-to_str = OnError(Bytes('utf-8') | String(), 'value is not a string')
+to_str = OnError(Bytes('utf-8') | String(), 'value is not a string', code=codes.IS_NOT_A_STRING)
 
 
 email_regexp_trafaret = OnError(to_str & Regexp(EMAIL_REGEXP), 'value is not a valid email address')
@@ -46,6 +47,7 @@ email_trafaret = (email_regexp_trafaret | (to_str & email_idna_encode & email_re
 Email = to_str & String(allow_blank=True) & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
+    code=codes.IS_NOT_VALID_EMAIL,
 )
 Email = WithRepr(Email, '<Email>')
 
@@ -77,6 +79,7 @@ def decode_url_idna(value):
 URL = OnError(
     URLRegexp | (to_str & decode_url_idna & URLRegexp),
     'value is not URL',
+    code=codes.IS_NOT_VALID_URL,
 )
 URL = WithRepr(URL, '<URL>')
 
@@ -86,6 +89,7 @@ IPv4 = OnError(
         r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',  # noqa
     ),
     'value is not IPv4 address',
+    code=codes.IS_NOT_IPv4,
 )
 IPv4 = WithRepr(IPv4, '<IPv4>')
 
@@ -111,9 +115,10 @@ IPv6 = OnError(
         re.IGNORECASE,
     ),
     'value is not IPv6 address',
+    code=codes.IS_NOT_IPv6,
 )
 IPv6 = WithRepr(IPv6, '<IPv6>')
 
 
-IP = OnError(IPv4 | IPv6, 'value is not IP address')
+IP = OnError(IPv4 | IPv6, 'value is not IP address', code=codes.IS_NOT_IP)
 IP = WithRepr(IP, '<IP>')
