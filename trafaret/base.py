@@ -934,7 +934,7 @@ class Dict(Trafaret, DictAsyncMixin):
         self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
             key_ = Key(key) if isinstance(key, str_types) else key
-            key_.set_trafaret(ensure_trafaret(trafaret))
+            key_.set_trafaret(trafaret)
             self.keys.append(key_)
         # optimized version without runtime check for context arg
         self._keys = [with_context_caller(key) for key in self.keys]
