@@ -666,9 +666,17 @@ class Tuple(Trafaret, TupleAsyncMixin):
         try:
             value = tuple(value)
         except TypeError:
-            self._failure('value must be convertable to tuple', value=value)
+            self._failure(
+                'value must be convertable to tuple',
+                value=value,
+                code=codes.TUPLE_LIKE,
+            )
         if len(value) != self.length:
-            self._failure('value must contain %s items' % self.length, value=value)
+            self._failure(
+                'value must contain %s items' % self.length,
+                value=value,
+                code=codes.LOT_ELEMENTS,
+            )
 
     def transform(self, value, context=None):
         self.check_common(value)
@@ -731,7 +739,7 @@ class Key(KeyAsyncMixin):
             return
 
         if not self.optional:
-            yield self.name, DataError(error='is required'), (self.name,)
+            yield self.name, DataError(error='is required', code=codes.REQUIRED), (self.name,)
 
     def get_data(self, data, default):
         return data.get(self.name, default)
@@ -881,7 +889,11 @@ class Dict(Trafaret, DictAsyncMixin):
 
     def transform(self, value, context=None):
         if not isinstance(value, AbcMapping):
-            self._failure("value is not a dict", value=value)
+            self._failure(
+                "value is not a dict",
+                value=value,
+                code=codes.IS_NOT_A_DICT,
+            )
         collect = {}
         errors = {}
         touched_names = []
@@ -901,11 +913,20 @@ class Dict(Trafaret, DictAsyncMixin):
                     continue
                 if not self.allow_any and key not in self.extras:
                     if key in collect:
-                        errors[key] = DataError("%s key was shadowed" % key)
+                        errors[key] = DataError(
+                            "%s key was shadowed" % key,
+                            code=codes.SHADOWED,
+                        )
                     else:
-                        errors[key] = DataError("%s is not allowed key" % key)
+                        errors[key] = DataError(
+                            "%s is not allowed key" % key,
+                            code=codes.NOT_ALLOWED,
+                        )
                 elif key in collect:
-                    errors[key] = DataError("%s key was shadowed" % key)
+                    errors[key] = DataError(
+                        "%s key was shadowed" % key,
+                        code=codes.SHADOWED,
+                    )
                 else:
                     try:
                         collect[key] = self.extras_trafaret(value[key])
@@ -982,7 +1003,11 @@ class Mapping(Trafaret, MappingAsyncMixin):
 
     def transform(self, mapping, context=None):
         if not isinstance(mapping, AbcMapping):
-            self._failure("value is not a dict", value=mapping)
+            self._failure(
+                "value is not a dict",
+                value=mapping,
+                code=codes.IS_NOT_A_DICT,
+            )
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -1024,7 +1049,11 @@ class Enum(Trafaret):
 
     def check_value(self, value):
         if value not in self.variants:
-            self._failure("value doesn't match any variant", value=value)
+            self._failure(
+                "value doesn't match any variant",
+                value=value,
+                code=codes.DOES_NOT_MATCH_ANY,
+            )
 
     def __repr__(self):
         return "<Enum(%s)>" % (", ".join(repr(v) for v in self.variants))
@@ -1039,7 +1068,11 @@ class Callable(Trafaret):
 
     def check_value(self, value):
         if not callable(value):
-            self._failure("value is not callable", value=value)
+            self._failure(
+                "value is not callable",
+                value=value,
+                code=codes.IS_NOT_CALLABLE,
+            )
 
     def __repr__(self):
         return "<Callable>"
@@ -1118,7 +1151,11 @@ class Forward(Trafaret, ForwardAsyncMixin):
 
     def transform(self, value, context=None):
         if self.trafaret is None:
-            self._failure('trafaret not set yet', value=value)
+            self._failure(
+                'trafaret not set yet',
+                value=value,
+                code=codes.TRAFARET_IS_NOT_SET,
+            )
         return self.trafaret(value, context=context)
 
     def __repr__(self):

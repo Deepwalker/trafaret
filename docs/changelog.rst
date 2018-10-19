@@ -4,12 +4,14 @@ Changelog
 2.0.0
 -----
 
-– ``WithRepr``
-– strip a lot from dict, like keys
+– ``WithRepr`` – use it to return custom representation, like ``<Email>``
+– strip a lot from dict, like ``keys()``
 – trafarets are not mutable
-– DataError has new ``code`` attribute, self.failure has ``code`` attribute
+– DataError has new ``code`` attribute, self.failure has ``code`` argument
+- OnError has ``code`` argument too
 – String, AnyString, Bytes
 – Int, ToInt, Float, ToFloat
+- ToDecimal
 – visitor deleted
 
 – test coverage
