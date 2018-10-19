@@ -9,7 +9,7 @@ py36 = sys.version_info >= (3, 6, 0)
 if py3:
     getargspec = inspect.getfullargspec
     STR_TYPES = (str, bytes)
-else:
+else:  # pragma: no cover
     getargspec = inspect.getargspec
     STR_TYPES = (basestring,)  # noqa
 
@@ -18,7 +18,7 @@ _empty = object()
 
 
 def py3metafix(cls):
-    if not py3:
+    if not py3:  # pragma: no cover
         return cls
     else:
         newcls = cls.__metaclass__(cls.__name__, (cls,), {})
