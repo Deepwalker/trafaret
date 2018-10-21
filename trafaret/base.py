@@ -602,7 +602,7 @@ class List(Trafaret, ListAsyncMixin):
             self._failure(
                 "value is not a list",
                 value=value,
-                code=codes.IS_NOT_LIST,
+                code=codes.IS_NOT_A_LIST,
             )
         if len(value) < self.min_length:
             self._failure(
