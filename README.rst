@@ -72,7 +72,7 @@ Rename dict keys:
 
 .. code-block:: python
 
-    >>> c = t.Dict(t.Key('uNJ') >> 'user_name': t.String})
+    >>> c = t.Dict({(t.Key('uNJ') >> 'user_name'): t.String})
     >>> c.check({'uNJ': 'Adam'})
     {'user_name': 'Adam'}
 
