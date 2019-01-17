@@ -361,6 +361,8 @@ class StrBool(Trafaret):
     True
     >>> StrBool().check('n')
     False
+    >>> StrBool().check('z')
+    False
     >>> StrBool().check(None)
     False
     >>> StrBool().check('1')
@@ -377,7 +379,7 @@ class StrBool(Trafaret):
     False
     """
 
-    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on', 'off',
+    convertable = ('t', 'true', 'false', 'y', 'n', 'z', 'yes', 'no', 'on', 'off',
                    '1', '0', 'none')
 
     def check_and_return(self, value):

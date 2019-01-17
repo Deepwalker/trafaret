@@ -482,6 +482,8 @@ class TestStrBoolTrafaret(unittest.TestCase):
         self.assertEqual(res, True)
         res = t.StrBool().check('n')
         self.assertEqual(res, False)
+        res = t.StrBool().check('z')
+        self.assertEqual(res, False)
         res = t.StrBool().check(None)
         self.assertEqual(res, False)
         res = t.StrBool().check('1')
@@ -500,7 +502,6 @@ class TestStrBoolTrafaret(unittest.TestCase):
         self.assertEqual(res, True)
         res = t.StrBool().check('off')
         self.assertEqual(res, False)
-
 
 
 class TestStringTrafaret(unittest.TestCase):
