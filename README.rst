@@ -105,7 +105,7 @@ Related projects
     :target: https://circleci.com/gh/Deepwalker/trafaret
     :alt: Build status @ Circle CI
 
-.. |gitter_chat| image:: https://badges.gitter.im/Deepwalker/trafaret.png
+.. |gitter_chat| image:: https://badges.gitter.im/Deepwalker/trafaret.svg
     :target: https://gitter.im/Deepwalker/trafaret
     :alt: Gitter Chat
 
