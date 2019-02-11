@@ -1042,8 +1042,12 @@ class Dict(Trafaret, DictAsyncMixin):
         Extends one Dict with other Dict Key`s or Key`s list,
         or dict instance supposed for Dict
         """
+        ignore = self.ignore
+        extra = self.extras
         if isinstance(other, Dict):
             other_keys = other.keys
+            ignore += other.ignore
+            extra += other.extras
         elif isinstance(other, (list, tuple)):
             other_keys = list(other)
         elif isinstance(other, dict):
@@ -1051,7 +1055,8 @@ class Dict(Trafaret, DictAsyncMixin):
         else:
             raise TypeError('You must merge Dict only with Dict'
                             ' or list of Keys')
-        return self.__class__(*(self.keys + other_keys))
+        return self.__class__(*(self.keys + other_keys), ignore_extra=ignore,
+                              allow_extra=extra)
 
     __add__ = merge
 

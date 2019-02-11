@@ -116,6 +116,42 @@ class TestDictTrafaret(unittest.TestCase):
         with self.assertRaises(t.DataError):
             trafaret.check({"foo": 2, "marmalade": 5})
 
+    def test_add_kwargs_ignore(self):
+        first = t.Dict(
+            t.Key('bar', trafaret=t.Int()), ignore_extra=['eggs']
+        )
+        second = t.Dict(t.Key('bar1', trafaret=t.Int()))
+        third = first + second
+        third.check({'bar': 4, 'bar1': 41})
+        third.check({'bar': 4, 'bar1': 41, 'eggs': 'blabla'})
+
+        first = t.Dict(
+            t.Key('bar', trafaret=t.Int()),
+        )
+        second = t.Dict(t.Key('bar1', trafaret=t.Int()), ignore_extra=['eggs'])
+        third = first + second
+        third.check({'bar': 4, 'bar1': 41})
+        third.check({'bar': 4, 'bar1': 41, 'eggs': 'blabla'})
+
+    def test_add_kwargs_extra(self):
+        first = t.Dict(
+            t.Key('bar', trafaret=t.Int()), allow_extra=['eggs']
+        )
+        second = t.Dict(t.Key('bar1', trafaret=t.Int()))
+        third = first + second
+        third.check({"bar": 1, "bar1": 41, "eggs": None})
+        third.check({"bar": 1, "bar1": 41})
+        with self.assertRaises(t.DataError):
+            third.check({"bar": 2, "bar1": 1, "marmalade": 5})
+
+        first = t.Dict(t.Key('bar', trafaret=t.Int()))
+        second = t.Dict(t.Key('bar1', trafaret=t.Int()), allow_extra=['eggs'])
+        third = first + second
+        third.check({"bar": 1, "bar1": 41, "eggs": None})
+        third.check({"bar": 1, "bar1": 41})
+        with self.assertRaises(t.DataError):
+            third.check({"bar": 2, "bar1": 1, "marmalade": 5})
+
     def test_callable_key(self):
         def simple_key(value):
             yield 'simple', 'simple data', []
