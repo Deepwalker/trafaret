@@ -939,7 +939,7 @@ class Dict(Trafaret, DictAsyncMixin):
         # optimized version without runtime check for context arg
         self._keys = [with_context_caller(key) for key in self.keys]
 
-        self.key_registry = {key.name: key for key in self.keys}
+        self.key_registry = {key.name: key for key in self.keys if isinstance(key, Key)}
 
     def _clone_args(self):
         """ return args to create new Dict clone
@@ -1024,6 +1024,7 @@ class Dict(Trafaret, DictAsyncMixin):
         """ Given the name of a Key, return the corresponding Key object.
 
         Note: Does not support to_name since mutliple Keys may have the same to_name.
+              Does not support arbitrary callables that aren't saved as Key objects.
 
         >>> Dict({t.Key('foo'): t.String}).get('foo')
         <Key "foo" <String>>
@@ -1082,11 +1083,10 @@ class Dict(Trafaret, DictAsyncMixin):
 
         for k, v in value.items():
             if isinstance(v, AbcMapping):
-
                 collect[k] = self.get(k).trafaret.partial_check(v, context=context)
             else:
                 collect[k] = self.get(k).trafaret.check(v, context=context)
-            return collect
+        return collect
 
     def __repr__(self):
         r = "<Dict("

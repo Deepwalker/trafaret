@@ -201,6 +201,34 @@ class TestDictTrafaret(unittest.TestCase):
         dct = t.Dict(key1=t.String)
         dct + {'a': t.String}
 
+    def test_get(self):
+        trafaret = t.Dict({t.Key('foo'): t.String, 'bar': t.Int})
+        self.assertEqual('foo', trafaret.get('foo').name)
+        self.assertEqual(str(trafaret.get('bar')), str(t.Key('bar', trafaret=t.Int)))
+        with self.assertRaises(KeyError):
+            trafaret.get('baz')
+
+    def test_partial_check(self):
+        trafaret = t.Dict({
+            t.Key('foo'): t.Dict({
+                t.Key('bar'): t.String,
+                'buzz': t.Int
+            }),
+            'baz': t.Int,
+            'lak': t.String
+        })
+        value_1 = {
+            'foo': {
+                'bar': 'this is a string'
+            },
+            'baz': 123
+        }
+        self.assertEqual(trafaret.partial_check(value_1), value_1)
+
+        value_2 = {'baz': 'this should be an int'}
+        with self.assertRaises(t.DataError):
+            trafaret.partial_check(value_2)
+
     def test_mapping_interface(self):
         trafaret = t.Dict({t.Key("foo"): t.String, t.Key("bar"): t.Float})
 
