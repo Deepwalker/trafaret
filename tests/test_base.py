@@ -207,6 +207,8 @@ class TestDictTrafaret(unittest.TestCase):
         self.assertEqual(str(trafaret.get('bar')), str(t.Key('bar', trafaret=t.Int)))
         with self.assertRaises(KeyError):
             trafaret.get('baz')
+        trafaret += t.Dict({'baz': t.String})
+        self.assertEqual('baz', trafaret.get('baz').name)
 
     def test_partial_check(self):
         trafaret = t.Dict({
