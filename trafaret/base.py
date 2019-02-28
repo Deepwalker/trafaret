@@ -909,7 +909,7 @@ class Dict(Trafaret, DictAsyncMixin):
 
     `ignore_extra` argument can be a list of keys, or `'*'` for any, that will be ignored.
     """
-    __slots__ = ['extras', 'extras_trafaret', 'allow_any', 'ignore', 'ignore_any', 'keys', '_keys']
+    __slots__ = ['extras', 'extras_trafaret', 'allow_any', 'ignore', 'ignore_any', 'keys', '_keys', 'key_registry']
 
     def __init__(self, *args, **trafarets):
         if args and isinstance(args[0], AbcMapping):
@@ -938,6 +938,8 @@ class Dict(Trafaret, DictAsyncMixin):
             self.keys.append(key_)
         # optimized version without runtime check for context arg
         self._keys = [with_context_caller(key) for key in self.keys]
+
+        self.key_registry = {key.name: key for key in self.keys}
 
     def _clone_args(self):
         """ return args to create new Dict clone
@@ -1017,6 +1019,74 @@ class Dict(Trafaret, DictAsyncMixin):
         if errors:
             raise DataError(error=errors, trafaret=self)
         return collect
+
+    def get(self, key_name):
+        """ Given the name of a Key, return the corresponding Key object.
+
+        Note: Does not support to_name since mutliple Keys may have the same to_name.
+
+        >>> Dict({t.Key('foo'): t.String}).get('foo')
+        <Key "foo" <String>>
+
+        >>> Dict({'bar': t.String}).get('bar')
+        <Key "bar" <String>>
+
+        >>> Dict({t.Key('foo'): t.String, 'bar': t.String}).get('baz')
+        KeyError: 'No key with name \'baz\' exists in <Dict(<Key "bar" <String>>, <Key "foo" <String>>)>.'
+
+        """
+        try:
+            return self.key_registry[key_name]
+        except KeyError as err:
+            raise KeyError(f"Cannot find Key with name '{key_name}'.") from err
+
+    def partial_check(self, value, context=None):
+        """ Validates a subset of key/value pairs against the Dict's trafaret.
+
+        Recurses through values that are type mapping and validate's their values as well, until
+        all values with the mapping and its sub-mappings are validated.
+
+        >>> validator = t.Dict({
+            t.Key('foo'): t.Dict({
+                t.Key('bar'): t.String,
+                'buzz': t.Int
+            }),
+            'baz': t.Int,
+            'lak': t.String
+        })
+
+        >>> value_1 = {
+            'foo': {
+                'bar': 'this is a string'
+            },
+            'baz': 123
+        }
+        >> validator.partial_check(value_1)
+        {
+            'foo': {
+                'bar': 'this is a string'
+            },
+            'baz': 123
+        }
+
+        >>> value_2 = {
+            'baz': 'this should be an int'
+        }
+        >> validator.partial_check(value_2)
+        trafaret.dataerror.DataError: value can't be converted to int
+        """
+        if not isinstance(value, AbcMapping):
+            self._failure("value is not a dict", value=value)
+
+        collect = {}
+
+        for k, v in value.items():
+            if isinstance(v, AbcMapping):
+
+                collect[k] = self.get(k).trafaret.partial_check(v, context=context)
+            else:
+                collect[k] = self.get(k).trafaret.check(v, context=context)
+            return collect
 
     def __repr__(self):
         r = "<Dict("
