@@ -12,7 +12,7 @@ async def check_int(value):
 
 async def check_int_context(value, context=None):
     if context is not None and value > context:
-        return t.DataError('too big')
+        return t.DataError('too big', code='too_big')
     return value
 
 
@@ -84,7 +84,7 @@ async def test_sync_key():
     assert res == {'simple': 'simple data'}
 
     def bad_key(value):
-        yield 'simple', t.DataError('bad key here'), []
+        yield 'simple', t.DataError('bad key here', code='bad_key_here'), []
 
     trafaret = t.Dict(bad_key)
     with pytest.raises(t.DataError) as res:

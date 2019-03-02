@@ -128,7 +128,7 @@ class Trafaret(TrafaretAsyncMixin):
         """
         Shortcut method for raising validation error
         """
-        raise DataError(error=error, value=value, trafaret=self, code=None)
+        raise DataError(error=error, value=value, trafaret=self, code=code)
 
     def __or__(self, other):
         return Or(self, other)
@@ -626,7 +626,7 @@ class List(Trafaret, ListAsyncMixin):
             except DataError as err:
                 errors[index] = err
         if errors:
-            raise self._failure(errors)
+            raise self._failure(errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return lst
 
     def __repr__(self):
@@ -688,7 +688,7 @@ class Tuple(Trafaret, TupleAsyncMixin):
             except DataError as err:
                 errors[idx] = err
         if errors:
-            self._failure(errors, value=value)
+            self._failure(errors, value=value, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return tuple(result)
 
     def __repr__(self):
@@ -933,7 +933,7 @@ class Dict(Trafaret, DictAsyncMixin):
                     except DataError as de:
                         errors[key] = de
         if errors:
-            self._failure(error=errors)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return collect
 
     def __repr__(self):
@@ -1025,7 +1025,7 @@ class Mapping(Trafaret, MappingAsyncMixin):
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            self._failure(errors)
+            self._failure(errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return checked_mapping
 
     def __repr__(self):

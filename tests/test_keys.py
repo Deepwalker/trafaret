@@ -36,7 +36,7 @@ class TestKey(unittest.TestCase):
 
 class TestKeysSubset(unittest.TestCase):
     def test_keys_subset(self):
-        cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal')}
+        cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal', code='not_equal')}
         d = t.Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': t.String})
 
         res = d.check({'pwd': u'a', 'pwd1': u'a', 'key1': u'b'}).keys()
@@ -53,7 +53,7 @@ class TestKeysSubset(unittest.TestCase):
         res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': u'Adam', 'last': u'Smith'})
         self.assertEqual(res, {'name': u'Adam Smith'})
 
-        bad_res = lambda d: t.DataError({'error key': u'bad res'})
+        bad_res = lambda d: t.DataError({'error key': t.DataError(u'bad res', code='bad_res')}, code='bad_res')
         trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
         res = extract_error(trafaret, {'name': u'Adam', 'last': u'Smith'})
         res = {'error key': 'bad res'}
@@ -63,7 +63,7 @@ class TestSubdict(unittest.TestCase):
     def test_subdict_sample(self):
         def check_passwords_equal(data):
             if data['password'] != data['password_confirm']:
-                return t.DataError('Passwords are not equal')
+                return t.DataError('Passwords are not equal', code='are_no_equal')
             return data['password']
 
         check_password = t.String()

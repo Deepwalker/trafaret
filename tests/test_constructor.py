@@ -95,7 +95,7 @@ class TestDictConstruct(unittest.TestCase):
 
 class TestCall(unittest.TestCase):
     def test_call(self):
-        a_three = lambda val: val if val == 3 else t.DataError('not a 3')
+        a_three = lambda val: val if val == 3 else t.DataError('not a 3', code='not_a_3')
         tt = construct([a_three])
         self.assertEqual(tt([3, 3, 3]), [3, 3, 3])
 

@@ -190,4 +190,5 @@ class ToDecimal(Float):
             self._failure(
                 'value can\'t be converted to Decimal',
                 value=value,
+                code=codes.INVALID_DECIMAL,
             )

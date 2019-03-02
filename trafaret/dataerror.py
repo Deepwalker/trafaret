@@ -27,18 +27,35 @@ class DataError(ValueError):
         self.trafaret = trafaret
         self.code = code or self.__class__.error_code
 
-    def __str__(self):
-        return str(self.error)
+    def __str__(self, value=False):
+        if value and self.value != _empty:
+            return '%s, got %r' % (str(self.error), self.value)
+        else:
+            return str(self.error)
 
     def __repr__(self):
         return 'DataError(%r)' % str(self)
 
+    def to_struct(self, value=False):
+        if isinstance(self.error, dict):
+            return {
+                'code': self.code,
+                'nested': dict(
+                    (k, v.as_dict(value=value) if isinstance(v, DataError) else v)
+                    for k, v in self.error.items()
+                ),
+            }
+        return {
+            'code': self.code,
+            'message': self.__str__(value=value),
+        }
+
     def as_dict(self, value=False):
-        # TODO FIXME to provide consisitence results
+        """Use `to_struct` if need consistency"""
         if not isinstance(self.error, dict):
-            if value and self.value != _empty:
-                return '%s, got %r' % (str(self.error), self.value)
-            else:
-                return str(self.error)
-        return dict((k, v.as_dict(value=value) if isinstance(v, DataError) else v)
-                    for k, v in self.error.items())
+            return self.__str__(value=value)
+
+        return dict(
+            (k, v.as_dict(value=value) if isinstance(v, DataError) else v)
+            for k, v in self.error.items()
+        )

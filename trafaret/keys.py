@@ -1,4 +1,5 @@
 import trafaret as t
+from . import codes
 
 
 class KeysSubset(t.Key):
@@ -31,7 +32,9 @@ class KeysSubset(t.Key):
         res = t.catch_error(self.trafaret, subdict)
         if isinstance(res, t.DataError):
             for k, e in res.error.items():
-                yield k, e if isinstance(e, t.DataError) else t.DataError(e), keys_names
+                if not isinstance(e, t.DataError):
+                    raise RuntimeError('Please use DataError instance')
+                yield k, e, keys_names
         else:
             for k, v in res.items():
                 yield k, v, keys_names
@@ -102,11 +105,39 @@ def xor_key(first, second, trafaret):
             key = first if first in value else second
             yield first, t.catch_error(trafaret, value[key]), (key,)
         elif first in value and second in value:
-            yield first, t.DataError(error='correct only if {} is not defined'.format(second)), (first,)
-            yield second, t.DataError(error='correct only if {} is not defined'.format(first)), (second,)
+            yield (
+                first,
+                t.DataError(
+                    error='correct only if {} is not defined'.format(second),
+                    code=codes.ONLY_ONE_MUST_BE_DEFINED
+                ),
+                (first,)
+            )
+            yield (
+                second,
+                t.DataError(
+                    error='correct only if {} is not defined'.format(first),
+                    code=codes.ONLY_ONE_MUST_BE_DEFINED
+                ),
+                (second,)
+            )
         else:
-            yield first, t.DataError(error='is required if {} is not defined'.format(second)), (first,)
-            yield second, t.DataError(error='is required if {} is not defined'.format(first)), (second,)
+            yield (
+                first,
+                t.DataError(
+                    error='is required if {} is not defined'.format(second),
+                    code=codes.ONE_IS_REQUIRED
+                ),
+                (first,)
+            )
+            yield (
+                second,
+                t.DataError(
+                    error='is required if {} is not defined'.format(first),
+                    code=codes.ONE_IS_REQUIRED
+                ),
+                (second,)
+            )
 
     return check_
 
@@ -124,14 +155,21 @@ def confirm_key(name, confirm_name, trafaret):
             first = value[name]
             yield name, t.catch_error(trafaret, first), (name,)
         else:
-            yield name, t.DataError('is required'), (name,)
+            yield name, t.DataError('is required', code=codes.REQUIRED), (name,)
         if confirm_name in value:
             second = value[confirm_name]
             yield confirm_name, t.catch_error(trafaret, second), (confirm_name,)
         else:
-            yield confirm_name, t.DataError('is required'), (confirm_name,)
+            yield confirm_name, t.DataError('is required', code=codes.REQUIRED), (confirm_name,)
         if not (first and second):
             return
         if first != second:
-            yield confirm_name, t.DataError('must be equal to {}'.format(name)), (confirm_name,)
+            yield (
+                confirm_name,
+                t.DataError(
+                    'must be equal to {}'.format(name),
+                    code=codes.MUST_BE_EQUAL
+                ),
+                (confirm_name,)
+            )
     return check_
