@@ -22,7 +22,7 @@ class OrAsyncMixin:
                 return (await trafaret.async_check(value, context=context))
             except DataError as e:
                 errors.append(e)
-        self._failure(dict(enumerate(errors)))
+        self._failure(dict(enumerate(errors)), code=codes.NOTHING_MATCH)
 
 
 class AndAsyncMixin:
@@ -43,7 +43,7 @@ class ListAsyncMixin:
             except DataError as err:
                 errors[index] = err
         if errors:
-            self._failure(error=errors)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return lst
 
 
@@ -58,7 +58,7 @@ class TupleAsyncMixin:
             except DataError as err:
                 errors[idx] = err
         if errors:
-            self._failure(errors, value=value)
+            self._failure(errors, value=value, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return tuple(result)
 
 
@@ -79,11 +79,11 @@ class MappingAsyncMixin:
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
-                errors[key] = DataError(error=pair_errors)
+                errors[key] = DataError(error=pair_errors, code=codes.PAIR_MEMBERS_DID_NOT_MATCH)
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            self._failure(error=errors)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return checked_mapping
 
 
@@ -154,7 +154,7 @@ class DictAsyncMixin:
                     except DataError as de:
                         errors[key] = de
         if errors:
-            self._failure(error=errors)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return collect
 
 

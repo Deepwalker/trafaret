@@ -670,7 +670,10 @@ class TestDataError(unittest.TestCase):
         )
 
     def test_nested_dataerror_value(self):
-        error = t.DataError(error={0: t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')})
+        error = t.DataError(
+            error={0: t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')},
+            code='some_elements_going_mad',
+        )
         self.assertEqual(
             error.as_dict(),
             {0: 'Wait for good value'}

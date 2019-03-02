@@ -2,6 +2,8 @@ IS_NOT_NULL = 'is_not_null'
 IS_NOT_BOOL = 'is_not_bool'
 IS_NOT_CONVERTIBLE_TO_BOOL = 'is_not_convertible_to_bool'
 
+NOTHING_MATCH = 'nothing_match'
+
 # String
 IS_NOT_A_STRING = 'is_not_a_string'
 EMPTY_STRING = 'empty_string'
@@ -34,6 +36,7 @@ TOO_LONG = 'too_long'
 TUPLE_LIKE = 'tuple_like'
 LOT_ELEMENTS = 'lot_elements'
 
+PAIR_MEMBERS_DID_NOT_MATCH = 'pair_members_did_not_match'
 SOME_ELEMENTS_DID_NOT_MATCH = 'some_elements_did_not_match'
 
 # Keys and dict
