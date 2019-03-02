@@ -2,6 +2,7 @@ from dateutil.parser import parse
 from datetime import datetime, date
 from .. import Trafaret
 from ..lib import STR_TYPES
+from .. import codes
 
 
 class DateTime(Trafaret):
@@ -23,7 +24,7 @@ class DateTime(Trafaret):
         try:
             return parse(value)
         except (ValueError, TypeError, OverflowError) as e:
-            self._failure(str(e))
+            self._failure(str(e), code=codes.NOT_DATETIME)
 
 
 class Date(Trafaret):
@@ -47,4 +48,4 @@ class Date(Trafaret):
         try:
             return parse(value).date()
         except (ValueError, TypeError, OverflowError) as e:
-            self._failure(str(e))
+            self._failure(str(e), code=codes.NOT_DATE)

@@ -59,7 +59,7 @@ class TestCallTrafaret(unittest.TestCase):
     def test_call(self):
         def validator(value):
             if value != "foo":
-                return t.DataError("I want only foo!")
+                return t.DataError("I want only foo!", code='i_wanna_foo')
             return 'foo'
         trafaret = t.Call(validator)
         res = trafaret.check("foo")
@@ -460,33 +460,6 @@ class TestNullTrafaret(unittest.TestCase):
         self.assertEqual(res, 'value should be None')
 
 
-class TestNumMeta(unittest.TestCase):
-
-    def test_num_meta_repr(self):
-        res = t.ToInt[1:]
-        self.assertEqual(repr(res), '<ToInt(gte=1)>')
-        res = t.ToInt[1:10]
-        self.assertEqual(repr(res), '<ToInt(gte=1, lte=10)>')
-        res = t.ToInt[:10]
-        self.assertEqual(repr(res), '<ToInt(lte=10)>')
-        res = t.ToFloat[1:]
-        self.assertEqual(repr(res), '<ToFloat(gte=1)>')
-        res = t.ToInt > 3
-        self.assertEqual(repr(res), '<ToInt(gt=3)>')
-        res = 1 < (t.ToFloat < 10)
-        self.assertEqual(repr(res), '<ToFloat(gt=1, lt=10)>')
-
-    def test_meta_res(self):
-        res = (t.ToInt > 5).check(10)
-        self.assertEqual(res, 10)
-        res = extract_error(t.ToInt > 5, 1)
-        self.assertEqual(res, 'value should be greater than 5')
-        res = (t.ToInt < 3).check(1)
-        self.assertEqual(res, 1)
-        res = extract_error(t.ToInt < 3, 3)
-        self.assertEqual(res, 'value should be less than 3')
-
-
 class TestOrNotToTest(unittest.TestCase):
     def test_or(self):
         nullString = t.Or(t.String, t.Null)
@@ -511,7 +484,7 @@ class TestAndTest(unittest.TestCase):
         self.assertEqual(indeed_int('123'), 123) # fixed 0.8.0 error
 
     def test_raise_error(self):
-        other = lambda v: DataError('other error')
+        other = lambda v: DataError('other error', code='other_error')
         fail_other = t.Atom('a') & other
         res = extract_error(fail_other, 'a')
         self.assertEqual(res, 'other error')
@@ -686,7 +659,7 @@ class TestSubclassTrafaret(unittest.TestCase):
 
 class TestDataError(unittest.TestCase):
     def test_dataerror_value(self):
-        error = t.DataError(error='Wait for good value', value='BAD ONE')
+        error = t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')
         self.assertEqual(
             error.as_dict(),
             'Wait for good value'
@@ -697,7 +670,7 @@ class TestDataError(unittest.TestCase):
         )
 
     def test_nested_dataerror_value(self):
-        error = t.DataError(error={0: t.DataError(error='Wait for good value', value='BAD ONE')})
+        error = t.DataError(error={0: t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')})
         self.assertEqual(
             error.as_dict(),
             {0: 'Wait for good value'}

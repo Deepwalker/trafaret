@@ -1,6 +1,7 @@
 import re
 from .base import Trafaret
 from .lib import STR_TYPES
+from . import codes
 
 
 class RegexpRaw(Trafaret):
@@ -15,10 +16,10 @@ class RegexpRaw(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, STR_TYPES):
-            self._failure("value is not a string", value=value)
+            self._failure("value is not a string", value=value, code=codes.IS_NOT_A_STRING)
         match = self.regexp.match(value)
         if not match:
-            self._failure('does not match pattern %s' % self.raw_regexp, value=value)
+            self._failure('does not match pattern %s' % self.raw_regexp, value=value, code=codes.DOES_NOT_MATCH_RE)
         return match
 
     def __repr__(self):

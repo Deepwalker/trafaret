@@ -4,6 +4,7 @@ from .dataerror import DataError
 from .lib import (
     _empty,
 )
+from . import codes
 
 
 class TrafaretAsyncMixin:
@@ -21,7 +22,7 @@ class OrAsyncMixin:
                 return (await trafaret.async_check(value, context=context))
             except DataError as e:
                 errors.append(e)
-        raise DataError(dict(enumerate(errors)), trafaret=self)
+        self._failure(dict(enumerate(errors)))
 
 
 class AndAsyncMixin:
@@ -42,7 +43,7 @@ class ListAsyncMixin:
             except DataError as err:
                 errors[index] = err
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors)
         return lst
 
 
@@ -64,7 +65,7 @@ class TupleAsyncMixin:
 class MappingAsyncMixin:
     async def async_transform(self, mapping, context=None):
         if not isinstance(mapping, AbcMapping):
-            self._failure("value is not a dict", value=mapping)
+            self._failure("value is not a dict", value=mapping, code=codes.IS_NOT_A_DICT)
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -82,7 +83,7 @@ class MappingAsyncMixin:
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors)
         return checked_mapping
 
 
@@ -103,14 +104,14 @@ class CallAsyncMixin:
 class ForwardAsyncMixin:
     async def async_transform(self, value, context=None):
         if self.trafaret is None:
-            self._failure('trafaret not set yet', value=value)
+            self._failure('trafaret not set yet', value=value, code=codes.TRAFARET_IS_NOT_SET)
         return (await self.trafaret.async_check(value, context=context))
 
 
 class DictAsyncMixin:
     async def async_transform(self, value, context=None):
         if not isinstance(value, AbcMapping):
-            self._failure("value is not a dict", value=value)
+            self._failure("value is not a dict", value=value, code=codes.IS_NOT_A_DICT)
         collect = {}
         errors = {}
         touched_names = []
@@ -142,18 +143,18 @@ class DictAsyncMixin:
                     continue
                 if not self.allow_any and key not in self.extras:
                     if key in collect:
-                        errors[key] = DataError("%s key was shadowed" % key)
+                        errors[key] = DataError("%s key was shadowed" % key, code=codes.SHADOWED)
                     else:
-                        errors[key] = DataError("%s is not allowed key" % key)
+                        errors[key] = DataError("%s is not allowed key" % key, code=codes.NOT_ALLOWED)
                 elif key in collect:
-                    errors[key] = DataError("%s key was shadowed" % key)
+                    errors[key] = DataError("%s key was shadowed" % key, code=codes.SHADOWED)
                 else:
                     try:
                         collect[key] = await self.extras_trafaret.async_check(value[key])
                     except DataError as de:
                         errors[key] = de
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors)
         return collect
 
 
@@ -176,4 +177,4 @@ class KeyAsyncMixin:
             return
 
         if not self.optional:
-            yield self.name, DataError(error='is required'), (self.name,)
+            yield self.name, DataError(error='is required', code=codes.REQUIRED), (self.name,)
