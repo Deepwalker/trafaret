@@ -295,7 +295,7 @@ class Or(Trafaret, OrAsyncMixin):
                 return trafaret(value, context=context)
             except DataError as e:
                 errors.append(e)
-        raise DataError(dict(enumerate(errors)), trafaret=self)
+        raise self._failure(dict(enumerate(errors)), code=codes.NOTHING_MATCH)
 
     def __repr__(self):
         return "<Or(%s)>" % (", ".join(repr(t) for t in self.trafarets))
@@ -1022,7 +1022,7 @@ class Mapping(Trafaret, MappingAsyncMixin):
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
-                errors[key] = DataError(error=pair_errors)
+                errors[key] = DataError(error=pair_errors, code=codes.PAIR_MEMBERS_DID_NOT_MATCH)
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:

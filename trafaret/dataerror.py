@@ -26,6 +26,8 @@ class DataError(ValueError):
         self.value = value
         self.trafaret = trafaret
         self.code = code or self.__class__.error_code
+        # if self.code == 'unknown':
+            # raise RuntimeError()
 
     def __str__(self, value=False):
         if value and self.value != _empty:
