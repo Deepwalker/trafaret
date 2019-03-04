@@ -13,11 +13,11 @@ class DataError(ValueError):
 
     def __init__(self, error=None, name=None, value=_empty, trafaret=None, code=None):
         """
-        :attribute error: can be a string, a list of dataerrors, a dict[string, dataerror]
+        :attribute error: can be a string or a dict[string, dataerror]
         :attribute name:
         :attribute value: validated value that leads to this error
         :attribute trafaret: trafaret raised error
-        :attribute code: code for error, like `value_is_to_big`
+        :attribute code: code for error, like `value_is_too_big`
         """
         if not isinstance(error, STR_TYPES + (dict, )):
             raise RuntimeError('Only str or dict is supported, got %r' % error)
@@ -27,7 +27,7 @@ class DataError(ValueError):
         self.trafaret = trafaret
         self.code = code or self.__class__.error_code
         # if self.code == 'unknown':
-            # raise RuntimeError()
+        #     raise RuntimeError()
 
     def __str__(self, value=False):
         if value and self.value != _empty:
