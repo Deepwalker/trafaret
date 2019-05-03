@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import unittest
-from collections import Mapping as AbcMapping
 from decimal import Decimal
 
 import trafaret as t

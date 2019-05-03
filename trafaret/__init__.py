@@ -106,4 +106,4 @@ __all__ = (
 )
 
 
-__VERSION__ = (2, 0, '0-alpha.02')
+__VERSION__ = (2, 0, '0-alpha.03')

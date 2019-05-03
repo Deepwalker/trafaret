@@ -1,5 +1,15 @@
 import sys
 import inspect
+try:
+    from collections.abc import (
+        Mapping as AbcMapping,
+        Iterable,
+    )
+except ImportError:
+    from collections import (
+        Mapping as AbcMapping,
+        Iterable,
+    )
 
 
 py3 = sys.version_info[0] == 3
@@ -71,3 +81,18 @@ def get_callable_args(fn):
     if hasattr(fn, '__self__'):
         spec.args.pop(0)  # remove `self` from args
     return spec.args
+
+
+__all__ = (
+    AbcMapping,
+    Iterable,
+    py3,
+    py36,
+    getargspec,
+    STR_TYPES,
+    py3metafix,
+    WithContextCaller,
+    WithoutContextCaller,
+    with_context_caller,
+    get_callable_args,
+)

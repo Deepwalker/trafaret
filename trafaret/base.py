@@ -3,10 +3,6 @@
 import functools
 import itertools
 import warnings
-from collections import (
-    Mapping as AbcMapping,
-    Iterable,
-)
 from .lib import (
     py3,
     py36,
@@ -16,6 +12,8 @@ from .lib import (
     with_context_caller,
     _empty,
     STR_TYPES,
+    AbcMapping,
+    Iterable,
 )
 from .dataerror import DataError
 from . import codes
