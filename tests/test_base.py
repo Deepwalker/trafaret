@@ -2,7 +2,7 @@
 import unittest
 import pytest
 import trafaret as t
-from collections import Mapping as AbcMapping
+from trafaret.lib import AbcMapping
 from trafaret import catch_error, extract_error, DataError, guard
 from trafaret.base import deprecated
 
@@ -96,7 +96,7 @@ class TestBasics(unittest.TestCase):
         self.assertEqual(trafaret(123, context=lambda v: v + 123), 246)
 
     def test_upper(self):
-        trafaret = t.Regexp('\w+-\w+') & str.upper
+        trafaret = t.Regexp(r'\w+-\w+') & str.upper
         self.assertEqual(trafaret('abc-Abc'), 'ABC-ABC')
 
 
@@ -655,33 +655,6 @@ class TestSubclassTrafaret(unittest.TestCase):
         self.assertEqual(res, Type)
         res = extract_error(c, object)
         self.assertEqual(res, 'value is not subclass of type')
-
-
-class TestDataError(unittest.TestCase):
-    def test_dataerror_value(self):
-        error = t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')
-        self.assertEqual(
-            error.as_dict(),
-            'Wait for good value'
-        )
-        self.assertEqual(
-            error.as_dict(value=True),
-            "Wait for good value, got 'BAD ONE'"
-        )
-
-    def test_nested_dataerror_value(self):
-        error = t.DataError(
-            error={0: t.DataError(error='Wait for good value', value='BAD ONE', code='bad_value')},
-            code='some_elements_going_mad',
-        )
-        self.assertEqual(
-            error.as_dict(),
-            {0: 'Wait for good value'}
-        )
-        self.assertEqual(
-            error.as_dict(value=True),
-            {0: "Wait for good value, got 'BAD ONE'"}
-        )
 
 
 class TestOnErrorTrafaret(unittest.TestCase):

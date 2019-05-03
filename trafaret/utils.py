@@ -1,8 +1,8 @@
 """
 There will be small helpers to render forms with exist trafarets for DRY.
 """
-import collections
 from itertools import groupby
+from .lib import AbcMapping
 
 
 def recursive_unfold(data, prefix='', delimeter='__'):
@@ -23,7 +23,7 @@ def recursive_unfold(data, prefix='', delimeter='__'):
                     value, concat(prefix, key, delimeter), delimeter):
                 yield pair
 
-    if isinstance(data, collections.Mapping):
+    if isinstance(data, AbcMapping):
         for pair in unfold_dict(data, prefix, delimeter):
             yield pair
 
