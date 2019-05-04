@@ -2,13 +2,13 @@
 
 import re
 from .regexp import Regexp
-from .base import String, Bytes, OnError, WithRepr
+from .base import String, FromBytes, OnError, WithRepr
 from .lib import py3
 from . import codes
 
 if py3:
     import urllib.parse as urlparse
-else:
+else:  # pragma: no cover
     import urlparse
 
 
@@ -39,7 +39,7 @@ def email_idna_encode(value):
     return value
 
 
-to_str = OnError(Bytes('utf-8') | String(), 'value is not a string', code=codes.IS_NOT_A_STRING)
+to_str = OnError(FromBytes('utf-8') | String(), 'value is not a string', code=codes.IS_NOT_A_STRING)
 
 
 email_regexp_trafaret = OnError(to_str & Regexp(EMAIL_REGEXP), 'value is not a valid email address')

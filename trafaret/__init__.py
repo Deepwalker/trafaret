@@ -8,6 +8,7 @@ from .base import (
 
     Any,
     Null,
+    Iterable,
     List,
     Key,
     Dict,
@@ -18,6 +19,7 @@ from .base import (
     String,
     AnyString,
     Bytes,
+    FromBytes,
     Callable,
     Bool,
     Type,
@@ -63,6 +65,7 @@ __all__ = (
 
     "Any",
     "Null",
+    "Iterable",
     "List",
     "Key",
     "Dict",
@@ -73,6 +76,7 @@ __all__ = (
     "String",
     "AnyString",
     "Bytes",
+    "FromBytes",
     "Float",
     "ToFloat",
     "Int",
@@ -106,4 +110,4 @@ __all__ = (
 )
 
 
-__VERSION__ = (2, 0, '0-alpha.03')
+__VERSION__ = (2, 0, '0-alpha.04')

@@ -18,7 +18,7 @@ from .lib import (
     _empty,
     STR_TYPES,
     AbcMapping,
-    Iterable,
+    Iterable as AbcIterable,
 )
 from .dataerror import DataError
 from . import codes
@@ -490,13 +490,17 @@ class String(Trafaret):
         return "<String(blank)>" if self.allow_blank else "<String>"
 
 
+class Bytes(String):
+    str_type = (BYTES_TYPE,)
+
+
 class AnyString(String):
     str_type = (BYTES_TYPE, STR_TYPE)
 
 
-class Bytes(Trafaret):
+class FromBytes(Trafaret):
     """ Get bytes and try to decode it with given encoding, utf-8 by default.
-    It can be used like ``unicode_or_koi8r = String | Bytes(encoding='koi8r')``
+    It can be used like ``unicode_or_koi8r = String | FromBytes(encoding='koi8r')``
     """
     def __init__(self, encoding='utf-8'):
         self.encoding = encoding
@@ -518,7 +522,7 @@ class Bytes(Trafaret):
             )
 
     def __repr__(self):
-        return "<Bytes>"
+        return "<FromBytes>"
 
 
 class SquareBracketsMeta(TrafaretMeta):
@@ -563,7 +567,7 @@ class SquareBracketsMeta(TrafaretMeta):
 
 
 @py3metafix
-class List(Trafaret, ListAsyncMixin):
+class Iterable(Trafaret, ListAsyncMixin):
     """
     >>> List(Int)
     <List(<Int>)>
@@ -600,9 +604,9 @@ class List(Trafaret, ListAsyncMixin):
         self.max_length = max_length
 
     def check_common(self, value):
-        if not isinstance(value, Iterable):
+        if not isinstance(value, AbcIterable):
             self._failure(
-                "value is not a list",
+                "value is not iterable",
                 value=value,
                 code=codes.IS_NOT_A_LIST,
             )
@@ -645,6 +649,17 @@ class List(Trafaret, ListAsyncMixin):
         r += repr(self.trafaret)
         r += ")>"
         return r
+
+
+class List(Iterable):
+    def check_common(self, value):
+        if not isinstance(value, list):
+            self._failure(
+                "value is not a list",
+                value=value,
+                code=codes.IS_NOT_A_LIST,
+            )
+        super(List, self).check_common(value)
 
 
 class Tuple(Trafaret, TupleAsyncMixin):
@@ -861,7 +876,7 @@ class Dict(Trafaret, DictAsyncMixin):
         if self.ignore_any or self.ignore:
             kw['ignore_extra'] = list(self.ignore)
             if self.ignore_any:
-                kw['ignore_any'].append('*')
+                kw['ignore_extra'].append('*')
         return keys, kw
 
     def allow_extra(self, *names, **kw):
