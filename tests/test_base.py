@@ -66,6 +66,11 @@ class TestCallTrafaret(unittest.TestCase):
         self.assertEqual(res, 'foo')
         err = extract_error(trafaret, "bar")
         self.assertEqual(err, 'I want only foo!')
+        assert repr(trafaret) == '<Call(validator)>'
+
+    def test_should_be_callable(self):
+        with pytest.raises(RuntimeError):
+            t.Call(5)
 
 
 class TestCallableTrafaret(unittest.TestCase):
@@ -73,6 +78,7 @@ class TestCallableTrafaret(unittest.TestCase):
         t.Callable().check(lambda: 1)
         res = extract_error(t.Callable(), 1)
         self.assertEqual(res, 'value is not callable')
+        assert repr(t.Callable()) == '<Callable>'
 
 
 class TestBasics(unittest.TestCase):
@@ -117,10 +123,18 @@ class TestDictTrafaret(unittest.TestCase):
         res = extract_error(trafaret, {"foo": 1, "bar": u"spam", "ham": 100})
         self.assertEqual(res, {'ham': 'ham is not allowed key'})
         trafaret = trafaret.allow_extra("*")
+        self.assertEqual(repr(trafaret), '<Dict(any, extras=(eggs) | <Key "bar" <String>>, <Key "foo" <ToInt>>)>')
+        trafaret = trafaret.ignore_extra("a")
+        self.assertEqual(repr(trafaret), '<Dict(any, ignore=(a), extras=(eggs) | <Key "bar" <String>>, <Key "foo" <ToInt>>)>')
         trafaret.check({"foo": 1, "bar": u"spam", "ham": 100})
         trafaret.check({"foo": 1, "bar": u"spam", "ham": 100, "baz": None})
         res = extract_error(trafaret, {"foo": 1, "ham": 100, "baz": None})
         self.assertEqual(res, {'bar': 'is required'})
+
+    def test_key_shadowed(self):
+        trafaret = t.Dict(t.Key('a', to_name='b', trafaret=t.Int))
+        res = extract_error(trafaret, {'a': 5, 'b': 7})
+        assert res == {'b': 'b key was shadowed'}
 
     def test_kwargs_extra(self):
         trafaret = t.Dict(t.Key('foo', trafaret=t.ToInt()), allow_extra=['eggs'])
@@ -257,6 +271,12 @@ class TestDictTrafaret(unittest.TestCase):
         dct = t.Dict(key1=t.String)
         dct + {'a': t.String}
 
+    def test_bad_args_add(self):
+        dct = t.Dict(key1=t.String)
+        with pytest.raises(TypeError):
+            dct + 8
+
+
     def test_mapping_interface(self):
         trafaret = t.Dict({t.Key("foo"): t.String, t.Key("bar"): t.ToFloat})
 
@@ -296,6 +316,12 @@ class TestDictTrafaret(unittest.TestCase):
         with pytest.raises(RuntimeError) as exc_info:
             t.Dict({5: t.String})
         assert exc_info.value.args[0] == 'Non callable Keys are not supported'
+
+    def test_clone(self):
+        d = t.Dict(t.Key('a', t.Int), ignore_extra='*')
+        newd = d.ignore_extra('a')
+        assert newd.ignore_any == True
+        assert newd.ignore == ['a']
 
 
 
@@ -378,6 +404,9 @@ class TestForwardTrafaret(unittest.TestCase):
         res = extract_error(empty_node, 'something')
         self.assertEqual(res, 'trafaret not set yet')
 
+        with pytest.raises(RuntimeError):
+            node << t.Int()
+
 
 
 class TestToIntTrafaret(unittest.TestCase):
@@ -433,6 +462,18 @@ class TestList(unittest.TestCase):
         with pytest.raises(RuntimeError) as exc_info:
             t.List[1:10]
         assert exc_info.value.args[0] == 'Trafaret is required for List initialization'
+
+    def test_2_0_regression(self):
+        t_request = t.Dict({
+            t.Key('params', optional=True): t.Or(t.List(t.Any()), t.Mapping(t.AnyString(), t.Any())),
+        })
+        assert t_request.check({'params': {'aaa': 123}}) == {'params': {'aaa': 123}}
+
+
+class TestIterableTrafaret(unittest.TestCase):
+    def test_iterable(self):
+        res = extract_error(t.Iterable(t.ToInt), 1)
+        self.assertEqual(res, 'value is not iterable')
 
 
 class TestMappingTrafaret(unittest.TestCase):
@@ -564,18 +605,18 @@ class TestStringTrafaret(unittest.TestCase):
         self.assertEqual(res, u'123')
 
 
-class TestBytesTrafaret(unittest.TestCase):
+class TestFromBytesTrafaret(unittest.TestCase):
 
     def test_bytes(self):
-        res = t.Bytes()
-        self.assertEqual(repr(res), '<Bytes>')
-        res = t.Bytes().check(b"foo")
+        res = t.FromBytes()
+        self.assertEqual(repr(res), '<FromBytes>')
+        res = t.FromBytes().check(b"foo")
         self.assertEqual(res, 'foo')
-        res = t.Bytes()(b"")
+        res = t.FromBytes()(b"")
         self.assertEqual(res, '')
-        res = t.Bytes().check(b"")
+        res = t.FromBytes().check(b"")
         self.assertEqual(res, '')
-        res = extract_error(t.Bytes(), 1)
+        res = extract_error(t.FromBytes(), 1)
         self.assertEqual(res, 'value is not a bytes')
 
 
@@ -681,10 +722,37 @@ def test_with_repr():
 
 class TestGuard(unittest.TestCase):
     def test_keywords_only(self):
-        @guard(a=t.ToInt)
-        def fn(**kw):
-            return kw
-        self.assertEqual(fn(a='123'), {'a': 123})
+        @guard(a=t.ToInt, b=t.AnyString)
+        def fn(a, b='abba'):
+            return {'a': a, 'b': b}
+        assert fn(a='123') == {'a': 123, 'b': 'abba'}
+
+        with pytest.raises(t.DataError) as exc_info:
+            fn(a='bam')
+        assert exc_info.value.as_dict() == {'a': 'value can\'t be converted to int'}
+
+
+    def test_class_method(self):
+        class A(object):
+            @guard(a=t.ToInt)
+            def fn(self, **kw):
+                return kw
+        a = A()
+        self.assertEqual(a.fn(a='123'), {'a': 123})
+
+
+    def test_args_checks(self):
+        with pytest.raises(RuntimeError) as exc_info:
+            @guard(123)
+            def fn(**kw):
+                return kw
+        assert exc_info.value.args[0] == 'trafaret should be instance of Dict or Forward'
+
+        with pytest.raises(RuntimeError) as exc_info:
+            @guard(t.Dict(t.Key('a', trafaret=t.Bytes)), a=t.ToInt)
+            def fn(**kw):
+                return kw
+        assert exc_info.value.args[0] == 'choose one way of initialization, trafaret or kwargs'
 
 
 def test_ignore():

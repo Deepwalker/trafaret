@@ -5,7 +5,7 @@ try:
         Mapping as AbcMapping,
         Iterable,
     )
-except ImportError:
+except ImportError:  # pragma: no cover
     from collections import (
         Mapping as AbcMapping,
         Iterable,

@@ -10,9 +10,10 @@ Changelog
 – DataError has new ``code`` attribute, self.failure has ``code`` argument
 - OnError has ``code`` argument too
 - New `DataError.to_struct` method that returns errors in more consistent way
-– String, AnyString, Bytes
+– String, AnyString, Bytes, FromBytes(encoding=utf-8)
 – Int, ToInt, Float, ToFloat
 - ToDecimal
+- Iterable that acts like a List, but works with any iterable
 – visitor deleted
 
 – test coverage
