@@ -46,6 +46,7 @@ Email = String(allow_blank=True) & OnError(
 )
 
 
+_UNICODE_RANGE = u'\u0080-\U0010FFFF'  # except "C0 Controls and Basic Latin" unicode range
 URL_REGEXP = re.compile(
     r'^(?:http|ftp)s?://'  # http:// or https://
     r'(?:\S+(?::\S*)?@)?'  # user and password
@@ -53,8 +54,8 @@ URL_REGEXP = re.compile(
     r'localhost|'  # localhost...
     r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # ...or ip
     r'(?::\d+)?'  # optional port
-    r'(?:/?|[/?]\S+)$',
-    re.IGNORECASE,
+    r'(?:/?|[/?][\S' + _UNICODE_RANGE + ']+)$',
+    re.IGNORECASE | re.UNICODE,
 )
 URLRegexp = Regexp(URL_REGEXP)
 

@@ -657,6 +657,12 @@ class TestURLTrafaret(unittest.TestCase):
         res = str(t.URL.check('http://user:password@example.net/resource/?param=value#anchor'))
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
+        res = str(t.URL.check('http://example.net/resource/\xa0value'))
+        self.assertEqual(res, 'http://example.net/resource/\xa0value')
+
+        res = str(t.URL.check('http://example.net/resource/\u00a0value'))
+        self.assertEqual(res, 'http://example.net/resource/\u00a0value')
+
 
 class TestIPv4Trafaret(unittest.TestCase):
     def setUp(self):
