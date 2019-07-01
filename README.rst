@@ -8,7 +8,7 @@ Ultimate transformation library that supports validation, contexts and ``aiohttp
 Trafaret is rigid and powerful lib to work with foreign data, configs etc.
 It provides simple way to check anything, and convert it accordingly to your needs.
 
-It have shortcut syntax and ability to express anything that you can code:
+It has shortcut syntax and ability to express anything that you can code:
 
 .. code-block:: python
 
