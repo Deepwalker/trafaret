@@ -2,6 +2,7 @@
 import unittest
 import trafaret as t
 from collections import Mapping as AbcMapping
+from datetime import date, datetime
 from trafaret import catch_error, extract_error, DataError, guard
 
 
@@ -567,6 +568,55 @@ class TestStringTrafaret(unittest.TestCase):
         #     AssertionError: Either allow_blank or min_length should be specified, not both
         res = t.String(min_length=0, max_length=6, allow_blank=True).check('123')
         self.assertEqual(res, '123')
+
+
+class TestDateTrafaret(unittest.TestCase):
+
+    def test_date(self):
+        res = t.Date()
+        self.assertEqual(repr(res), '<Date %Y-%m-%d>')
+
+        res = t.Date('%y-%m-%d')
+        self.assertEqual(repr(res), '<Date %y-%m-%d>')
+
+        res = t.Date().check(date.today())
+        self.assertEqual(res, date.today())
+
+        res = t.Date().check(datetime.now())
+        self.assertEqual(res, date.today())
+
+        res = t.Date().check("2019-07-25")
+        self.assertEqual(res, date(year=2019, month=7, day=25))
+
+        res = extract_error(t.Date(), "25-07-2019")
+        self.assertEqual(res, 'date `25-07-2019` does not match format `%Y-%m-%d`')
+
+        res = extract_error(t.Date(), 1564077758)
+        self.assertEqual(res, 'value `1564077758` cannot be converted to date')
+
+
+class TestDateTimeTrafaret(unittest.TestCase):
+
+    def test_datetime(self):
+        res = t.DateTime()
+        self.assertEqual(repr(res), '<DateTime %Y-%m-%d %H:%M:%S>')
+
+        res = t.DateTime('%Y-%m-%d %H:%M')
+        self.assertEqual(repr(res), '<DateTime %Y-%m-%d %H:%M>')
+
+        now = datetime(year=2019, month=7, day=25, hour=21, minute=45)
+        res = t.DateTime('%Y-%m-%d %H:%M').check(now)
+        self.assertEqual(res, now)
+
+        res = t.DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+        self.assertEqual(res, datetime(year=2019, month=7, day=25, hour=21, minute=45))
+
+        res = extract_error(t.DateTime(), "25-07-2019")
+        self.assertEqual(res, 'datetime `25-07-2019` does not match format `%Y-%m-%d %H:%M:%S`')
+
+        res = extract_error(t.DateTime(), 1564077758)
+        self.assertEqual(res, 'value `1564077758` cannot be converted to datetime')
+
 
 class TestRegexpTrafaret(unittest.TestCase):
     def test_regexp(self):

@@ -15,6 +15,8 @@ from .base import (
     Tuple,
 
     Atom,
+    Date,
+    DateTime,
     String,
     Float,
     FloatRaw,
@@ -67,6 +69,8 @@ __all__ = (
 
     "Atom",
     "String",
+    "Date",
+    "DateTime",
     "Float",
     "FloatRaw",
     "Int",
