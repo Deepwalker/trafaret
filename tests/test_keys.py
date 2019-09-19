@@ -1,4 +1,5 @@
 import unittest
+import pytest
 import trafaret as t
 from trafaret.keys import (
     KeysSubset,
@@ -57,6 +58,12 @@ class TestKeysSubset(unittest.TestCase):
         trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
         res = extract_error(trafaret, {'name': u'Adam', 'last': u'Smith'})
         res = {'error key': 'bad res'}
+
+        bad_err = lambda d: t.DataError({'error_key': 'lala'})
+        trafaret = t.Dict({KeysSubset('name', 'last'): bad_err})
+        with pytest.raises(RuntimeError) as exc_info:
+            trafaret({'name': u'Adam', 'last': u'Smith'})
+        assert exc_info.value.args[0] == 'Please use DataError instance'
 
 
 class TestSubdict(unittest.TestCase):
