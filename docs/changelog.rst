@@ -15,7 +15,6 @@ Changelog
 - ToDecimal
 - Iterable that acts like a List, but works with any iterable
 - visitor deleted
--
 - test coverage
 
 
