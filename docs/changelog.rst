@@ -6,7 +6,7 @@ Changelog
 
 - ``WithRepr`` – use it to return custom representation, like ``<Email>``
 - strip a lot from dict, like ``keys()``
-- trafarets are not mutable
+- trafarets are not mutable
 - DataError has new ``code`` attribute, self.failure has ``code`` argument
 - OnError has ``code`` argument too
 - New ``DataError.to_struct`` method that returns errors in more consistent way
