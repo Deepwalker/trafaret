@@ -31,11 +31,8 @@ EMAIL_REGEXP = re.compile(
 def email_idna_encode(value):
     if '@' in value:
         parts = value.split('@')
-        try:
-            parts[-1] = parts[-1].encode('idna').decode('ascii')
-            return '@'.join(parts)
-        except UnicodeError:
-            pass
+        parts[-1] = parts[-1].encode('idna').decode('ascii')
+        return '@'.join(parts)
     return value
 
 
@@ -66,14 +63,9 @@ URLRegexp = to_str & Regexp(URL_REGEXP)
 
 
 def decode_url_idna(value):
-    try:
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(value)
-        netloc = netloc.encode('idna').decode('ascii')  # IDN -> ACE
-    except UnicodeError:  # invalid domain part
-        pass
-    else:
-        return urlparse.urlunsplit((scheme, netloc, path, query, fragment))
-    return value
+    scheme, netloc, path, query, fragment = urlparse.urlsplit(value)
+    netloc = netloc.encode('idna').decode('ascii')  # IDN -> ACE
+    return urlparse.urlunsplit((scheme, netloc, path, query, fragment))
 
 
 URL = OnError(
