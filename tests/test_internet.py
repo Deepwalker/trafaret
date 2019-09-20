@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import pytest
 import unittest
 import trafaret as t
 from trafaret import extract_error
@@ -26,7 +27,7 @@ class TestURLTrafaret(unittest.TestCase):
         self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
 
     def test_bad_str(self):
-        with self.assertRaises(t.DataError) as context:
+        with pytest.raises(t.DataError) as excinfo:
             t.URL.check(b'http://\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
 
 
@@ -113,3 +114,7 @@ class TestEmailTrafaret(unittest.TestCase):
         self.assertEqual(res, True)
         res = extract_error(t.Email, 123)
         self.assertEqual(res, 'value is not a string')
+
+    def test_bad_str(self):
+        with pytest.raises(t.DataError) as excinfo:
+            t.Email.check(b'ahha@\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
