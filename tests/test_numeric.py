@@ -24,6 +24,10 @@ def test_meta_res():
     assert res == 1
     res = t.extract_error(t.ToInt < 3, 3)
     assert res == 'value should be less than 3'
+    res = t.extract_error(t.ToInt >= 5, 1)
+    assert res == 'value is less than 5'
+    res = t.extract_error(t.ToInt <= 3, 4)
+    assert res == 'value is greater than 3'
 
 def test_decimal():
     trafaret = t.ToDecimal()

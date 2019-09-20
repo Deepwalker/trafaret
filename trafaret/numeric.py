@@ -41,8 +41,14 @@ class NumberMeta(TrafaretMeta):
     def __lt__(cls, lt):
         return cls(lt=lt)
 
+    def __le__(cls, lte):
+        return cls(lte=lte)
+
     def __gt__(cls, gt):
         return cls(gt=gt)
+
+    def __ge__(cls, gte):
+        return cls(gte=gte)
 
 
 @py3metafix
