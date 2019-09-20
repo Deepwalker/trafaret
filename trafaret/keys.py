@@ -46,6 +46,7 @@ def subdict(name, *keys, **kw):
 
     Takes a `name`, any number of keys as args and keyword argument `trafaret`.
     Use it like:
+    ::
 
         def check_passwords_equal(data):
             if data['password'] != data['password_confirm']:
