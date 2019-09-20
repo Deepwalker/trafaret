@@ -6,7 +6,5 @@ API docs
 
   trafaret
   trafaret.keys
-  trafaret.extras
   trafaret.utils
-  trafaret.visitor
   trafaret.constructor
