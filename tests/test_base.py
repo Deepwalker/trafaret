@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 import trafaret as t
+from datetime import date, datetime
 from trafaret.lib import AbcMapping
 from trafaret import catch_error, extract_error, DataError, guard
 from trafaret.base import deprecated
@@ -627,6 +628,45 @@ class TestStringTrafaret:
         assert repr(res) == '<String>'
         res = t.String(allow_blank=True)
         assert repr(res) == '<String(blank)>'
+
+
+class TestDateTrafaret:
+    def test_date(self):
+        res = t.Date().check(date.today())
+        assert res == date.today()
+        res = t.Date().check(datetime.now())
+        assert res == date.today()
+        res = t.Date().check("2019-07-25")
+        assert res == date(year=2019, month=7, day=25)
+        res = extract_error(t.Date(), "25-07-2019")
+        assert res == 'date `25-07-2019` does not match format `%Y-%m-%d`'
+        res = extract_error(t.Date(), 1564077758)
+        assert res == 'value `1564077758` cannot be converted to date'
+
+    def test_repr(self):
+        res = t.Date()
+        assert repr(res) == '<Date %Y-%m-%d>'
+        res = t.Date('%y-%m-%d')
+        assert repr(res) == '<Date %y-%m-%d>'
+
+
+class TestDateTimeTrafaret:
+    def test_datetime(self):
+        now = datetime(year=2019, month=7, day=25, hour=21, minute=45)
+        res = t.DateTime('%Y-%m-%d %H:%M').check(now)
+        assert res == now
+        res = t.DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+        assert res == datetime(year=2019, month=7, day=25, hour=21, minute=45)
+        res = extract_error(t.DateTime(), "25-07-2019")
+        assert res == 'datetime `25-07-2019` does not match format `%Y-%m-%d %H:%M:%S`'
+        res = extract_error(t.DateTime(), 1564077758)
+        assert res == 'value `1564077758` cannot be converted to datetime'
+
+    def test_repr(self):
+        res = t.DateTime()
+        assert repr(res) == '<DateTime %Y-%m-%d %H:%M:%S>'
+        res = t.DateTime('%Y-%m-%d %H:%M')
+        assert repr(res) == '<DateTime %Y-%m-%d %H:%M>'
 
 
 class TestFromBytesTrafaret:
