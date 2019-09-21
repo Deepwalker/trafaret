@@ -8,6 +8,7 @@ try:
 except ImportError:
     from collections import Mapping as AbcMapping
 from collections import Iterable
+from datetime import date, datetime
 from .lib import (
     py3,
     py36,
@@ -491,6 +492,84 @@ class String(Trafaret):
 
     def __repr__(self):
         return "<String(blank)>" if self.allow_blank else "<String>"
+
+
+class Date(Trafaret):
+    """
+    >>> Date()
+    <Date %Y-%m-%d>
+    >>> Date('%y-%m-%d')
+    <Date %y-%m-%d>
+    >>> Date().check(date.today())
+    datetime.date(2019, 7, 25)
+    >>> Date().check(datetime.now())
+    datetime.date(2019, 7, 25)
+    >>> Date().check("2019-07-25")
+    datetime.date(2019, 7, 25)
+    >>> Date(format='%y-%m-%d').check('00-01-01')
+    datetime.date(2000, 1, 1)
+    >>> extract_error(Date(), "25-07-2019")
+    'date `25-07-2019` does not match format `%Y-%m-%d`'
+    >>> extract_error(Date(), 1564077758)
+    'value `1564077758` cannot be converted to date'
+    """
+
+    def __init__(self, format='%Y-%m-%d'):
+        self._format = format
+
+    def check_and_return(self, value):
+        if isinstance(value, datetime):
+            return value.date()
+        elif isinstance(value, date):
+            return value
+
+        try:
+            extracted_date = datetime.strptime(value, self._format).date()
+        except ValueError:
+            self._failure('date `{}` does not match format `{}`'.format(value, self._format))
+        except TypeError:
+            self._failure('value `{}` cannot be converted to date'.format(value))
+        else:
+            return extracted_date
+
+    def __repr__(self):
+        return '<Date {}>'.format(self._format)
+
+
+class DateTime(Trafaret):
+    """
+    >>> DateTime()
+    <DateTime %Y-%m-%d %H:%M:%S>
+    >>> DateTime('%Y-%m-%d %H:%M')
+    <DateTime %Y-%m-%d %H:%M>
+    >>> DateTime().check(datetime.now())
+    datetime.datetime(2019, 7, 25, 21, 45, 37, 319284)
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    datetime.datetime(2019, 7, 25, 21, 45)
+    >>> extract_error(DateTime(), "2019-07-25")
+    'datetime `2019-07-25` does not match format `%Y-%m-%d %H:%M:%S`'
+    >>> extract_error(DateTime(), date.today())
+    'value `2019-07-25` cannot be converted to datetime'
+    """
+
+    def __init__(self, format='%Y-%m-%d %H:%M:%S'):
+        self._format = format
+
+    def check_and_return(self, value):
+        if isinstance(value, datetime):
+            return value
+
+        try:
+            extracted_datetime = datetime.strptime(value, self._format)
+        except ValueError:
+            self._failure('datetime `{}` does not match format `{}`'.format(value, self._format))
+        except TypeError:
+            self._failure('value `{}` cannot be converted to datetime'.format(value))
+        else:
+            return extracted_datetime
+
+    def __repr__(self):
+        return '<DateTime {}>'.format(self._format)
 
 
 class Bytes(String):

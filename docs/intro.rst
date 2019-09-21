@@ -606,6 +606,50 @@ This checker test that a received value is equal with first argument.
 This may be useful in ``Dict`` with ``Or`` statements to create
 enumerations.
 
+Date
+....
+
+Check that argument is an instance of ``datetime.date`` object::
+
+    >>> t.Date().check("2019-07-25")
+    '2019-07-25'
+    >>> t.Date().check(date.today())
+    datetime.date('2019-07-25')
+
+You can easily specify the format for ``Date`` trafaret::
+
+    >>> t.Date(format='%y-%m-%d')
+    '<Date %y-%m-%d>'
+    >>> t.Date(format='%y-%m-%d').check('00-01-01')
+    '00-01-01'
+
+ToDate
+......
+
+Behave like ``Date``, but also returns ``datetime.date`` object::
+
+    >>> t.ToDate().check("2019-07-25")
+    datetime.date('2019-07-25')
+    >>> t.ToDate().check(datetime.now())
+    datetime.date('2019-07-25')
+
+DateTime
+........
+Similar to ``Date``, but checking for ``datetime.datetime`` object::
+
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    '2019-07-25 21:45'
+    >>> t.extract_error(t.DateTime(), date.today())
+    'value `2019-09-22` cannot be converted to datetime'
+
+
+ToDateTime
+..........
+Behave like ``DateTime``, but also returns ``datetime.datetime`` object::
+
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    datetime.datetime(2019, 7, 25, 21, 45)
+
 
 List
 ....

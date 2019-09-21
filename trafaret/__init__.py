@@ -16,6 +16,8 @@ from .base import (
     Tuple,
 
     Atom,
+    Date,
+    DateTime,
     String,
     AnyString,
     Bytes,
@@ -74,6 +76,8 @@ __all__ = (
 
     "Atom",
     "String",
+    "Date",
+    "DateTime",
     "AnyString",
     "Bytes",
     "FromBytes",
