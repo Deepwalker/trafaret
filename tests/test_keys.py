@@ -1,4 +1,3 @@
-import unittest
 import pytest
 import trafaret as t
 from trafaret.keys import (
@@ -10,49 +9,52 @@ from trafaret.keys import (
 from trafaret import catch_error, extract_error, DataError
 
 
-class TestKey(unittest.TestCase):
+class TestKey:
     def test_key(self):
         default = lambda: 1
-        res = t.Key(name='test', default=default)
-        self.assertEqual(repr(res), '<Key "test" <Any>>')
         res = next(t.Key(name='test', default=default)({}))
-        self.assertEqual(res, ('test', 1, ('test',)))
+        assert res == ('test', 1, ('test',))
         res = next(t.Key(name='test', default=2)({}))
-        self.assertEqual(res, ('test', 2, ('test',)))
+        assert res == ('test', 2, ('test',))
         default = lambda: None
         res = next(t.Key(name='test', default=default)({}))
-        self.assertEqual(res, ('test', None, ('test',)))
+        assert res == ('test', None, ('test',))
         res = next(t.Key(name='test', default=None)({}))
-        self.assertEqual(res, ('test', None, ('test',)))
+        assert res == ('test', None, ('test',))
         # res = next(t.Key(name='test').pop({}))
-        # self.assertEqual(res, ('test', DataError(is required)))
+        # assert res == ('test', DataError(is required))
         res = list(t.Key(name='test', optional=True)({}))
-        self.assertEqual(res, [])
+        assert res == []
 
     def test_key_return_original_name_on_error(self):
         res = list(t.Key(name='test', to_name='tost', trafaret=t.Int())({'test': 'a'}))[0]
         assert res[0] == 'test'  # must be original key name
         assert isinstance(res[1], DataError)
 
+    def test_repr(self):
+        default = lambda: 1
+        res = t.Key(name='test', default=default)
+        assert repr(res) == '<Key "test" <Any>>'
 
-class TestKeysSubset(unittest.TestCase):
+
+class TestKeysSubset:
     def test_keys_subset(self):
         cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else t.DataError('Not equal', code='not_equal')}
         d = t.Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': t.String})
 
         res = d.check({'pwd': u'a', 'pwd1': u'a', 'key1': u'b'}).keys()
-        self.assertEqual(list(sorted(res)), [u'key1', u'pwd'])
+        assert list(sorted(res)) == [u'key1', u'pwd']
 
         res = extract_error(d.check, {'pwd': u'a', 'pwd1': u'c', 'key1': u'b'})
-        self.assertEqual(res, {'pwd': 'Not equal'})
+        assert res == {'pwd': 'Not equal'}
 
         res = extract_error(d.check, {'pwd': u'a', 'pwd1': None, 'key1': u'b'})
-        self.assertEqual(res, {'pwd': 'Not equal'})
+        assert res == {'pwd': 'Not equal'}
 
         get_values = (lambda d, keys: [d[k] for k in keys if k in d])
         join = (lambda d: {'name': u' '.join(get_values(d, ['name', 'last']))})
         res = t.Dict({KeysSubset('name', 'last'): join}).check({'name': u'Adam', 'last': u'Smith'})
-        self.assertEqual(res, {'name': u'Adam Smith'})
+        assert res == {'name': u'Adam Smith'}
 
         bad_res = lambda d: t.DataError({'error key': t.DataError(u'bad res', code='bad_res')}, code='bad_res')
         trafaret = t.Dict({KeysSubset('name', 'last'): bad_res})
@@ -66,7 +68,7 @@ class TestKeysSubset(unittest.TestCase):
         assert exc_info.value.args[0] == 'Please use DataError instance'
 
 
-class TestSubdict(unittest.TestCase):
+class TestSubdict:
     def test_subdict_sample(self):
         def check_passwords_equal(data):
             if data['password'] != data['password_confirm']:
@@ -96,7 +98,7 @@ class TestSubdict(unittest.TestCase):
         assert res.as_dict() == {'password_confirm': 'is required'}
 
 
-class TestXorKey(unittest.TestCase):
+class TestXorKey:
     def test_xor_key(self):
         trafaret = t.Dict(xor_key('name', 'nick', t.String()))
 
@@ -115,7 +117,7 @@ class TestXorKey(unittest.TestCase):
         }
 
 
-class TestConfirmKey(unittest.TestCase):
+class TestConfirmKey:
     def test_confirm_key(self):
         trafaret = t.Dict(confirm_key('password', 'password_confirm', t.String()))
 
