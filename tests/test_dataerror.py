@@ -20,7 +20,17 @@ def test_nested_dataerror_value():
     assert error.as_dict(value=True) == {0: "Wait for good value, got 'BAD ONE'"}
     assert error.to_struct() == {
         'code': 'some_elements_going_mad',
-        'nested': {0: 'Wait for good value'},
+        'nested': {0: {
+            'code': 'bad_value',
+            'message': 'Wait for good value',
+        }},
+    }
+    assert error.to_struct(value=True) == {
+        'code': 'some_elements_going_mad',
+        'nested': {0: {
+            'code': 'bad_value',
+            'message': "Wait for good value, got 'BAD ONE'",
+        }},
     }
 
 
