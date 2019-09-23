@@ -1,120 +1,124 @@
 # -*- coding: utf-8 -*-
 import pytest
-import unittest
 import trafaret as t
 from trafaret import extract_error
 
 
-class TestURLTrafaret(unittest.TestCase):
+@pytest.fixture()
+def valid_ips_v4():
+    return (
+        '127.0.0.1',
+        '8.8.8.8',
+        '192.168.1.1',
+    )
 
+
+@pytest.fixture()
+def invalid_ips_v4():
+    return (
+        '32.64.128.256',
+        '2001:0db8:0000:0042:0000:8a2e:0370:7334',
+        '192.168.1.1 ',
+    )
+
+
+@pytest.fixture()
+def valid_ips_v6():
+    return (
+        '2001:0db8:0000:0042:0000:8a2e:0370:7334',
+        '2001:0Db8:0000:0042:0000:8A2e:0370:7334',
+        '2001:cdba:0:0:0:0:3257:9652',
+        '2001:cdba::3257:9652',
+        'fe80::',
+        '::',
+        '::1',
+        '2001:db8::',
+        'ffaa::',
+        '::ffff:255.255.255.0',
+        '2001:db8:3:4::192.168.1.1',
+        'fe80::1:2%en0',
+    )
+
+
+@pytest.fixture()
+def invalid_ips_v6():
+    return (
+        '2001:0db8:z000:0042:0000:8a2e:0370:7334',
+        '2001:cdba:0:0:::0:0:3257:9652',
+        '2001:cdba::3257:::9652',
+        '127.0.0.1',
+        ':ffaa:'
+    )
+
+
+class TestURLTrafaret:
     def test_url(self):
         res = t.URL.check('http://example.net/resource/?param=value#anchor')
-        self.assertEqual(res, 'http://example.net/resource/?param=value#anchor')
+        assert res == 'http://example.net/resource/?param=value#anchor'
 
         res = str(t.URL.check('http://пример.рф/resource/?param=value#anchor'))
-        self.assertEqual(res, 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor')
+        assert res == 'http://xn--e1afmkfd.xn--p1ai/resource/?param=value#anchor'
 
         res = t.URL.check('http://example_underscore.net/resource/?param=value#anchor')
-        self.assertEqual(res, 'http://example_underscore.net/resource/?param=value#anchor')
+        assert res == 'http://example_underscore.net/resource/?param=value#anchor'
 
         res = str(t.URL.check('http://user@example.net/resource/?param=value#anchor'))
-        self.assertEqual(res, 'http://user@example.net/resource/?param=value#anchor')
+        assert res == 'http://user@example.net/resource/?param=value#anchor'
 
         res = str(t.URL.check('http://user:@example.net/resource/?param=value#anchor'))
-        self.assertEqual(res, 'http://user:@example.net/resource/?param=value#anchor')
+        assert res == 'http://user:@example.net/resource/?param=value#anchor'
 
         res = str(t.URL.check('http://user:password@example.net/resource/?param=value#anchor'))
-        self.assertEqual(res, 'http://user:password@example.net/resource/?param=value#anchor')
+        assert res == 'http://user:password@example.net/resource/?param=value#anchor'
 
     def test_bad_str(self):
-        with pytest.raises(t.DataError) as excinfo:
+        with pytest.raises(t.DataError):
             t.URL.check(b'http://\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
 
 
-class TestIPv4Trafaret(unittest.TestCase):
-    def setUp(self):
-        self.valid_ips = (
-            '127.0.0.1',
-            '8.8.8.8',
-            '192.168.1.1',
-        )
-
-        self.invalid_ips = (
-            '32.64.128.256',
-            '2001:0db8:0000:0042:0000:8a2e:0370:7334',
-            '192.168.1.1 ',
-        )
-
-    def test_ipv4(self):
-        ip = t.IPv4
-
-        for data in self.valid_ips:
-            result = ip(data)
-
-            self.assertEqual(result, data)
-
-        for data in self.invalid_ips:
-            with self.assertRaises(t.DataError):
-                ip(data)
-
-
-class TestIPv6Trafaret(unittest.TestCase):
-    def setUp(self):
-        self.valid_ips = (
-            '2001:0db8:0000:0042:0000:8a2e:0370:7334',
-            '2001:0Db8:0000:0042:0000:8A2e:0370:7334',
-            '2001:cdba:0:0:0:0:3257:9652',
-            '2001:cdba::3257:9652',
-            'fe80::',
-            '::',
-            '::1',
-            '2001:db8::',
-            'ffaa::',
-            '::ffff:255.255.255.0',
-            '2001:db8:3:4::192.168.1.1',
-            'fe80::1:2%en0',
-        )
-
-        self.invalid_ips = (
-            '2001:0db8:z000:0042:0000:8a2e:0370:7334',
-            '2001:cdba:0:0:::0:0:3257:9652',
-            '2001:cdba::3257:::9652',
-            '127.0.0.1',
-            ':ffaa:'
-        )
-
-    def test_ipv6(self):
-        ip = t.IPv6
-
-        for data in self.valid_ips:
-            result = ip(data)
-
-            self.assertEqual(result, data)
-
-        for data in self.invalid_ips:
-            with self.assertRaises(t.DataError):
-                ip(data)
-
-
-class TestEmailTrafaret(unittest.TestCase):
+class TestEmailTrafaret:
     def test_email(self):
         res = t.Email.check('someone@example.net')
-        self.assertEqual(res, 'someone@example.net')
-        res = extract_error(t.Email,'someone@example') # try without domain-part
-        self.assertEqual(res, 'value is not a valid email address')
+        assert res == 'someone@example.net'
+        res = extract_error(t.Email, 'someone@example')  # try without domain-part
+        assert res == 'value is not a valid email address'
         res = str(t.Email.check('someone@пример.рф')) # try with `idna` encoding
-        self.assertEqual(res, 'someone@xn--e1afmkfd.xn--p1ai')
+        assert res == 'someone@xn--e1afmkfd.xn--p1ai'
         # res = (t.Email() >> (lambda m: m.groupdict()['domain'])).check('someone@example.net')
-        # self.assertEqual(res, 'example.net')
+        # assert res == 'example.net'
         res = extract_error(t.Email, 'foo')
-        self.assertEqual(res, 'value is not a valid email address')
+        assert res == 'value is not a valid email address'
         res = extract_error(t.Email, 'f' * 10000 + '@correct.domain.edu')
-        self.assertEqual(res, 'value is not a valid email address')
+        assert res == 'value is not a valid email address'
         res = extract_error(t.Email, 'f' * 248 + '@x.edu') == 'f' * 248 + '@x.edu'
-        self.assertEqual(res, True)
+        assert res == True
         res = extract_error(t.Email, 123)
-        self.assertEqual(res, 'value is not a string')
+        assert res == 'value is not a string'
 
     def test_bad_str(self):
-        with pytest.raises(t.DataError) as excinfo:
+        with pytest.raises(t.DataError):
             t.Email.check(b'ahha@\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
+
+
+def test_ipv4(valid_ips_v4, invalid_ips_v4):
+    ip = t.IPv4
+
+    for data in valid_ips_v4:
+        result = ip(data)
+        assert result == data
+
+    for data in invalid_ips_v4:
+        with pytest.raises(t.DataError):
+            ip(data)
+
+
+def test_ipv6(valid_ips_v6, invalid_ips_v6):
+    ip = t.IPv6
+
+    for data in valid_ips_v6:
+        result = ip(data)
+        assert result == data
+
+    for data in invalid_ips_v6:
+        with pytest.raises(t.DataError):
+            ip(data)
