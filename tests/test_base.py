@@ -705,7 +705,7 @@ class TestTypeTrafaret:
         res = c.check(1)
         assert res == 1
         res = extract_error(c, "foo")
-        assert res, 'value is not int'
+        assert res == 'value is not int'
 
     def test_repr(self):
         res = t.Type(int)
