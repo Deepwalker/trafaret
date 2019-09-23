@@ -43,7 +43,7 @@ class DataError(ValueError):
             return {
                 'code': self.code,
                 'nested': dict(
-                    (k, v.as_dict(value=value) if isinstance(v, DataError) else v)
+                    (k, v.to_struct(value=value) if isinstance(v, DataError) else v)
                     for k, v in self.error.items()
                 ),
             }
