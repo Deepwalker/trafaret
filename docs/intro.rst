@@ -1,5 +1,5 @@
-Introducing trafaret
-====================
+Introducing
+===========
 
 Trafaret is validation library with support to convert data structures.
 Sample usage::
