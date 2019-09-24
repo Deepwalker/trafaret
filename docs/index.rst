@@ -13,9 +13,16 @@ Contents:
   :caption: Table of Contents
   :glob:
 
+  installation
   intro
-  changelog
+  api
+  keys_and_dicts
+  errors
+  composition
+  examples
+  web_use
   api/index
+  changelog
 
 Indices and tables
 ==================
