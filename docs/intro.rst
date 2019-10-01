@@ -97,18 +97,51 @@ This checker test that a received string is IP address (IPv4 or IPv6).
 Regexp
 ......
 
+The checker test that a received string match with given regexp. With this
+Regexp you can write you own checker like Email or URL.
+
+    >>> t.Regexp(regexp=r"\w{3}-\w{3}-\w{4}").check('544-343-7564')
+    '544-343-7564'
+
+RegexpRaw
+.........
+
+With this checker you can use all ``re.match`` power to extract from strings dicts
+and other higher level datastructures.
+
+    >>> name_checker = t.RegexpRaw(r'^name=(\w+)$') >> (lambda m: m.groups()[0])
+    >>> name_checker.check('name=Jeff')
+    'Jeff'
+
+or more interesting example:
+
+    >>> from datetime import datetime
+    >>>
+    >>> def to_datetime(m):
+    >>>    return datetime(*[int(i) for i in m.groups()])
+    >>>
+    >>> date_checker = t.RegexpRaw(regexp='^year=(\d+), month=(\d+), day=(\d+)$') >> to_datetime
+    >>>
+    >>> date_checker.check('year=2019, month=07, day=23')
+    datetime.datetime(2019, 7, 23, 0, 0)
+
+Bytes
+.....
+
+Also if you want to check, is value bytes string or no you can use this checker.
+
+    >>> t.Bytes().check(b'bytes string')
 
 AnyString
 .........
 
+If you need to check value which can be string or bytes string, you can use
+``AnyString``.
 
-Bytes
-.....
-
-
-Bytes
-.....
-
+    >>> for item in ['string', b'bytes string']:
+    >>>     print(t.AnyString().check(item))
+    string
+    b'bytes string'
 
 FromBytes
 .........
