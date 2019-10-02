@@ -120,7 +120,7 @@ or more interesting example:
     >>> def to_datetime(m):
     >>>    return datetime(*[int(i) for i in m.groups()])
     >>>
-    >>> date_checker = t.RegexpRaw(regexp='^year=(\d+), month=(\d+), day=(\d+)$') >> to_datetime
+    >>> date_checker = t.RegexpRaw(regexp='^year=(\d+), month=(\d+), day=(\d+)$') & to_datetime
     >>>
     >>> date_checker.check('year=2019, month=07, day=23')
     datetime.datetime(2019, 7, 23, 0, 0)
@@ -142,6 +142,71 @@ If you need to check value which can be string or bytes string, you can use
     >>>     print(t.AnyString().check(item))
     string
     b'bytes string'
+
+Dict and Keys
+.............
+
+The ``Dict`` checker is needed to validate a dictionaries. For use ``Dict`` you
+need to describe your dictionary as dictionary where instead of values are
+checkers of this values.
+
+    >>> login_validator = t.Dict({'username': t.String(max_length=10), 'email': t.Email}) 
+    >>> login_validator.check({'username': 'Misha', 'email': 'misha@gmail.com'})
+    {'username': 'Misha', 'email': 'misha@gmail.com'}
+
+Methods:
+
+- ``allow_extra(*names)`` : where ``names`` can be key names or ``*``
+  to allow any additional keys.
+
+- ``make_optional(*names)`` : where ``names`` can be key names or
+  ``*`` to make all options optional.
+
+- ``ignore_extra(*names)``: where ``names`` are the names of the keys
+  or ``*`` to exclude listed key names or all unspecified ones from
+  the validation process and final result
+
+- ``merge(Dict|dict|[t.Key...])`` : where argument can be other
+  ``Dict``, ``dict`` like provided to ``Dict``, or list of
+  ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s,
+  like ``dict1 + dict2``.
+
+Some time we need to change name of key in initial dictionary. For that
+trafaret provides ``Key``. This can be very useful. As example when you receive
+form from frontend with keys in camel case and you want to convert this keys to
+snake case.
+
+    >>> login_validator = t.Dict({t.Key('userName') >> 'user_name': t.String})
+    >>> login_validator.check({'userName': 'Misha'})
+    {'user_name': 'Misha'}
+
+Also we can to receive input data like this:
+
+    >>> data = {"title": "Glue", "authorFirstName": "Irvine", "authorLastName": "Welsh"}
+
+and want to split data which connected with author and book. For that we can 
+use ``fold``.
+
+    >>> from trafaret.utils import fold
+    >>>
+    >>> book_validator = t.Dict({
+    >>>     "title": t.String,
+    >>>     t.Key('authorFirstName') >> 'author__first_name': t.String,
+    >>>     t.Key('authorLastName') >> 'author__last_name': t.String,
+    >>> }) >> fold
+    >>>
+    >>> book_validator.check(data)
+    {'author': {'first_name': 'Irvine', 'last_name': 'Welsh'}, 'title': 'Glue'}
+
+We have some example of enhanced ``Key`` in extras::
+
+    >>> from trafaret.extras import KeysSubset
+    >>> cmp_pwds = lambda x: {'pwd': x['pwd'] if x.get('pwd') == x.get('pwd1') else DataError('Not equal')}
+    >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
+    >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
+    {'pwd': 'a', 'key1': 'b'}
+
+- DictKeys
 
 FromBytes
 .........
@@ -216,14 +281,6 @@ Callable
 
 Call
 ....
-
-
-Dict
-....
-
-- dict
-- Key
-- DictKeys
 
 
 Operations
