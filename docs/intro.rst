@@ -162,22 +162,63 @@ checkers of this values.
     >>> login_validator.check({'username': 'Misha', 'email': 'misha@gmail.com'})
     {'username': 'Misha', 'email': 'misha@gmail.com'}
 
-Methods:
+``Dict`` has a lot of helpful methods:
 
-- ``allow_extra(*names)`` : where ``names`` can be key names or ``*``
-  to allow any additional keys.
+    - ``allow_extra`` - when you need to validate only a part of keys you can use allow_extra to allow to do that:
 
-- ``make_optional(*names)`` : where ``names`` can be key names or
-  ``*`` to make all options optional.
+    >>> data = {'username': 'Misha', 'age': 12, 'email': 'm@gmail.com', 'is_superuser': True}
+    >>>
+    >>> user_validator = t.Dict({'username': t.String, 'age': t.Int})
+    >>>
+    >>> # generate a new checker with allow any extra keys
+    >>> new_user_validator = user_validator.allow_extra('*')
+    >>> new_user_validator.check(data)
+    {'username': 'Misha', 'age': 12, 'email': 'm@gmail.com', 'is_superuser': True}
 
-- ``ignore_extra(*names)``: where ``names`` are the names of the keys
-  or ``*`` to exclude listed key names or all unspecified ones from
-  the validation process and final result
+    Also if you want to allow only some concretical kyes you cat set them:
 
-- ``merge(Dict|dict|[t.Key...])`` : where argument can be other
-  ``Dict``, ``dict`` like provided to ``Dict``, or list of
-  ``Key``s. Also provided as ``__add__``, so you can add ``Dict``s,
-  like ``dict1 + dict2``.
+    >>> user_validator.allow_extra('email', 'is_superuser')
+
+    If when you need to specify type of extra keys you can use ``trafaret``
+    keyword argument for that:
+
+    >>> user_validator.allow_extra('email', 'is_superuser', trafaret=t.String)
+
+    Also you can specify extra keys when you create your ``Dict`` checker:
+
+    >>> user_validator = t.Dict({'username': t.String, 'age': t.Int}, allow_extra=['*'])
+
+    - ``ignore_extra`` - when you need to remove nececary data from result you can use it.
+      This method has similar signature like in ``allow_extra``.
+
+    >>> data = {'username': 'Misha', 'age': 12, 'email': 'm@gmail.com', 'is_superuser': True}
+    >>>
+    >>> user_validator = t.Dict({'username': t.String, 'age': t.Int}).ignore_extra('*')
+    >>> user_validator.check(data)
+    {'username': 'Misha', 'age': 12}
+
+    - ``make_optional`` - when your data has optional keys you can set them by this method.
+      This method has similar signature like in ``allow_extra``.
+
+    >>> data = {'username': 'Misha', 'age': 12}
+    >>>
+    >>> user_validator = t.Dict({'username': t.String, 'age': t.Int}).make_optional('email')
+    >>> user_validator.check(data)
+    {'username': 'Misha', 'age': 12}
+
+    - ``merge`` - where argument can be other ``Dict``, dict like provided to ``Dict``,
+      or list of ``Key`` s. Also provided as ``__add__``, so you can add ``Dict`` s, like ``dict1 + dict2``.
+      
+      This can be so useful when you have two large dictionaries with so similar structure.
+      As example it possible when you do validation for create and update some
+      instance whan for create instance you don't need `id` but for update do.
+
+    >>> user_create_validator = t.Dict({'username': t.String, 'age': t.Int})
+    >>>
+    >>> user_update_validator = user_create_validator + {'id': t.Int}
+    >>> user_update_validator.check({'username': 'misha', 'age': 12, 'id': 1})
+    {'username': 'misha', 'age': 12, 'id': 1}
+
 
 Some time we need to change name of key in initial dictionary. For that
 trafaret provides ``Key``. This can be very useful. As example when you receive
@@ -206,6 +247,44 @@ use ``fold``.
     >>> book_validator.check(data)
     {'author': {'first_name': 'Irvine', 'last_name': 'Welsh'}, 'title': 'Glue'}
 
+Key
+~~~
+
+Special class to create dict keys. Parameters are:
+
+- `name` - key name
+- `default` - default if key is not present
+- `optional` - if True the key is optional
+- `to_name` - allows to rename the key
+
+Below you can to see a good example of usage all of these parameters:
+
+    >>> import hashlib
+    >>>
+    >>> hash_md5 = lambda d: hashlib.md5(d.encode()).hexdigest()
+    >>> comma_to_list = lambda d: [s.strip() for s in d.split(',')]
+    >>>
+    >>> converter = t.Dict({
+    >>>    t.Key('userNameFirst') >> 'name': t.String,
+    >>>    t.Key('userNameSecond') >> 'second_name': t.String,
+    >>>    t.Key('userPassword') >> 'password': hash_md5,
+    >>>    t.Key('userEmail', optional=True, to_name='email'): t.String,
+    >>>    t.Key('userTitle', default='Bachelor', to_name='title'): t.String,
+    >>>    t.Key('userRoles', to_name='roles'): comma_to_list,
+    >>> })
+
+DictKeys
+~~~~~~~~
+
+If you need to check just that dictionary has all given keys so ``DictKeys``
+is a good approach for that.
+
+    >>> t.DictKeys(['a', 'b']).check({'a': 1, 'b': 2})
+    {'a': 1, 'b': 2}
+
+KeysSubset
+~~~~~~~~~~
+
 We have some example of enhanced ``Key`` in extras::
 
     >>> from trafaret.extras import KeysSubset
@@ -213,8 +292,6 @@ We have some example of enhanced ``Key`` in extras::
     >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
     >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
     {'pwd': 'a', 'key1': 'b'}
-
-- DictKeys
 
 FromBytes
 .........
@@ -305,13 +382,63 @@ Or
 fold
 ....
 
+We already talked about ``fold`` but let's see all features of this utils.
+
+The parameters:
+
+    - `prefix` - the prefix which need to remove
+    - `delimeter` - the parameter which use for split to keys
+
+The full example:
+
+    >>> new_fold = lambda x: fold(x, 'data', '.')
+    >>> 
+    >>> book_validator = t.Dict({
+    >>>     "data.author.first_name": t.String,
+    >>>     "data.author.last_name": t.String,
+    >>> }) >> new_fold
+    >>>
+    >>> book_validator.check({
+    >>>    "data.author.first_name": 'Irvine',
+    >>>    "data.author.last_name": 'Welsh',
+    >>> })
+    {'author': {'first_name': 'Irvine', 'last_name': 'Welsh'}}
+
+
+subdict
+.......
+
+Very often when we do validation of the form we need to validate values which
+depend on each other. As example it can be `password` and `second_password`.
+For cases like this a trafaret has ``subdict``.
+
+    >>> def check_passwords_equal(data):
+    >>>     if data['password'] != data['password_confirm']:
+    >>>         return t.DataError('Passwords are not equal')
+    >>>     return data['password']
+    >>>
+    >>> passwords_key = subdict(
+    >>>     'password',
+    >>>     t.Key('password', trafaret=t.String(max_length=10)),
+    >>>     t.Key('password_confirm', trafaret=t.String(max_length=10)),
+    >>>     trafaret=check_passwords_equal,
+    >>> )
+    >>>
+    >>> signup_trafaret = t.Dict(
+    >>>     t.Key('email', trafaret=t.Email),
+    >>>     passwords_key,
+    >>> )
+    >>>
+    >>> signup_trafaret.check({
+    >>>     "email": "m@gmail.com",
+    >>>     "password": "111",
+    >>>     "password_confirm": "111",
+    >>> }) 
+    {'email': 'm@gmail.com', 'password': '111'}
+
 
 split
 .....
-
-
-KeysSubset
-..........
 
 
 Other
