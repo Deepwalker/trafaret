@@ -794,6 +794,8 @@ class Dict(Trafaret, DictAsyncMixin):
     only `Key` subclasses.
     So we need to look at the `key` contract:
 
+    .. code-block:: python
+
         key_instance(data: Mapping) -> Sequence[
             name_to_store,
             result or DataError,
@@ -818,11 +820,11 @@ class Dict(Trafaret, DictAsyncMixin):
 
     Arguments:
 
-    * Dict accepts keys as *args
+    * Dict accepts keys as `*args`
     * if first argument to Dict is a `dict` then its keys will be merged with args keys and
-    this `dict` values must be trafarets. If key of this `dict` is a str, then Dict will create
-    `Key` instance with this key as Key name and value as its trafaret. If `key` is a `Key` instance
-    then Dict will call this key `set_trafaret` method.
+      this `dict` values must be trafarets. If key of this `dict` is a str, then Dict will create
+      `Key` instance with this key as Key name and value as its trafaret. If `key` is a `Key` instance
+      then Dict will call this key `set_trafaret` method.
 
     `allow_extra` argument can be a list of keys, or `'*'` for any, that will be checked against
     `allow_extra_trafaret` or `Any`.
