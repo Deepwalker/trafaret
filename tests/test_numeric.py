@@ -1,4 +1,48 @@
+from decimal import Decimal
+
+import pytest
+
 import trafaret as t
+from trafaret.codes import INVALID_DECIMAL
+
+
+class TestToDecimal:
+    @pytest.mark.parametrize('value, expected', [
+        (0, Decimal('0.0000')),
+        (1000, Decimal('1000.0000')),
+        (1000.0, Decimal('1000.0000')),
+        ('1000', Decimal('1000.0000')),
+        ('1000.0', Decimal('1000.0000')),
+        (-1000, Decimal('-1000.0000')),
+        (-1000.0, Decimal('-1000.0000')),
+        ('-1000', Decimal('-1000.0000')),
+        ('-1000.0', Decimal('-1000.0000')),
+    ])
+    def test_to_decimal(self, value, expected):
+        result = t.ToDecimal().check(value)
+        assert result == expected
+
+    def test_error_code(self):
+        with pytest.raises(t.DataError) as err:
+            t.ToDecimal().check('')
+        assert err.value.code == INVALID_DECIMAL
+
+    def test_extract_error(self):
+        result = t.extract_error(t.ToDecimal(), '')
+        assert result == 'value can\'t be converted to Decimal'
+
+    def test_none_to_decimal(self):
+        with pytest.raises(TypeError) as err:
+            t.extract_error(t.ToDecimal(), None)
+            assert err == 'conversion from NoneType to Decimal is not supported'
+
+    @pytest.mark.parametrize('value, expected', [
+        (t.ToDecimal(), '<ToDecimal>'),
+        (t.ToDecimal[1:], '<ToDecimal(gte=1)>'),
+        (t.ToDecimal[1:20], '<ToDecimal(gte=1, lte=20)>'),
+    ])
+    def test_repr(self, value, expected):
+        assert repr(value) == expected
 
 
 def test_num_meta_repr():
@@ -28,8 +72,3 @@ def test_meta_res():
     assert res == 'value is less than 5'
     res = t.extract_error(t.ToInt <= 3, 4)
     assert res == 'value is greater than 3'
-
-def test_decimal():
-    trafaret = t.ToDecimal()
-    res = t.extract_error(trafaret, '')
-    assert res == 'value can\'t be converted to Decimal'

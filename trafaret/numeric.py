@@ -187,7 +187,14 @@ class ToInt(Int):
 
 
 class ToDecimal(Float):
+    """
+    Checks that value is a Decimal.
+    Or if value is a string converts this string to Decimal.
+    """
     value_type = decimal.Decimal
+
+    def check_and_return(self, data):
+        return self._check(data)
 
     def _converter(self, value):
         try:

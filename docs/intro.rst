@@ -304,9 +304,32 @@ ToFloat
 .......
 
 
-ToDecemal
+ToDecimal
 .........
+Checks that value is a Decimal.
+If value is a string converts this string to Decimal::
 
+    >>> from decimal import Decimal, ROUND_HALF_UP
+    >>> import trafaret as t
+
+    >>> validator = t.Dict({
+    >>>     "name": t.String,
+    >>>     "salary": t.ToDecimal(gt=0) & (
+    >>>         lambda d: d.quantize(Decimal('.0000'), rounding=ROUND_HALF_UP)
+    >>>     ),
+    >>> })
+
+    >>> validator.check({"name": "Bob", "salary": "1000.0"})
+    {'name': 'Bob', 'salary': Decimal('1000.0000')}
+
+    >>> validator.check({"name": "Tom", "salary": 1000.0005})
+    {'name': 'Tom', 'salary': Decimal('1000.0005')}
+
+    >>> validator.check({"name": "Jay", "salary": 1000.00049})
+    {'name': 'Jay', 'salary': Decimal('1000.0005')}
+
+    >>> validator.check({"name": "Joe", "salary": -1000})
+    DataError: {'salary': DataError('value should be greater than 0')}
 
 Int
 ...
