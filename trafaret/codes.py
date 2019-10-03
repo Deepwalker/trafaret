@@ -6,6 +6,7 @@ NOTHING_MATCH = 'nothing_match'
 
 # String
 IS_NOT_A_STRING = 'is_not_a_string'
+IS_NOT_A_BYTES_STRING = 'is_not_a_bytes_string'
 EMPTY_STRING = 'empty_string'
 SHORT_STRING = 'short_string'
 LONG_STRING = 'long_string'

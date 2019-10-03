@@ -453,6 +453,9 @@ class String(Trafaret):
     """
     str_type = STR_TYPE
 
+    TYPE_ERROR_MESSAGE = "value is not a string"
+    TYPE_ERROR_CODE = codes.IS_NOT_A_STRING
+
     def __init__(self, allow_blank=False, min_length=None, max_length=None):
         assert not (allow_blank and min_length), \
             "Either allow_blank or min_length should be specified, not both"
@@ -462,7 +465,7 @@ class String(Trafaret):
 
     def check_and_return(self, value):
         if not isinstance(value, self.str_type):
-            self._failure("value is not a string", value=value, code=codes.IS_NOT_A_STRING)
+            self._failure(self.TYPE_ERROR_MESSAGE, value=value, code=self.TYPE_ERROR_CODE)
         if not self.allow_blank and len(value) == 0:
             self._failure("blank value is not allowed", value=value, code=codes.EMPTY_STRING)
         elif self.allow_blank and len(value) == 0:
@@ -487,6 +490,9 @@ class String(Trafaret):
 
 class Bytes(String):
     str_type = (BYTES_TYPE,)
+
+    TYPE_ERROR_MESSAGE = "value is not a bytes string"
+    TYPE_ERROR_CODE = codes.IS_NOT_A_BYTES_STRING
 
 
 class AnyString(String):
