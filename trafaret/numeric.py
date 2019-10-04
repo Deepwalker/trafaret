@@ -189,6 +189,9 @@ class ToInt(Int):
 class ToDecimal(Float):
     value_type = decimal.Decimal
 
+    def check_and_return(self, data):
+        return self._check(data)
+
     def _converter(self, value):
         try:
             return self.value_type(value)

@@ -298,22 +298,83 @@ StrBool
 
 Float
 .....
+Check if value is a float or can be converted to a float.
+Supports ``lte``, ``gte``, ``lt``, ``gt`` parameters,
+``<=``, ``>=``, ``<``, ``>`` operators and ``Float[0:10]`` slice notation::
 
+    >>> t.Float(gt=3.5).check(4)
+    4
+
+    >>> (t.Float >= 3.5).check(4)
+    4
+
+    >>> t.Float[3.5:].check(4)
+    4
 
 ToFloat
 .......
+Similar to ``Float``, but converting to ``float``::
 
+    >>> t.ToFloat(gte=3.5).check(4)
+    4.0
 
-ToDecemal
+ToDecimal
 .........
+Similar to ``ToFloat``, but converting to ``Decimal``::
 
+    >>> from decimal import Decimal, ROUND_HALF_UP
+    >>> import trafaret as t
+
+    >>> validator = t.Dict({
+    >>>     "name": t.String,
+    >>>     "salary": t.ToDecimal(gt=0) & (
+    >>>         lambda value: value.quantize(
+                    Decimal('.0000'), rounding=ROUND_HALF_UP
+                )
+    >>>     ),
+    >>> })
+
+    >>> validator.check({"name": "Bob", "salary": "1000.0"})
+    {'name': 'Bob', 'salary': Decimal('1000.0000')}
+
+    >>> validator.check({"name": "Tom", "salary": 1000.0005})
+    {'name': 'Tom', 'salary': Decimal('1000.0005')}
+
+    >>> validator.check({"name": "Jay", "salary": 1000.00049})
+    {'name': 'Jay', 'salary': Decimal('1000.0005')}
+
+    >>> validator.check({"name": "Joe", "salary": -1000})
+    DataError: {'salary': DataError('value should be greater than 0')}
 
 Int
 ...
+Similar to ``Float``, but checking for ``int``::
 
+    >>> t.Int(gt=3).check(4)
+    4
 
 ToInt
 .....
+Similar to ``Int``, but converting to ``int``::
+
+    >>> import trafaret as t
+    >>> from yarl import URL
+
+    >>> query_validator = t.Dict({
+    >>>     t.Key('node', default=0): t.ToInt(gte=0),
+    >>> })
+
+    >>> url = URL('https://www.amazon.com/b?node=18637575011')
+    >>> query_validator.check(url.query)
+    {'node': 18637575011}
+
+    >>> url = URL('https://www.amazon.com/b')
+    >>> query_validator.check(url.query)
+    {'node': 0}
+
+    >>> url = URL('https://www.amazon.com/b?node=-10')
+    >>> query_validator.check(url.query)
+    DataError: {'node': DataError('value is less than 0')}
 
 
 Null
