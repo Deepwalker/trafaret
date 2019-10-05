@@ -5,6 +5,7 @@
 \.pydevproject
 *.egg-info
 build/
+_build/
 dist/
 .idea/
 .coverage

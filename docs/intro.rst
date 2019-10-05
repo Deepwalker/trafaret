@@ -189,15 +189,6 @@ checkers of this values.
     >>> user_validator.check(data)
     {'username': 'Misha', 'age': 12}
 
-    - ``make_optional`` - when your data has optional keys you can set them by this method.
-      This method has similar signature like in ``allow_extra``.
-
-    >>> data = {'username': 'Misha', 'age': 12}
-    >>>
-    >>> user_validator = t.Dict({'username': t.String, 'age': t.Int}).make_optional('email')
-    >>> user_validator.check(data)
-    {'username': 'Misha', 'age': 12}
-
     - ``merge`` - where argument can be other ``Dict``, dict like provided to ``Dict``,
       or list of ``Key`` s. Also provided as ``__add__``, so you can add ``Dict`` s, like ``dict1 + dict2``.
       
