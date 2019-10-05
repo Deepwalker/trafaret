@@ -484,6 +484,9 @@ Enum
 Callable
 ........
 
+This checker test that a received value is callable.
+
+    >>> t.Callable().check(lambda: 1)
 
 Call
 ....
