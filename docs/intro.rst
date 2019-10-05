@@ -388,6 +388,13 @@ Similar to ``Int``, but converting to ``int``::
 Null
 ....
 
+This checker test that a received value is ``None``. This checker is very
+useful together with other checkers when you need to test that receive value
+has some time or ``None`.
+
+    >>> (t.Int | t.Null).check(5)
+    5
+    >>> (t.Int | t.Null).check(None)
 
 Any
 ...
