@@ -143,6 +143,26 @@ If you need to check value which can be string or bytes string, you can use
     string
     b'bytes string'
 
+FromBytes
+.........
+
+If you need to convert bytestring to ``utf-8`` or to the other standard you can use
+this checker. If receive value can't be converted to standard then trafaret
+raise an error. This often can be useful when receive value can be a ``string``
+or a ``bytestring``.
+
+    >>> unicode_or_utf16 = t.String | t.FromBytes(encoding='utf-16')
+    >>>
+    >>> unicode_or_utf16.check(b'\xff\xfet\x00r\x00a\x00f\x00a\x00r\x00e\x00t\x00')
+    'trafaret'
+    >>> unicode_or_utf16.check('trafaret')
+    'trafaret'
+
+The default encoding is ``utf-8``.
+
+    >>> t.FromBytes().check(b'trafaret')
+    'trafaret'
+
 Dict and Keys
 .............
 
@@ -275,9 +295,6 @@ We have some example of enhanced ``Key`` in extras::
     >>> d = Dict({KeysSubset('pwd', 'pwd1'): cmp_pwds, 'key1': String})
     >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
     {'pwd': 'a', 'key1': 'b'}
-
-FromBytes
-.........
 
 
 Bool
