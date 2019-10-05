@@ -296,6 +296,16 @@ We have some example of enhanced ``Key`` in extras::
     >>> d.check({'pwd': 'a', 'pwd1': 'a', 'key1': 'b'}).keys()
     {'pwd': 'a', 'key1': 'b'}
 
+Mapping
+.......
+
+This checker test that a received dictionary has current types of keys and
+values.
+
+    >>> t.Mapping(t.String, t.Int).check({"foo": 1, "bar": 2})
+    {'foo': 1, 'bar': 2}
+
+Where a first argument is a type of keys and second is type of values.
 
 Bool
 ....
@@ -466,10 +476,6 @@ This checker test that a received value is a tuple of items with some type.
 
     >>> t.Tuple(t.ToInt, t.ToInt, t.String).check([3, 4, u'5'])
     (3, 4, u'5')
-
-Mapping
-.......
-
 
 Enum
 ....
