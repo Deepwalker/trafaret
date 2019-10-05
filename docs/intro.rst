@@ -597,7 +597,24 @@ This checker test that a received value is a tuple of items with some type.
     # (3, 4, u'5')
 
 Enum
-....
+----
+
+Enum object can contain values of different types. Enum check determines whether given value is in the Enum instance.
+
+Example::
+
+  >>> Enum(1, 2, 'error').check(2)
+  2
+
+Enum can be used to validate user choice/input with predefined variants, for example defect severity in the bug tracking sytem.
+
+Example::
+
+  >>> user_choice = 'critical'
+  >>> severities = ('trivial', 'minor', 'major', 'critical')
+  >>> Enum(*severities).check(user_choice)
+  'critical'
+
 
 
 Callable
