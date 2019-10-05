@@ -192,7 +192,7 @@ checkers of this values.
     >>> user_validator.allow_extra('email', 'is_superuser')
 
     If when you need to specify type of extra keys you can use ``trafaret``
-    keyword argument for that:
+    keyword argument for that *(by default trafaret is Any)*:
 
     >>> user_validator.allow_extra('email', 'is_superuser', trafaret=t.String)
 
@@ -390,7 +390,7 @@ Null
 
 This checker test that a received value is ``None``. This checker is very
 useful together with other checkers when you need to test that receive value
-has some time or ``None`.
+has some type or ``None``.
 
     >>> (t.Int | t.Null).check(5)
     5
@@ -399,6 +399,13 @@ has some time or ``None`.
 Any
 ...
 
+This checker doesn't check anything. This is very often use in ``Dict`` to
+test that some key exists in the dictionary, but doesn't care what type it is.
+
+    >>> t.Dict({"value": t.Any}).check({"value": "123"})
+    {'value': '123'}
+
+This is the same with ``allow_extra`` method in ``Dict``.
 
 Type
 ....
