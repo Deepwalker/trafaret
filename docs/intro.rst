@@ -410,9 +410,23 @@ This is the same with ``allow_extra`` method in ``Dict``.
 Type
 ....
 
+Checks that data is instance of given class. Just instantiate it with any
+class, like int, float, str. For instance:
+
+    >>> t.Type(int).check(4)
+    4
+
 
 Atom
-....
+----
+
+This checker test that a received value is equal with first argument.
+
+    >>> t.Atom('this_key_must_be_this').check('this_key_must_be_this')
+    'this_key_must_be_this'
+
+This may be useful in ``Dict`` with ``Or`` statements to create
+enumerations.
 
 
 List
@@ -448,6 +462,10 @@ Iterable
 Tuple
 .....
 
+This checker test that a received value is a tuple of items with some type.
+
+    >>> t.Tuple(t.ToInt, t.ToInt, t.String).check([3, 4, u'5'])
+    (3, 4, u'5')
 
 Mapping
 .......
