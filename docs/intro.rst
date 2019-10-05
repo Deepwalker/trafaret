@@ -276,6 +276,28 @@ Below you can to see a good example of usage all of these parameters:
     >>>    t.Key('userRoles', to_name='roles'): comma_to_list,
     >>> })
 
+It provides method ``__call__(self, data)`` that extract key value
+from data through mapping ``get`` method.
+Key ``__call__`` method yields ``(key name, Maybe(DataError), [touched
+keys])`` triples.
+You can redefine ``get_data(self, data, default)`` method in
+subclassed ``Key`` if you want to use something other then
+``.get(...)`` method. Like this for the `aiohttp
+<http://aiohttp.readthedocs.io/>`_'s `MultiDict` class::
+
+    class MDKey(t.Key):
+        def get_data(data, default):
+            return data.get_all(self.name, default)
+
+    t.Dict({MDKey('users'): t.List(t.String)})
+
+Moreover, instead of ``Key`` you can use any callable, say a function::
+
+    def simple_key(value):
+        yield 'simple', 'simple data', []
+
+    check_args = t.Dict(simple_key)
+
 DictKeys
 ~~~~~~~~
 
@@ -490,6 +512,20 @@ This checker test that a received value is callable.
 
 Call
 ....
+
+This checker receive custom function for validation and convert value. If value
+is valid then function return converted value else raise ``DataError``.
+
+.. code-block:: python
+
+    def validator(value):
+        """The custom validation function.""""
+        if value != "foo":
+            return t.DataError("I want only foo!", code='i_wanna_foo')
+        return 'foo'
+    
+    t.Call(validator).check('foo')
+    # 'foo'
 
 
 Operations
