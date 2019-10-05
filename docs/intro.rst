@@ -522,14 +522,33 @@ For cases like this a trafaret has ``subdict``.
 Other
 -----
 
-
 Forward
 .......
 
+This checker is container for any checker, that you can provide later.
+To provide container use ``provide`` method or ``<<`` operation::
 
-Guard
+    >> node = t.Forward()
+    >> node & t.Dict(name=t.String, children=t.List[node])
+
+guard
 .....
+
+This is decorator for functions. You can validate and convert receive arguments.
+
+
+    >>> @t.guard(user_name=t.String(max_length=10), age=t.ToInt, is_superuser=t.Bool)
+    >>> def create_user(user_name, age, is_superuser=False):
+    >>>    # do some stuff
+    >>>    ...
+    >>>    return (user_name, age, is_superuser)
+
+    >>> create_user('Misha', '12')
+    ('Misha', 12, False)
+    >>> # convert age to integer
 
 
 GuardError
-..........
+~~~~~~~~~~
+
+The `guard` raise ``GuardError`` error that base by ``DataError``.
