@@ -292,9 +292,34 @@ FromBytes
 Bool
 ....
 
+The checker test that a received value is a boolean type.
+
+    >>> t.Bool().check(True)
+    True
 
 StrBool
 .......
+
+If you need to check value that can be equivalent to a boolean type, you can use ``StrBool``.
+**Letter case doesn't matter.**
+
+As an example, ``StrBool`` can be used to classify data with dissimilar values.
+
+    >>> data = {'Alice': 'YeS', 'Bobby': '1', 'Johny': 0, \
+    >>>   'Linda': 't', 'Tomas': 'oFF', 'Aaron': None, \
+    >>>   'Isaac': 'On', 'Carry': False, 'Terry': 1}
+    >>>
+    >>> for key, value in data.items():
+          print("'%s' is %s" % (key, t.StrBool().check(value)))
+    'Alice' is True
+    'Bobby' is True
+    'Johny' is False
+    'Linda' is True
+    'Tomas' is False
+    'Aaron' is False
+    'Isaac' is True
+    'Carry' is False
+    'Terry' is True
 
 Float
 .....
