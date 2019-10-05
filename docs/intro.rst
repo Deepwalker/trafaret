@@ -418,6 +418,28 @@ Atom
 List
 ....
 
+This checker test that a received value is a list of items with some type.
+
+    >>> t.List(t.Int).check(range(100))
+    [0, 1, 2, ... 99]
+    >>> t.extract_error(t.List(t.Int).check(['a']))
+    {0: DataError("value can't be converted to int")}
+
+Also if an item has possible two or three types you can use ``Or``.
+
+    >>> t.List(t.ToInt | t.String).check(['1', 'test'])
+    [1, 'test']
+
+Options:
+
+    - **min_length** *(integer)* - validation for minimum length of receive list
+    - **max_length** *(integer)* - validation for maximum length of receive list
+
+The simple examples of usage:
+
+    >>> t.List(t.Int, min_length=1, max_length=2).check(['1', '2'])
+    ['1', '2']
+
 
 Iterable
 ........
@@ -526,7 +548,7 @@ Forward
 .......
 
 This checker is container for any checker, that you can provide later.
-To provide container use ``provide`` method or ``<<`` operation::
+To provide container use ``provide`` method or ``&`` operation::
 
     >> node = t.Forward()
     >> node & t.Dict(name=t.String, children=t.List[node])
