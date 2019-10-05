@@ -446,13 +446,20 @@ Call
 Operations
 ----------
 
-And
-...
-
-
 Or
 ..
 
+You can combine checkers and for that you need to use ``Or``.
+``Or`` takes other converters as arguments. The input is considered valid if one
+of the converters succeed:
+
+    >>> Or(t.Int, t.String).check('1')
+    1
+
+but the more popular way it is using ``|``
+
+    >>> (t.Int | t.String).check('five')
+    'five'
 
 fold
 ....
@@ -510,10 +517,6 @@ For cases like this a trafaret has ``subdict``.
     >>>     "password_confirm": "111",
     >>> }) 
     {'email': 'm@gmail.com', 'password': '111'}
-
-
-split
-.....
 
 
 Other
