@@ -23,7 +23,6 @@ Contents:
   web_use
   api/index
   changelog
-  old_intro
 
 Indices and tables
 ==================
