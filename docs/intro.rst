@@ -622,6 +622,7 @@ Behave like ``Date``, but also returns ``datetime.date`` object::
 
 DateTime
 ........
+
 Similar to ``Date``, but checking for ``datetime.datetime`` object::
 
     >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
@@ -632,6 +633,7 @@ Similar to ``Date``, but checking for ``datetime.datetime`` object::
 
 ToDateTime
 ..........
+
 Behave like ``DateTime``, but also returns ``datetime.datetime`` object::
 
     >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")

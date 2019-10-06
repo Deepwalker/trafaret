@@ -634,20 +634,27 @@ class TestDateTrafaret:
     def test_date(self):
         res = t.Date().check(date.today())
         assert res == date.today()
-        res = t.Date().check(datetime.now())
-        assert res == date.today()
+        now = datetime.now()
+        res = t.Date().check(now)
+        assert res == now
         res = t.Date().check("2019-07-25")
-        assert res == date(year=2019, month=7, day=25)
+        assert res == '2019-07-25'
         res = extract_error(t.Date(), "25-07-2019")
         assert res == 'date `25-07-2019` does not match format `%Y-%m-%d`'
         res = extract_error(t.Date(), 1564077758)
         assert res == 'value `1564077758` cannot be converted to date'
 
+    def test_to_date(self):
+        res = t.ToDate().check("2019-07-25")
+        assert res == date(year=2019, month=7, day=25)
+        res = t.ToDate().check(datetime.now())
+        assert res == date.today()
+
     def test_repr(self):
-        res = t.Date()
-        assert repr(res) == '<Date %Y-%m-%d>'
-        res = t.Date('%y-%m-%d')
-        assert repr(res) == '<Date %y-%m-%d>'
+        date_repr, to_date_repr = t.Date(), t.ToDate()
+        assert repr(date_repr) == repr(to_date_repr) == '<Date %Y-%m-%d>'
+        date_repr, to_date_repr = t.Date('%y-%m-%d'), t.ToDate('%y-%m-%d')
+        assert repr(date_repr) == repr(to_date_repr) == '<Date %y-%m-%d>'
 
 
 class TestDateTimeTrafaret:
@@ -656,17 +663,21 @@ class TestDateTimeTrafaret:
         res = t.DateTime('%Y-%m-%d %H:%M').check(now)
         assert res == now
         res = t.DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
-        assert res == datetime(year=2019, month=7, day=25, hour=21, minute=45)
+        assert res == '2019-07-25 21:45'
         res = extract_error(t.DateTime(), "25-07-2019")
         assert res == 'datetime `25-07-2019` does not match format `%Y-%m-%d %H:%M:%S`'
         res = extract_error(t.DateTime(), 1564077758)
         assert res == 'value `1564077758` cannot be converted to datetime'
 
+    def test_to_datetime(self):
+        res = t.ToDateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+        assert res == datetime(year=2019, month=7, day=25, hour=21, minute=45)
+
     def test_repr(self):
-        res = t.DateTime()
-        assert repr(res) == '<DateTime %Y-%m-%d %H:%M:%S>'
-        res = t.DateTime('%Y-%m-%d %H:%M')
-        assert repr(res) == '<DateTime %Y-%m-%d %H:%M>'
+        datetime_repr, to_datetime_repr = t.DateTime(), t.ToDateTime()
+        assert repr(datetime_repr) == repr(to_datetime_repr) == '<DateTime %Y-%m-%d %H:%M:%S>'
+        datetime_repr, to_datetime_repr = t.DateTime('%Y-%m-%d %H:%M'), t.ToDateTime('%Y-%m-%d %H:%M')
+        assert repr(datetime_repr) == repr(to_datetime_repr) == '<DateTime %Y-%m-%d %H:%M>'
 
 
 class TestFromBytesTrafaret:
