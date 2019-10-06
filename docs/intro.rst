@@ -328,6 +328,19 @@ Below you can to see a good example of usage all of these parameters:
        t.Key('userRoles', to_name='roles'): comma_to_list,
     })
 
+We can rewrite it to:
+
+.. code-block:: python
+
+    converter = t.Dict(
+       t.Key('userNameFirst', to_name='name', trafaret=t.String),
+       t.Key('userNameSecond', to_name='second_name', trafaret=t.String),
+       t.Key('userPassword', to_name='password', trafaret=hash_md5),
+       t.Key('userEmail', optional=True, to_name='email', trafaret=t.String),
+       t.Key('userTitle', default='Bachelor', to_name='title', trafaret=t.String),
+       t.Key('userRoles', to_name='roles', trafaret=comma_to_list),
+    )
+
 It provides method ``__call__(self, data)`` that extract key value
 from data through mapping ``get`` method.
 Key ``__call__`` method yields ``(key name, Maybe(DataError), [touched
