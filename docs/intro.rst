@@ -630,6 +630,22 @@ The simple examples of usage:
 Iterable
 ........
 
+This checker is the same with ``List`` but it don't raise error if received
+value isn't instance of a ``list``.
+
+.. code-block:: python
+
+    my_data = (1, 2)
+
+    try:
+        t.List(t.Int, min_length=1, max_length=2).check(my_data)
+    except t.DataError as e:
+        print(e)    
+    # value is not a list
+
+    t.Iterable(t.Int, max_length=2).check(my_data)
+    # [1, 2]
+
 
 Tuple
 .....
