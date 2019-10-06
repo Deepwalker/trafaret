@@ -207,24 +207,23 @@ Mapping
 
 
 Enum
-----
+....
 
-Enum object can contain values of different types. Enum check determines whether given value is in the Enum instance.
+This checker tests that given value is in the list of arguments passed to Enum. List of arguments can contain values of different types. 
 
 Example::
 
-  >>> Enum(1, 2, 'error').check(2)
+  >>> t.Enum(1, 2, 'error').check(2)
   2
 
-Enum can be used to validate user choice/input with predefined variants, for example defect severity in the bug tracking sytem.
+This checker can be used to validate user choice/input with predefined variants, for example defect severity in the bug tracking system.
 
 Example::
 
   >>> user_choice = 'critical'
   >>> severities = ('trivial', 'minor', 'major', 'critical')
-  >>> Enum(*severities).check(user_choice)
+  >>> t.Enum(*severities).check(user_choice)
   'critical'
-
 
 
 Callable
