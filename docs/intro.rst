@@ -397,8 +397,10 @@ Bool
 
 The checker test that a received value is a boolean type.
 
-    >>> t.Bool().check(True)
-    True
+.. code-block:: python
+    
+    t.Bool().check(True)
+    # True
 
 StrBool
 .......
@@ -406,23 +408,40 @@ StrBool
 If you need to check value that can be equivalent to a boolean type, you can use ``StrBool``.
 **Letter case doesn't matter.**
 
-As an example, ``StrBool`` can be used to classify data with dissimilar values.
+Sample with all supported equivalents:
 
-    >>> data = {'Alice': 'YeS', 'Bobby': '1', 'Johny': 0, \
-    >>>   'Linda': 't', 'Tomas': 'oFF', 'Aaron': None, \
-    >>>   'Isaac': 'On', 'Carry': False, 'Terry': 1}
-    >>>
-    >>> for key, value in data.items():
-          print("'%s' is %s" % (key, t.StrBool().check(value)))
-    'Alice' is True
-    'Bobby' is True
-    'Johny' is False
-    'Linda' is True
-    'Tomas' is False
-    'Aaron' is False
-    'Isaac' is True
-    'Carry' is False
-    'Terry' is True
+.. code-block:: python
+
+    equivalents  = ('t', 'true', 'y', 'yes', 'on', '1',\
+                    'false', 'n', 'no', 'off', '0', 'none')
+
+    for value in equivalents:
+      print("%s is %s" % (value, t.StrBool().check(value)))
+    # t is True
+    # true is True
+    # y is True
+    # yes is True
+    # on is True
+    # 1 is True
+    # false is False
+    # n is False
+    # no is False
+    # off is False
+    # 0 is False
+    # none is False
+
+Also, function can take ``1`` and ``0`` as integers, ``booleans`` and ``None``.
+
+.. code-block:: python
+
+    t.StrBool().check(1)
+    # True
+
+    t.StrBool().check(False)
+    # False
+
+    t.StrBool().check(None)
+    # False
 
 Float
 .....
