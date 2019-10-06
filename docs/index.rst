@@ -15,12 +15,9 @@ Contents:
 
   installation
   intro
-  api
-  keys_and_dicts
   errors
-  composition
-  examples
   web_use
+  api
   api/index
   changelog
 
