@@ -768,6 +768,8 @@ For cases like this a trafaret has ``subdict``.
 
 .. code-block:: python
 
+    from trafaret.keys import subdict
+
     def check_passwords_equal(data):
         if data['password'] != data['password_confirm']:
             return t.DataError('Passwords are not equal')
