@@ -54,7 +54,3 @@ it will be dict instance.
 
 Also, as_dict and to_struct have optional parameter ``value`` that set to False
 as default. If set it to ``True`` trafaret will show bad value in error message.
-
-
-Create custom error renderer
-............................
