@@ -599,6 +599,22 @@ This checker test that a received value is a tuple of items with some type.
 Enum
 ....
 
+This checker tests that given value is in the list of arguments passed to Enum. List of arguments can contain values of different types. 
+
+Example::
+
+  >>> t.Enum(1, 2, 'error').check(2)
+  2
+
+This checker can be used to validate user choice/input with predefined variants, for example defect severity in the bug tracking system.
+
+Example::
+
+  >>> user_choice = 'critical'
+  >>> severities = ('trivial', 'minor', 'major', 'critical')
+  >>> t.Enum(*severities).check(user_choice)
+  'critical'
+
 
 Callable
 ........
