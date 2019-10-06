@@ -417,6 +417,7 @@ Sample with all supported equivalents:
 
     for value in equivalents:
       print("%s is %s" % (value, t.StrBool().check(value)))
+
     # t is True
     # true is True
     # y is True
@@ -645,19 +646,24 @@ Enum
 
 This checker tests that given value is in the list of arguments passed to Enum. List of arguments can contain values of different types. 
 
-Example::
+Example:
 
-  >>> t.Enum(1, 2, 'error').check(2)
-  2
+.. code-block:: python
+
+  t.Enum(1, 2, 'error').check(2)
+  # 2
 
 This checker can be used to validate user choice/input with predefined variants, for example defect severity in the bug tracking system.
 
-Example::
+Example:
 
-  >>> user_choice = 'critical'
-  >>> severities = ('trivial', 'minor', 'major', 'critical')
-  >>> t.Enum(*severities).check(user_choice)
-  'critical'
+.. code-block:: python
+
+  user_choice = 'critical'
+  severities = ('trivial', 'minor', 'major', 'critical')
+
+  t.Enum(*severities).check(user_choice)
+  # 'critical'
 
 
 Callable
@@ -705,6 +711,7 @@ of the converters succeed:
 but the more popular way it is using ``|``
 
 .. code-block:: python
+
     (t.Int | t.String).check('five')
     # 'five'
 
