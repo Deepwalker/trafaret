@@ -496,6 +496,9 @@ class String(Trafaret):
 
 class Date(Trafaret):
     """
+    Checks that value is a `datetime.date` & `datetime.datetime` instances or a string
+    that is convertable to `datetime.date` object.
+
     >>> Date()
     <Date %Y-%m-%d>
     >>> Date('%y-%m-%d')
@@ -503,11 +506,11 @@ class Date(Trafaret):
     >>> Date().check(date.today())
     datetime.date(2019, 7, 25)
     >>> Date().check(datetime.now())
-    datetime.date(2019, 7, 25)
+    datetime.datetime(2019, 10, 6, 14, 42, 52, 431348)
     >>> Date().check("2019-07-25")
-    datetime.date(2019, 7, 25)
+    '2019, 7, 25'
     >>> Date(format='%y-%m-%d').check('00-01-01')
-    datetime.date(2000, 1, 1)
+    '00-01-01'
     >>> extract_error(Date(), "25-07-2019")
     'date `25-07-2019` does not match format `%Y-%m-%d`'
     >>> extract_error(Date(), 1564077758)
@@ -517,7 +520,7 @@ class Date(Trafaret):
     def __init__(self, format='%Y-%m-%d'):
         self._format = format
 
-    def check_and_return(self, value):
+    def _check(self, value):
         if isinstance(value, datetime):
             return value.date()
         elif isinstance(value, date):
@@ -532,12 +535,34 @@ class Date(Trafaret):
         else:
             return extracted_date
 
+    def check_and_return(self, value):
+        self._check(value)
+        return value
+
     def __repr__(self):
         return '<Date {}>'.format(self._format)
 
 
+class ToDate(Date):
+    """
+    Returns instance of `datetime.date` object if value is a string or `datetime.date` & `datetime.datetime` instances.
+
+    >>> ToDate().check(datetime.now())
+    datetime.date(2019, 10, 6)
+    >>> ToDate().check("2019-07-25")
+    datetime.date(2019, 7, 25)
+    >>> ToDate(format='%y-%m-%d').check('00-01-01')
+    datetime.date(2000, 1, 1)
+    """
+
+    def check_and_return(self, data):
+        return self._check(data)
+
+
 class DateTime(Trafaret):
     """
+    Checks that value is a `datetime.datetime` instance or a string that is convertable to `datetime.datetime` object.
+
     >>> DateTime()
     <DateTime %Y-%m-%d %H:%M:%S>
     >>> DateTime('%Y-%m-%d %H:%M')
@@ -545,7 +570,7 @@ class DateTime(Trafaret):
     >>> DateTime().check(datetime.now())
     datetime.datetime(2019, 7, 25, 21, 45, 37, 319284)
     >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
-    datetime.datetime(2019, 7, 25, 21, 45)
+    '2019-07-25 21:45'
     >>> extract_error(DateTime(), "2019-07-25")
     'datetime `2019-07-25` does not match format `%Y-%m-%d %H:%M:%S`'
     >>> extract_error(DateTime(), date.today())
@@ -555,7 +580,7 @@ class DateTime(Trafaret):
     def __init__(self, format='%Y-%m-%d %H:%M:%S'):
         self._format = format
 
-    def check_and_return(self, value):
+    def _check(self, value):
         if isinstance(value, datetime):
             return value
 
@@ -568,8 +593,24 @@ class DateTime(Trafaret):
         else:
             return extracted_datetime
 
+    def check_and_return(self, value):
+        self._check(value)
+        return value
+
     def __repr__(self):
         return '<DateTime {}>'.format(self._format)
+
+
+class ToDateTime(DateTime):
+    """
+    Returns instance of `datetime.datetime` object if value is a string or `datetime.datetime` instance.
+
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    datetime.datetime(2019, 7, 25, 21, 45)
+    """
+
+    def check_and_return(self, value):
+        return self._check(value)
 
 
 class Bytes(String):
