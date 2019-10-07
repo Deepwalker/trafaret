@@ -415,10 +415,10 @@ The checker test that a received value is a boolean type.
     t.Bool().check(True)
     # True
 
-StrBool
-.......
+ToBool
+......
 
-If you need to check value that can be equivalent to a boolean type, you can use ``StrBool``.
+If you need to check value that can be equivalent to a boolean type, you can use ``ToBool``.
 **Letter case doesn't matter.**
 
 Sample with all supported equivalents:
@@ -429,7 +429,7 @@ Sample with all supported equivalents:
                     'false', 'n', 'no', 'off', '0', 'none')
 
     for value in equivalents:
-      print("%s is %s" % (value, t.StrBool().check(value)))
+      print("%s is %s" % (value, t.ToBool().check(value)))
 
     # t is True
     # true is True
@@ -448,13 +448,13 @@ Also, function can take ``1`` and ``0`` as integers, ``booleans`` and ``None``.
 
 .. code-block:: python
 
-    t.StrBool().check(1)
+    t.ToBool().check(1)
     # True
 
-    t.StrBool().check(False)
+    t.ToBool().check(False)
     # False
 
-    t.StrBool().check(None)
+    t.ToBool().check(None)
     # False
 
 Float

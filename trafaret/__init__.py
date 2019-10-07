@@ -25,7 +25,7 @@ from .base import (
     Type,
     Subclass,
     Mapping,
-    StrBool,
+    ToBool,
     DictKeys,
 
     guard,
@@ -87,7 +87,7 @@ __all__ = (
     "Type",
     "Subclass",
     "Mapping",
-    "StrBool",
+    "ToBool",
     "DictKeys",
 
     "guard",

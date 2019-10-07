@@ -362,31 +362,31 @@ class Bool(Trafaret):
         return "<Bool>"
 
 
-class StrBool(Trafaret):
+class ToBool(Trafaret):
     """
-    >>> extract_error(StrBool(), 'aloha')
+    >>> extract_error(ToBool(), 'aloha')
     "value can't be converted to Bool"
-    >>> StrBool().check(1)
+    >>> ToBool().check(1)
     True
-    >>> StrBool().check(0)
+    >>> ToBool().check(0)
     False
-    >>> StrBool().check('y')
+    >>> ToBool().check('y')
     True
-    >>> StrBool().check('n')
+    >>> ToBool().check('n')
     False
-    >>> StrBool().check(None)
+    >>> ToBool().check(None)
     False
-    >>> StrBool().check('1')
+    >>> ToBool().check('1')
     True
-    >>> StrBool().check('0')
+    >>> ToBool().check('0')
     False
-    >>> StrBool().check('YeS')
+    >>> ToBool().check('YeS')
     True
-    >>> StrBool().check('No')
+    >>> ToBool().check('No')
     False
-    >>> StrBool().check(True)
+    >>> ToBool().check(True)
     True
-    >>> StrBool().check(False)
+    >>> ToBool().check(False)
     False
     """
 
@@ -398,14 +398,14 @@ class StrBool(Trafaret):
         _value = str(value).strip().lower()
         if _value not in self.convertable:
             self._failure(
-                "value can't be converted to Bool",
+                'value can\'t be converted to Bool',
                 value=value,
                 code=codes.IS_NOT_CONVERTIBLE_TO_BOOL,
             )
         return _value in ('t', 'true', 'y', 'yes', 'on', '1')
 
     def __repr__(self):
-        return "<StrBool>"
+        return "<ToBool>"
 
 
 class Atom(Trafaret):
