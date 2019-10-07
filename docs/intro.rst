@@ -807,6 +807,7 @@ For cases like this a trafaret has ``subdict``.
     }) 
     # {'email': 'm@gmail.com', 'password': '111'}
 
+As you can see, `password` and `password_confirm` replaced to just password with value that ``check_passwords_equal`` return.
 
 Other
 -----
