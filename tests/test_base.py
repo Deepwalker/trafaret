@@ -566,7 +566,7 @@ class TestAndTest:
         assert repr(t.Bool & t.Null) == '<And(<Bool>, <Null>)>'
 
 
-class TestStrBoolTrafaret:
+class TestToBoolTrafaret:
     @pytest.mark.parametrize('value, expected_result', [
         # True results
         ('t', True),
@@ -587,15 +587,15 @@ class TestStrBoolTrafaret:
         (False, False),
     ])
     def test_str_bool(self, value, expected_result):
-        actual_result = t.StrBool().check(value)
+        actual_result = t.ToBool().check(value)
         assert actual_result == expected_result
 
     def test_extract_error(self):
-        res = extract_error(t.StrBool(), 'aloha')
+        res = extract_error(t.ToBool(), 'aloha')
         assert res == "value can't be converted to Bool"
 
     def test_repr(self):
-        assert repr(t.StrBool()) == '<StrBool>'
+        assert repr(t.ToBool()) == '<ToBool>'
 
 
 class TestStringTrafaret:
