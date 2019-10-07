@@ -566,6 +566,9 @@ class ToDate(Date):
     def check_and_return(self, data):
         return self._check(data)
 
+    def __repr__(self):
+        return '<ToDate {}>'.format(self._format)
+
 
 class DateTime(Trafaret):
     """
@@ -627,6 +630,9 @@ class ToDateTime(DateTime):
 
     def check_and_return(self, value):
         return self._check(value)
+
+    def __repr__(self):
+        return '<ToDateTime {}>'.format(self._format)
 
 
 class Bytes(String):
