@@ -4,7 +4,10 @@ import functools
 import itertools
 import numbers
 import warnings
-from collections import Mapping as AbcMapping
+try:
+    from collections.abc import Mapping as AbcMapping
+except ImportError:
+    from collections import Mapping as AbcMapping
 from .lib import (
     py3,
     py36,
