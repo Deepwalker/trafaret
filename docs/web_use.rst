@@ -69,22 +69,6 @@ the ``utils.py``.
 .. code-block:: python
 
     import trafaret as t
-    from trafaret.keys import subdict
-
-
-    def author_validation(data):
-        """Test that first author exist in list of all authors."""
-        
-        if data['first_author'] not in data['authors']:
-            raise t.DataError('first_author must exist in authors')
-
-
-    authors = subdict(
-        'authors',
-        t.Key('bookFirstAuthor', to_name='first_author', trafaret=t.String(max_length=10)),
-        t.Key('bookAuthors', to_name='authors', trafaret=t.List(t.String(max_length=10))),
-        trafaret=author_validation,
-    )
 
     create_book_chacker = t.Dict({
        t.Key('bookTitle', to_name='title'): t.String,
@@ -92,7 +76,9 @@ the ``utils.py``.
        t.Key('bookDescription', to_name='description'): t.String(min_length=20),
        t.Key('bookPrice', to_name='price', default=100): t.Int >= 100,
        t.Key('bookIsFree', optional=True, to_name='is_free'): t.Bool,
-    }) + t.Dict(authors)
+       t.Key('bookFirstAuthor', to_name='first_author'): t.String(max_length=10),
+       t.Key('bookAuthors', to_name='authors'): t.List(t.String(max_length=10)),
+    })
 
 
     update_user_chacker = create_book_chacker + {"id": t.Int}
@@ -109,7 +95,7 @@ functions which do it.
 .. code-block:: python
 
     def prepare_data_for_create_book(data):
-        valid_data = create_book_chacker.check(data, value=True)
+        valid_data = create_book_chacker.check(data)
 
         # do something else
         ...
@@ -117,7 +103,7 @@ functions which do it.
         return valid_data
 
     def prepare_data_for_update_book(data):
-        valid_data = update_user_chacker.check(data, value=True)
+        valid_data = update_user_chacker.check(data)
 
         # do something else
         ...
@@ -137,7 +123,7 @@ Let's use these function in our handlers.
     # handlers
 
     async def create_book(req):
-        """Hadler for create book""""
+        """Hadler for create book"""
         raw_data = await req.json()
         data = prepare_data_for_create_book(raw_data)
 
@@ -184,7 +170,7 @@ After that we can send request to the our server.
         "bookFirstAuthor": "Welsh",
         "bookAuthors": ["Welsh"]
     }
-    r.post("http://0.0.0.0:9000/", json=data).text
+    r.post("http://0.0.0.0:8000/", json=data).text
 
     # '{"created": true}'
 
@@ -216,7 +202,7 @@ connected with ``trafater``.
                 return await fn(*args, **kwargs)
             except t.DataError as e:
                 return web.json_response({
-                    'errors': e.as_dict()
+                    'errors': e.as_dict(value=True)
                 })
         
         return inner
@@ -251,6 +237,6 @@ valid.
         "bookFirstAuthor": "Welsh",
         "bookAuthors": ["Welsh"]
     }
-    r.put("http://0.0.0.0:9000/", json=data).text
+    r.put("http://0.0.0.0:8000/", json=data).text
 
     # '{"errors": {"id": "is required"}}'
