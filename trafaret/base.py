@@ -507,9 +507,9 @@ class Date(Trafaret):
     >>> Date(format='%y-%m-%d').check('00-01-01')
     '00-01-01'
     >>> extract_error(Date(), "25-07-2019")
-    'date `25-07-2019` does not match format `%Y-%m-%d`'
+    'value does not match format %Y-%m-%d'
     >>> extract_error(Date(), 1564077758)
-    'value `1564077758` cannot be converted to date'
+    'value cannot be converted to date'
     """
 
     def __init__(self, format='%Y-%m-%d'):
@@ -524,9 +524,17 @@ class Date(Trafaret):
         try:
             extracted_date = datetime.strptime(value, self._format).date()
         except ValueError:
-            self._failure('date `{}` does not match format `{}`'.format(value, self._format))
+            self._failure(
+                'value does not match format %s' % self._format,
+                value=value,
+                code=codes.DOES_NOT_MATCH_FORMAT
+            )
         except TypeError:
-            self._failure('value `{}` cannot be converted to date'.format(value))
+            self._failure(
+                'value cannot be converted to date',
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_DATE
+            )
         else:
             return extracted_date
 
@@ -567,9 +575,9 @@ class DateTime(Trafaret):
     >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
     '2019-07-25 21:45'
     >>> extract_error(DateTime(), "2019-07-25")
-    'datetime `2019-07-25` does not match format `%Y-%m-%d %H:%M:%S`'
+    'value does not match format %Y-%m-%d %H:%M:%S'
     >>> extract_error(DateTime(), date.today())
-    'value `2019-07-25` cannot be converted to datetime'
+    'value cannot be converted to datetime'
     """
 
     def __init__(self, format='%Y-%m-%d %H:%M:%S'):
@@ -582,9 +590,17 @@ class DateTime(Trafaret):
         try:
             extracted_datetime = datetime.strptime(value, self._format)
         except ValueError:
-            self._failure('datetime `{}` does not match format `{}`'.format(value, self._format))
+            self._failure(
+                'value does not match format %s' % self._format,
+                value=value,
+                code=codes.DOES_NOT_MATCH_FORMAT
+            )
         except TypeError:
-            self._failure('value `{}` cannot be converted to datetime'.format(value))
+            self._failure(
+                'value cannot be converted to datetime',
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_DATETIME
+            )
         else:
             return extracted_datetime
 

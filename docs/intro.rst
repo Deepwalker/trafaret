@@ -628,7 +628,7 @@ Similar to ``Date``, but checking for ``datetime.datetime`` object::
     >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
     '2019-07-25 21:45'
     >>> t.extract_error(t.DateTime(), date.today())
-    'value `2019-09-22` cannot be converted to datetime'
+    'value cannot be converted to datetime'
 
 
 ToDateTime

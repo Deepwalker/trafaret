@@ -640,9 +640,9 @@ class TestDateTrafaret:
         res = t.Date().check("2019-07-25")
         assert res == '2019-07-25'
         res = extract_error(t.Date(), "25-07-2019")
-        assert res == 'date `25-07-2019` does not match format `%Y-%m-%d`'
+        assert res == 'value does not match format %Y-%m-%d'
         res = extract_error(t.Date(), 1564077758)
-        assert res == 'value `1564077758` cannot be converted to date'
+        assert res == 'value cannot be converted to date'
 
     def test_to_date(self):
         res = t.ToDate().check("2019-07-25")
@@ -665,9 +665,9 @@ class TestDateTimeTrafaret:
         res = t.DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
         assert res == '2019-07-25 21:45'
         res = extract_error(t.DateTime(), "25-07-2019")
-        assert res == 'datetime `25-07-2019` does not match format `%Y-%m-%d %H:%M:%S`'
+        assert res == 'value does not match format %Y-%m-%d %H:%M:%S'
         res = extract_error(t.DateTime(), 1564077758)
-        assert res == 'value `1564077758` cannot be converted to datetime'
+        assert res == 'value cannot be converted to datetime'
 
     def test_to_datetime(self):
         res = t.ToDateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")

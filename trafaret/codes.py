@@ -58,6 +58,12 @@ IS_NOT_IPv4 = 'is_not_ipv4'
 IS_NOT_IPv6 = 'is_not_ipv6'
 IS_NOT_IP = 'is_not_ip'
 
+# Date & DateTime
+DOES_NOT_MATCH_FORMAT = 'does_not_match_format'
+IS_NOT_CONVERTIBLE_TO_DATE = 'is_not_convertible_to_date'
+IS_NOT_CONVERTIBLE_TO_DATETIME = 'is_not_convertible_to_datetime'
+
+
 # Contrib
 NOT_DATETIME = 'not_datetime'
 NOT_DATE = 'not_date'
