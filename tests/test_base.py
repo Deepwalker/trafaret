@@ -652,9 +652,12 @@ class TestDateTrafaret:
 
     def test_repr(self):
         date_repr, to_date_repr = t.Date(), t.ToDate()
-        assert repr(date_repr) == repr(to_date_repr) == '<Date %Y-%m-%d>'
+        assert repr(date_repr) == '<Date %Y-%m-%d>'
+        assert repr(to_date_repr) == '<ToDate %Y-%m-%d>'
+
         date_repr, to_date_repr = t.Date('%y-%m-%d'), t.ToDate('%y-%m-%d')
-        assert repr(date_repr) == repr(to_date_repr) == '<Date %y-%m-%d>'
+        assert repr(date_repr) == '<Date %y-%m-%d>'
+        assert repr(to_date_repr) == '<ToDate %y-%m-%d>'
 
 
 class TestDateTimeTrafaret:
@@ -675,9 +678,12 @@ class TestDateTimeTrafaret:
 
     def test_repr(self):
         datetime_repr, to_datetime_repr = t.DateTime(), t.ToDateTime()
-        assert repr(datetime_repr) == repr(to_datetime_repr) == '<DateTime %Y-%m-%d %H:%M:%S>'
+        assert repr(datetime_repr) == '<DateTime %Y-%m-%d %H:%M:%S>'
+        assert repr(to_datetime_repr) == '<ToDateTime %Y-%m-%d %H:%M:%S>'
+
         datetime_repr, to_datetime_repr = t.DateTime('%Y-%m-%d %H:%M'), t.ToDateTime('%Y-%m-%d %H:%M')
-        assert repr(datetime_repr) == repr(to_datetime_repr) == '<DateTime %Y-%m-%d %H:%M>'
+        assert repr(datetime_repr) == '<DateTime %Y-%m-%d %H:%M>'
+        assert repr(to_datetime_repr) == '<ToDateTime %Y-%m-%d %H:%M>'
 
 
 class TestFromBytesTrafaret:
