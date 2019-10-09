@@ -3,11 +3,6 @@
 import functools
 import itertools
 import warnings
-try:
-    from collections.abc import Mapping as AbcMapping
-except ImportError:
-    from collections import Mapping as AbcMapping
-from collections import Iterable
 from datetime import date, datetime
 from .lib import (
     py3,
