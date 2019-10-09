@@ -1,7 +1,8 @@
 from bson.objectid import ObjectId
 from bson.errors import InvalidId
 
-from .. import Trafaret, str_types
+from .. import Trafaret
+from ..lib import STR_TYPES
 
 
 class MongoId(Trafaret):
@@ -20,7 +21,7 @@ class MongoId(Trafaret):
     "'just_id' is not a valid ObjectId, it must be a 12-byte input or a 24-character hex string"
     """
 
-    convertable = str_types + (ObjectId,)
+    convertable = STR_TYPES + (ObjectId,)
     value_type = ObjectId
     allow_blank = False
 
@@ -32,11 +33,11 @@ class MongoId(Trafaret):
 
     def check_and_return(self, value):
         if not self.allow_blank and value is None:
-            self._failure("blank value is not allowed")
+            self._failure("blank value is not allowed", code='empty_value')
         if isinstance(value, self.convertable) or value is None:
             try:
                 return ObjectId(value)
             except InvalidId as e:
-                self._failure(str(e))
+                self._failure(str(e), code='invalid_objectid')
 
-        self._failure('value is not %s' % self.value_type.__name__)
+        self._failure('value is not %s' % self.value_type.__name__, code='not_objectid')

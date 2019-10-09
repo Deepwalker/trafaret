@@ -8,6 +8,7 @@ from .base import (
 
     Any,
     Null,
+    Iterable,
     List,
     Key,
     Dict,
@@ -15,30 +16,39 @@ from .base import (
     Tuple,
 
     Atom,
+    Date,
+    ToDate,
+    DateTime,
+    ToDateTime,
     String,
-    Float,
-    FloatRaw,
-    Int,
-    IntRaw,
+    AnyString,
+    Bytes,
+    FromBytes,
     Callable,
     Bool,
     Type,
     Subclass,
     Mapping,
-    StrBool,
+    ToBool,
     DictKeys,
 
     guard,
 
     # utils
     OnError,
+    WithRepr,
     ensure_trafaret,
     extract_error,
     ignore,
-    _dd,
     catch,
     catch_error,
-    str_types,
+)
+from .numeric import (
+    Float,
+    ToFloat,
+    Int,
+    ToInt,
+    ToDecimal,
 )
 from .regexp import Regexp, RegexpRaw
 from .internet import (
@@ -59,6 +69,7 @@ __all__ = (
 
     "Any",
     "Null",
+    "Iterable",
     "List",
     "Key",
     "Dict",
@@ -67,16 +78,24 @@ __all__ = (
 
     "Atom",
     "String",
+    "Date",
+    "ToDate",
+    "DateTime",
+    "ToDateTime",
+    "AnyString",
+    "Bytes",
+    "FromBytes",
     "Float",
-    "FloatRaw",
+    "ToFloat",
     "Int",
-    "IntRaw",
+    "ToInt",
+    "ToDecimal",
     "Callable",
     "Bool",
     "Type",
     "Subclass",
     "Mapping",
-    "StrBool",
+    "ToBool",
     "DictKeys",
 
     "guard",
@@ -90,14 +109,13 @@ __all__ = (
     "IP",
 
     "OnError",
+    "WithRepr",
     "ensure_trafaret",
     "extract_error",
     "ignore",
-    "_dd",
     "catch",
     "catch_error",
-    "str_types",
 )
 
 
-__VERSION__ = (1, 2, 0)
+__VERSION__ = (2, 0, '0-alpha.04')

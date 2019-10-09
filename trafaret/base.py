@@ -2,22 +2,22 @@
 
 import functools
 import itertools
-import numbers
 import warnings
-try:
-    from collections.abc import Mapping as AbcMapping
-except ImportError:
-    from collections import Mapping as AbcMapping
+from datetime import date, datetime
 from .lib import (
     py3,
     py36,
     py3metafix,
     getargspec,
-    get_callable_argspec,
+    get_callable_args,
     with_context_caller,
     _empty,
+    STR_TYPES,
+    AbcMapping,
+    Iterable as AbcIterable,
 )
 from .dataerror import DataError
+from . import codes
 
 
 if py36:
@@ -33,7 +33,7 @@ if py36:
         DictAsyncMixin,
         KeyAsyncMixin,
     )
-else:
+else:  # pragma: no cover
     class EmptyMixin(object):
         pass
     TrafaretAsyncMixin = EmptyMixin
@@ -50,23 +50,12 @@ else:
 
 # Python3 support
 if py3:
-    str_types = (str, bytes)
     unicode = str
     BYTES_TYPE = bytes
-else:
-    try:
-        from future_builtins import map
-    except ImportError:
-        # Support for GAE runner
-        from itertools import imap as map
-    str_types = (basestring,)  # noqa
+    STR_TYPE = str
+else:  # pragma: no cover
     BYTES_TYPE = str
-
-
-def _dd(value):
-    if not hasattr(value, 'items'):
-        return repr(value)
-    return r"{%s}" % ', '.join("%r: %s" % (x[0], _dd(x[1])) for x in sorted(value.items(), key=lambda x: x[0]))
+    STR_TYPE = unicode
 
 
 def deprecated(message):
@@ -134,17 +123,11 @@ class Trafaret(TrafaretAsyncMixin):
                 " check_and_return methods '%s'" % cls
             )
 
-    def _failure(self, error=None, value=_empty):
+    def _failure(self, error=None, value=_empty, code=None):
         """
         Shortcut method for raising validation error
         """
-        raise DataError(error=error, value=value, trafaret=self)
-
-    def append(self, other):
-        """
-        Appends new converter to list.
-        """
-        return And(self, other)
+        raise DataError(error=error, value=value, trafaret=self, code=code)
 
     def __or__(self, other):
         return Or(self, other)
@@ -160,15 +143,33 @@ class Trafaret(TrafaretAsyncMixin):
 
 
 class OnError(Trafaret):
-    def __init__(self, trafaret, message):
+    def __init__(self, trafaret, message, code=None):
         self.trafaret = ensure_trafaret(trafaret)
         self.message = message
+        self.code = code
 
     def transform(self, value, context=None):
         try:
             return self.trafaret(value, context=context)
-        except DataError:
-            raise DataError(self.message, value=value)
+        except DataError as de:
+            raise DataError(
+                self.message,
+                value=value,
+                trafaret=self.trafaret,
+                code=self.code or de.code,
+            )
+
+
+class WithRepr(Trafaret):
+    def __init__(self, trafaret, representation):
+        self.trafaret = ensure_trafaret(trafaret)
+        self.representation = representation
+
+    def transform(self, value, context=None):
+        return self.trafaret(value, context=context)
+
+    def __repr__(self):
+        return self.representation
 
 
 def ensure_trafaret(trafaret):
@@ -207,7 +208,11 @@ class TypingTrafaret(Trafaret):
 
     def check_value(self, value):
         if not self.typing_checker(value, self.type_):
-            self._failure(self.failure_message % self.type_.__name__, value=value)
+            self._failure(
+                self.failure_message % self.type_.__name__,
+                value=value,
+                code=self.code,
+            )
 
     def __repr__(self):
         return "<%s(%s)>" % (self.__class__.__name__, self.type_.__name__)
@@ -228,6 +233,7 @@ class Subclass(TypingTrafaret):
 
     typing_checker = issubclass
     failure_message = "value is not subclass of %s"
+    code = "is_not_subclass"
 
 
 class Type(TypingTrafaret):
@@ -245,6 +251,7 @@ class Type(TypingTrafaret):
 
     typing_checker = isinstance
     failure_message = "value is not %s"
+    code = "is_not_instance"
 
 
 class Any(Trafaret):
@@ -277,7 +284,7 @@ class Or(Trafaret, OrAsyncMixin):
     __slots__ = ['trafarets']
 
     def __init__(self, *trafarets):
-        self.trafarets = list(map(ensure_trafaret, trafarets))
+        self.trafarets = [ensure_trafaret(t) for t in trafarets]
 
     def transform(self, value, context=None):
         errors = []
@@ -286,10 +293,10 @@ class Or(Trafaret, OrAsyncMixin):
                 return trafaret(value, context=context)
             except DataError as e:
                 errors.append(e)
-        raise DataError(dict(enumerate(errors)), trafaret=self)
+        raise self._failure(dict(enumerate(errors)), code=codes.NOTHING_MATCH)
 
     def __repr__(self):
-        return "<Or(%s)>" % (", ".join(map(repr, self.trafarets)))
+        return "<Or(%s)>" % (", ".join(repr(t) for t in self.trafarets))
 
 
 class And(Trafaret, AndAsyncMixin):
@@ -303,16 +310,15 @@ class And(Trafaret, AndAsyncMixin):
         self.other = ensure_trafaret(other)
 
     def transform(self, value, context=None):
+        # it will raise in case of error
         res = self.trafaret(value, context=context)
-        if isinstance(res, DataError):
-            raise DataError
-        res = self.other(res, context=context)
-        if isinstance(res, DataError):
-            raise res
-        return res
+        return self.other(res, context=context)
 
     def __repr__(self):
-        return repr(self.trafaret)
+        return "<And(%s, %s)>" % (
+            repr(self.trafaret),
+            repr(self.other),
+        )
 
 
 class Null(Trafaret):
@@ -326,7 +332,7 @@ class Null(Trafaret):
 
     def check_value(self, value):
         if value is not None:
-            self._failure("value should be None", value=value)
+            self._failure("value should be None", value=value, code=codes.IS_NOT_NULL)
 
     def __repr__(self):
         return "<Null>"
@@ -346,212 +352,56 @@ class Bool(Trafaret):
 
     def check_value(self, value):
         if not isinstance(value, bool):
-            self._failure("value should be True or False", value=value)
+            self._failure("value should be True or False", value=value, code=codes.IS_NOT_BOOL)
 
     def __repr__(self):
         return "<Bool>"
 
 
-class StrBool(Trafaret):
+class ToBool(Trafaret):
     """
-    >>> extract_error(StrBool(), 'aloha')
+    >>> extract_error(ToBool(), 'aloha')
     "value can't be converted to Bool"
-    >>> StrBool().check(1)
+    >>> ToBool().check(1)
     True
-    >>> StrBool().check(0)
+    >>> ToBool().check(0)
     False
-    >>> StrBool().check('y')
+    >>> ToBool().check('y')
     True
-    >>> StrBool().check('n')
+    >>> ToBool().check('n')
     False
-    >>> StrBool().check(None)
+    >>> ToBool().check(None)
     False
-    >>> StrBool().check('1')
+    >>> ToBool().check('1')
     True
-    >>> StrBool().check('0')
+    >>> ToBool().check('0')
     False
-    >>> StrBool().check('YeS')
+    >>> ToBool().check('YeS')
     True
-    >>> StrBool().check('No')
+    >>> ToBool().check('No')
     False
-    >>> StrBool().check(True)
+    >>> ToBool().check(True)
     True
-    >>> StrBool().check(False)
+    >>> ToBool().check(False)
     False
     """
 
-    convertable = ('t', 'true', 'false', 'y', 'n', 'yes', 'no', 'on', 'off',
-                   '1', '0', 'none')
+    true_values = ('t', 'true', 'y', 'yes', 'on', '1')
+    false_values = ('false', 'n', 'no', 'off', '0', 'none')
+    convertable = true_values + false_values
 
     def check_and_return(self, value):
         _value = str(value).strip().lower()
         if _value not in self.convertable:
-            self._failure("value can't be converted to Bool", value=value)
+            self._failure(
+                'value can\'t be converted to Bool',
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_BOOL,
+            )
         return _value in ('t', 'true', 'y', 'yes', 'on', '1')
 
     def __repr__(self):
-        return "<StrBool>"
-
-
-class NumberMeta(TrafaretMeta):
-    """
-    Allows slicing syntax for min and max arguments for
-    number trafarets
-
-    >>> Int[1:]
-    <Int(gte=1)>
-    >>> Int[1:10]
-    <Int(gte=1, lte=10)>
-    >>> Int[:10]
-    <Int(lte=10)>
-    >>> Float[1:]
-    <Float(gte=1)>
-    >>> Int > 3
-    <Int(gt=3)>
-    >>> 1 < (Float < 10)
-    <Float(gt=1, lt=10)>
-    >>> (Int > 5).check(10)
-    10
-    >>> extract_error(Int > 5, 1)
-    'value should be greater than 5'
-    >>> (Int < 3).check(1)
-    1
-    >>> extract_error(Int < 3, 3)
-    'value should be less than 3'
-    """
-
-    def __getitem__(cls, slice_):
-        return cls(gte=slice_.start, lte=slice_.stop)
-
-    def __lt__(cls, lt):
-        return cls(lt=lt)
-
-    def __gt__(cls, gt):
-        return cls(gt=gt)
-
-
-@py3metafix
-class FloatRaw(Trafaret):
-    """
-    Tests that value is a float or a string that is convertable to float.
-
-    >>> Float()
-    <Float>
-    >>> Float(gte=1)
-    <Float(gte=1)>
-    >>> Float(lte=10)
-    <Float(lte=10)>
-    >>> Float(gte=1, lte=10)
-    <Float(gte=1, lte=10)>
-    >>> Float().check(1.0)
-    1.0
-    >>> extract_error(Float(), 1 + 3j)
-    'value is not float'
-    >>> extract_error(Float(), 1)
-    1.0
-    >>> Float(gte=2).check(3.0)
-    3.0
-    >>> extract_error(Float(gte=2), 1.0)
-    'value is less than 2'
-    >>> Float(lte=10).check(5.0)
-    5.0
-    >>> extract_error(Float(lte=3), 5.0)
-    'value is greater than 3'
-    >>> Float().check("5.0")
-    5.0
-    """
-
-    __metaclass__ = NumberMeta
-
-    convertable = str_types + (numbers.Real,)
-    value_type = float
-
-    def __init__(self, gte=None, lte=None, gt=None, lt=None):
-        self.gte = gte
-        self.lte = lte
-        self.gt = gt
-        self.lt = lt
-
-    def _converter(self, value):
-        if not isinstance(value, self.convertable):
-            self._failure('value is not %s' % self.value_type.__name__, value=value)
-        try:
-            return self.value_type(value)
-        except ValueError:
-            self._failure(
-                "value can't be converted to %s" % self.value_type.__name__,
-                value=value
-            )
-
-    def _check(self, data):
-        if not isinstance(data, self.value_type):
-            value = self._converter(data)
-        else:
-            value = data
-        if self.gte is not None and value < self.gte:
-            self._failure("value is less than %s" % self.gte, value=data)
-        if self.lte is not None and value > self.lte:
-            self._failure("value is greater than %s" % self.lte, value=data)
-        if self.lt is not None and value >= self.lt:
-            self._failure("value should be less than %s" % self.lt, value=data)
-        if self.gt is not None and value <= self.gt:
-            self._failure("value should be greater than %s" % self.gt, value=data)
-        return value
-
-    def check_and_return(self, data):
-        self._check(data)
-        return data
-
-    def __lt__(self, lt):
-        return type(self)(gte=self.gte, lte=self.lte, gt=self.gt, lt=lt)
-
-    def __gt__(self, gt):
-        return type(self)(gte=self.gte, lte=self.lte, gt=gt, lt=self.lt)
-
-    def __repr__(self):
-        r = "<%s" % type(self).__name__
-        options = []
-        for param in ("gte", "lte", "gt", "lt"):
-            if getattr(self, param) is not None:
-                options.append("%s=%s" % (param, getattr(self, param)))
-        if options:
-            r += "(%s)" % (", ".join(options))
-        r += ">"
-        return r
-
-
-class Float(FloatRaw):
-    """Checks that value is a float.
-    Or if value is a string converts this string to float
-    """
-    def check_and_return(self, data):
-        return self._check(data)
-
-
-class IntRaw(FloatRaw):
-    """
-    >>> Int()
-    <Int>
-    >>> Int().check(5)
-    5
-    >>> extract_error(Int(), 1.1)
-    'value is not int'
-    >>> extract_error(Int(), 1 + 1j)
-    'value is not int'
-    """
-
-    value_type = int
-
-    def _converter(self, value):
-        if isinstance(value, float):
-            if not value.is_integer():
-                self._failure('value is not int', value=value)
-        return super(IntRaw, self)._converter(value)
-
-
-class Int(IntRaw):
-    def check_and_return(self, data):
-        return self._check(data)
+        return "<ToBool>"
 
 
 class Atom(Trafaret):
@@ -568,7 +418,11 @@ class Atom(Trafaret):
 
     def check_value(self, value):
         if self.value != value:
-            self._failure("value is not exactly '%s'" % self.value, value=value)
+            self._failure(
+                "value is not exactly '%s'" % self.value,
+                value=value,
+                code=codes.IS_NOT_EXACTLY,
+            )
 
 
 class String(Trafaret):
@@ -598,6 +452,10 @@ class String(Trafaret):
     >>> String(min_length=0, max_length=6, allow_blank=True).check('123')
     '123'
     """
+    str_type = STR_TYPE
+
+    TYPE_ERROR_MESSAGE = "value is not a string"
+    TYPE_ERROR_CODE = codes.IS_NOT_A_STRING
 
     def __init__(self, allow_blank=False, min_length=None, max_length=None):
         assert not (allow_blank and min_length), \
@@ -607,33 +465,207 @@ class String(Trafaret):
         self.max_length = max_length
 
     def check_and_return(self, value):
-        if not isinstance(value, str_types):
-            self._failure("value is not a string", value=value)
+        if not isinstance(value, self.str_type):
+            self._failure(self.TYPE_ERROR_MESSAGE, value=value, code=self.TYPE_ERROR_CODE)
         if not self.allow_blank and len(value) == 0:
-            self._failure("blank value is not allowed", value=value)
+            self._failure("blank value is not allowed", value=value, code=codes.EMPTY_STRING)
         elif self.allow_blank and len(value) == 0:
             return value
         if self.min_length is not None and len(value) < self.min_length:
-            self._failure('String is shorter than %s characters' % self.min_length, value=value)
+            self._failure(
+                'String is shorter than %s characters' % self.min_length,
+                value=value,
+                code=codes.SHORT_STRING,
+            )
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure('String is longer than %s characters' % self.max_length, value=value)
+            self._failure(
+                'String is longer than %s characters' % self.max_length,
+                value=value,
+                code=codes.LONG_STRING,
+            )
         return value
 
     def __repr__(self):
         return "<String(blank)>" if self.allow_blank else "<String>"
 
 
-class Bytes(Trafaret):
+class Date(Trafaret):
+    """
+    Checks that value is a `datetime.date` & `datetime.datetime` instances or a string
+    that is convertable to `datetime.date` object.
+
+    >>> Date()
+    <Date %Y-%m-%d>
+    >>> Date('%y-%m-%d')
+    <Date %y-%m-%d>
+    >>> Date().check(date.today())
+    datetime.date(2019, 7, 25)
+    >>> Date().check(datetime.now())
+    datetime.datetime(2019, 10, 6, 14, 42, 52, 431348)
+    >>> Date().check("2019-07-25")
+    '2019, 7, 25'
+    >>> Date(format='%y-%m-%d').check('00-01-01')
+    '00-01-01'
+    >>> extract_error(Date(), "25-07-2019")
+    'value does not match format %Y-%m-%d'
+    >>> extract_error(Date(), 1564077758)
+    'value cannot be converted to date'
+    """
+
+    def __init__(self, format='%Y-%m-%d'):
+        self._format = format
+
+    def _check(self, value):
+        if isinstance(value, datetime):
+            return value.date()
+        elif isinstance(value, date):
+            return value
+
+        try:
+            extracted_date = datetime.strptime(value, self._format).date()
+        except ValueError:
+            self._failure(
+                'value does not match format %s' % self._format,
+                value=value,
+                code=codes.DOES_NOT_MATCH_FORMAT
+            )
+        except TypeError:
+            self._failure(
+                'value cannot be converted to date',
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_DATE
+            )
+        else:
+            return extracted_date
+
+    def check_and_return(self, value):
+        self._check(value)
+        return value
+
+    def __repr__(self):
+        return '<Date {}>'.format(self._format)
+
+
+class ToDate(Date):
+    """
+    Returns instance of `datetime.date` object if value is a string or `datetime.date` & `datetime.datetime` instances.
+
+    >>> ToDate().check(datetime.now())
+    datetime.date(2019, 10, 6)
+    >>> ToDate().check("2019-07-25")
+    datetime.date(2019, 7, 25)
+    >>> ToDate(format='%y-%m-%d').check('00-01-01')
+    datetime.date(2000, 1, 1)
+    """
+
+    def check_and_return(self, data):
+        return self._check(data)
+
+    def __repr__(self):
+        return '<ToDate {}>'.format(self._format)
+
+
+class DateTime(Trafaret):
+    """
+    Checks that value is a `datetime.datetime` instance or a string that is convertable to `datetime.datetime` object.
+
+    >>> DateTime()
+    <DateTime %Y-%m-%d %H:%M:%S>
+    >>> DateTime('%Y-%m-%d %H:%M')
+    <DateTime %Y-%m-%d %H:%M>
+    >>> DateTime().check(datetime.now())
+    datetime.datetime(2019, 7, 25, 21, 45, 37, 319284)
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    '2019-07-25 21:45'
+    >>> extract_error(DateTime(), "2019-07-25")
+    'value does not match format %Y-%m-%d %H:%M:%S'
+    >>> extract_error(DateTime(), date.today())
+    'value cannot be converted to datetime'
+    """
+
+    def __init__(self, format='%Y-%m-%d %H:%M:%S'):
+        self._format = format
+
+    def _check(self, value):
+        if isinstance(value, datetime):
+            return value
+
+        try:
+            extracted_datetime = datetime.strptime(value, self._format)
+        except ValueError:
+            self._failure(
+                'value does not match format %s' % self._format,
+                value=value,
+                code=codes.DOES_NOT_MATCH_FORMAT
+            )
+        except TypeError:
+            self._failure(
+                'value cannot be converted to datetime',
+                value=value,
+                code=codes.IS_NOT_CONVERTIBLE_TO_DATETIME
+            )
+        else:
+            return extracted_datetime
+
+    def check_and_return(self, value):
+        self._check(value)
+        return value
+
+    def __repr__(self):
+        return '<DateTime {}>'.format(self._format)
+
+
+class ToDateTime(DateTime):
+    """
+    Returns instance of `datetime.datetime` object if value is a string or `datetime.datetime` instance.
+
+    >>> DateTime('%Y-%m-%d %H:%M').check("2019-07-25 21:45")
+    datetime.datetime(2019, 7, 25, 21, 45)
+    """
+
+    def check_and_return(self, value):
+        return self._check(value)
+
+    def __repr__(self):
+        return '<ToDateTime {}>'.format(self._format)
+
+
+class Bytes(String):
+    str_type = (BYTES_TYPE,)
+
+    TYPE_ERROR_MESSAGE = "value is not a bytes string"
+    TYPE_ERROR_CODE = codes.IS_NOT_A_BYTES_STRING
+
+
+class AnyString(String):
+    str_type = (BYTES_TYPE, STR_TYPE)
+
+
+class FromBytes(Trafaret):
+    """ Get bytes and try to decode it with given encoding, utf-8 by default.
+    It can be used like ``unicode_or_koi8r = String | FromBytes(encoding='koi8r')``
+    """
     def __init__(self, encoding='utf-8'):
         self.encoding = encoding
 
     def check_and_return(self, value):
         if not isinstance(value, BYTES_TYPE):
-            self._failure('Value is not bytes', value=value)
+            self._failure(
+                'value is not a bytes',
+                value=value,
+                code=codes.IS_NOT_BYTES,
+            )
         try:
             return value.decode(self.encoding)
         except UnicodeError:
-            raise self._failure('value cannot be decoded with %s encoding' % self.encoding)
+            raise self._failure(
+                'value cannot be decoded with %s encoding' % self.encoding,
+                value=value,
+                code=codes.CANNOT_BE_DECODED,
+            )
+
+    def __repr__(self):
+        return "<FromBytes>"
 
 
 class SquareBracketsMeta(TrafaretMeta):
@@ -678,7 +710,7 @@ class SquareBracketsMeta(TrafaretMeta):
 
 
 @py3metafix
-class List(Trafaret, ListAsyncMixin):
+class Iterable(Trafaret, ListAsyncMixin):
     """
     >>> List(Int)
     <List(<Int>)>
@@ -715,12 +747,24 @@ class List(Trafaret, ListAsyncMixin):
         self.max_length = max_length
 
     def check_common(self, value):
-        if not isinstance(value, list):
-            self._failure("value is not a list", value=value)
+        if not isinstance(value, AbcIterable):
+            self._failure(
+                "value is not iterable",
+                value=value,
+                code=codes.IS_NOT_A_LIST,
+            )
         if len(value) < self.min_length:
-            self._failure("list length is less than %s" % self.min_length, value=value)
+            self._failure(
+                "list length is less than %s" % self.min_length,
+                value=value,
+                code=codes.TOO_SHORT,
+            )
         if self.max_length is not None and len(value) > self.max_length:
-            self._failure("list length is greater than %s" % self.max_length, value=value)
+            self._failure(
+                "list length is greater than %s" % self.max_length,
+                value=value,
+                code=codes.TOO_LONG,
+            )
 
     def transform(self, value, context=None):
         self.check_common(value)
@@ -732,7 +776,7 @@ class List(Trafaret, ListAsyncMixin):
             except DataError as err:
                 errors[index] = err
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            raise self._failure(errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return lst
 
     def __repr__(self):
@@ -750,6 +794,17 @@ class List(Trafaret, ListAsyncMixin):
         return r
 
 
+class List(Iterable):
+    def check_common(self, value):
+        if not isinstance(value, list):
+            self._failure(
+                "value is not a list",
+                value=value,
+                code=codes.IS_NOT_A_LIST,
+            )
+        super(List, self).check_common(value)
+
+
 class Tuple(Trafaret, TupleAsyncMixin):
     """
     Tuple checker can be used to check fixed tuples, like (Int, Int, String).
@@ -765,16 +820,24 @@ class Tuple(Trafaret, TupleAsyncMixin):
     __slots__ = ['trafarets', 'length']
 
     def __init__(self, *args):
-        self.trafarets = list(map(ensure_trafaret, args))
+        self.trafarets = [ensure_trafaret(t) for t in args]
         self.length = len(self.trafarets)
 
     def check_common(self, value):
         try:
             value = tuple(value)
         except TypeError:
-            self._failure('value must be convertable to tuple', value=value)
+            self._failure(
+                'value must be convertable to tuple',
+                value=value,
+                code=codes.TUPLE_LIKE,
+            )
         if len(value) != self.length:
-            self._failure('value must contain %s items' % self.length, value=value)
+            self._failure(
+                'value must contain %s items' % self.length,
+                value=value,
+                code=codes.LOT_ELEMENTS,
+            )
 
     def transform(self, value, context=None):
         self.check_common(value)
@@ -786,7 +849,7 @@ class Tuple(Trafaret, TupleAsyncMixin):
             except DataError as err:
                 errors[idx] = err
         if errors:
-            self._failure(errors, value=value)
+            self._failure(errors, value=value, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return tuple(result)
 
     def __repr__(self):
@@ -837,7 +900,7 @@ class Key(KeyAsyncMixin):
             return
 
         if not self.optional:
-            yield self.name, DataError(error='is required'), (self.name,)
+            yield self.name, DataError(error='is required', code=codes.REQUIRED), (self.name,)
 
     def get_data(self, data, default):
         return data.get(self.name, default)
@@ -852,9 +915,6 @@ class Key(KeyAsyncMixin):
 
     def get_name(self):
         return self.to_name or self.name
-
-    def make_optional(self):
-        self.optional = True
 
     def __repr__(self):
         return '<%s "%s"%s %s>' % (
@@ -876,6 +936,8 @@ class Dict(Trafaret, DictAsyncMixin):
     a `key` implementation. And we need to note, that any callable can be `key`, not
     only `Key` subclasses.
     So we need to look at the `key` contract:
+
+    .. code-block:: python
 
         key_instance(data: Mapping) -> Sequence[
             name_to_store,
@@ -901,11 +963,11 @@ class Dict(Trafaret, DictAsyncMixin):
 
     Arguments:
 
-    * Dict accepts keys as *args
+    * Dict accepts keys as `*args`
     * if first argument to Dict is a `dict` then its keys will be merged with args keys and
-    this `dict` values must be trafarets. If key of this `dict` is a str, then Dict will create
-    `Key` instance with this key as Key name and value as its trafaret. If `key` is a `Key` instance
-    then Dict will call this key `set_trafaret` method.
+      this `dict` values must be trafarets. If key of this `dict` is a str, then Dict will create
+      `Key` instance with this key as Key name and value as its trafaret. If `key` is a `Key` instance
+      then Dict will call this key `set_trafaret` method.
 
     `allow_extra` argument can be a list of keys, or `'*'` for any, that will be checked against
     `allow_extra_trafaret` or `Any`.
@@ -936,11 +998,15 @@ class Dict(Trafaret, DictAsyncMixin):
 
         self.keys = list(args)
         for key, trafaret in itertools.chain(trafarets.items(), keys.items()):
-            key_ = Key(key) if isinstance(key, str_types) else key
-            key_.set_trafaret(trafaret)
+            key_ = Key(key) if isinstance(key, STR_TYPES) else key
+            if not callable(key_) and not hasattr(key_, 'async_call'):
+                raise RuntimeError('Non callable Keys are not supported')
+            key_.set_trafaret(ensure_trafaret(trafaret))
             self.keys.append(key_)
         # optimized version without runtime check for context arg
-        self._keys = [with_context_caller(key) for key in self.keys]
+        self._keys = []
+        for key in self.keys:
+            self._keys.append(with_context_caller(key))
 
     def _clone_args(self):
         """ return args to create new Dict clone
@@ -955,46 +1021,46 @@ class Dict(Trafaret, DictAsyncMixin):
         if self.ignore_any or self.ignore:
             kw['ignore_extra'] = list(self.ignore)
             if self.ignore_any:
-                kw['ignore_any'].append('*')
+                kw['ignore_extra'].append('*')
         return keys, kw
 
     def allow_extra(self, *names, **kw):
-        trafaret = kw.get('trafaret', Any)
-        for name in names:
-            if name == "*":
-                self.allow_any = True
-            else:
-                self.extras.append(name)
-        self.extras_trafaret = ensure_trafaret(trafaret)
-        return self
+        """ multi arguments that represents attribute names or `*`.
+        Will allow unconsumed by other keys attributes for given names
+        or all if includes `*`.
+        Also you can pass `trafaret` keyword argument to set `Trafaret`
+        instance for this extra args, or it will be `Any`.
+        Method creates `Dict` clone.
+        """
+        keys, dictkw = self._clone_args()
+        allow_extra = dictkw.setdefault('allow_extra', [])
+        allow_extra.extend(names)
+        if 'trafaret' in kw:
+            dictkw['allow_extra_trafaret'] = kw['trafaret']
+        return self.__class__(*keys, **dictkw)
 
     def ignore_extra(self, *names):
-        for name in names:
-            if name == "*":
-                self.ignore_any = True
-            else:
-                self.ignore.append(name)
-        return self
-
-    def make_optional(self, *args):
-        """ Deprecated. will change in-place keys for given args
-        or all keys if `*` in args.
+        """ multi arguments that represents attribute names or `*`.
+        Will ignore unconsumed by other keys attribute names for given names
+        or all if includes `*`.
+        Method creates `Dict` clone.
         """
-        deprecated('This method is deprecated. You can not change keys instances.')
-        for key in self.keys:
-            if key.name in args or '*' in args:
-                key.make_optional()
-        return self
+        keys, kw = self._clone_args()
+        ignore_extra = kw.setdefault('ignore_extra', [])
+        ignore_extra.extend(names)
+        return self.__class__(*keys, **kw)
 
     def transform(self, value, context=None):
         if not isinstance(value, AbcMapping):
-            self._failure("value is not a dict", value=value)
+            self._failure(
+                "value is not a dict",
+                value=value,
+                code=codes.IS_NOT_A_DICT,
+            )
         collect = {}
         errors = {}
         touched_names = []
         for key in self._keys:
-            if not callable(key):
-                raise ValueError('Non callable Keys are not supported')
             for k, v, names in key(value, context=context):
                 if isinstance(v, DataError):
                     errors[k] = v
@@ -1009,16 +1075,28 @@ class Dict(Trafaret, DictAsyncMixin):
                 if key in self.ignore:
                     continue
                 if not self.allow_any and key not in self.extras:
-                    errors[key] = DataError("%s is not allowed key" % key)
+                    if key in collect:
+                        errors[key] = DataError(
+                            "%s key was shadowed" % key,
+                            code=codes.SHADOWED,
+                        )
+                    else:
+                        errors[key] = DataError(
+                            "%s is not allowed key" % key,
+                            code=codes.NOT_ALLOWED,
+                        )
                 elif key in collect:
-                    errors[key] = DataError("%s key was shadowed" % key)
+                    errors[key] = DataError(
+                        "%s key was shadowed" % key,
+                        code=codes.SHADOWED,
+                    )
                 else:
                     try:
                         collect[key] = self.extras_trafaret(value[key])
                     except DataError as de:
                         errors[key] = de
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return collect
 
     def __repr__(self):
@@ -1070,13 +1148,6 @@ def DictKeys(keys):
 
     :param keys:
     :type keys:
-
-    >>> _dd(DictKeys(['a','b']).check({'a':1,'b':2,}))
-    "{'a': 1, 'b': 2}"
-    >>> extract_error(DictKeys(['a','b']), {'a':1,'b':2,'c':3,})
-    {'c': 'c is not allowed key'}
-    >>> extract_error(DictKeys(['key','key2']), {'key':'val'})
-    {'key2': 'is required'}
     """
     req = [(Key(key), Any) for key in keys]
     return Dict(dict(req))
@@ -1095,7 +1166,11 @@ class Mapping(Trafaret, MappingAsyncMixin):
 
     def transform(self, mapping, context=None):
         if not isinstance(mapping, AbcMapping):
-            self._failure("value is not a dict", value=mapping)
+            self._failure(
+                "value is not a dict",
+                value=mapping,
+                code=codes.IS_NOT_A_DICT,
+            )
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -1109,11 +1184,11 @@ class Mapping(Trafaret, MappingAsyncMixin):
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
-                errors[key] = DataError(error=pair_errors)
+                errors[key] = DataError(error=pair_errors, code=codes.PAIR_MEMBERS_DID_NOT_MATCH)
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return checked_mapping
 
     def __repr__(self):
@@ -1137,10 +1212,14 @@ class Enum(Trafaret):
 
     def check_value(self, value):
         if value not in self.variants:
-            self._failure("value doesn't match any variant", value=value)
+            self._failure(
+                "value doesn't match any variant",
+                value=value,
+                code=codes.DOES_NOT_MATCH_ANY,
+            )
 
     def __repr__(self):
-        return "<Enum(%s)>" % (", ".join(map(repr, self.variants)))
+        return "<Enum(%s)>" % (", ".join(repr(v) for v in self.variants))
 
 
 class Callable(Trafaret):
@@ -1152,7 +1231,11 @@ class Callable(Trafaret):
 
     def check_value(self, value):
         if not callable(value):
-            self._failure("value is not callable", value=value)
+            self._failure(
+                "value is not callable",
+                value=value,
+                code=codes.IS_NOT_CALLABLE,
+            )
 
     def __repr__(self):
         return "<Callable>"
@@ -1178,20 +1261,8 @@ class Call(Trafaret, CallAsyncMixin):
     def __init__(self, fn):
         if not callable(fn):
             raise RuntimeError("Call argument should be callable")
-        try:
-            argspec = get_callable_argspec(fn)
-        except TypeError:
-            self.fn = fn
-            self.supports_context = False
-            return
-        args = set(argspec.args)
+        args = set(get_callable_args(fn))
         self.supports_context = 'context' in args
-        if 'context' in args:
-            args.remove('context')
-        # if len(argspec.args) - len(argspec.defaults or []) > 1:
-        #     raise RuntimeError(
-        #         "Call argument should be one argument function"
-        #     )
         self.fn = fn
 
     def transform(self, value, context=None):
@@ -1243,7 +1314,11 @@ class Forward(Trafaret, ForwardAsyncMixin):
 
     def transform(self, value, context=None):
         if self.trafaret is None:
-            self._failure('trafaret not set yet', value=value)
+            self._failure(
+                'trafaret not set yet',
+                value=value,
+                code=codes.TRAFARET_IS_NOT_SET,
+            )
         return self.trafaret(value, context=context)
 
     def __repr__(self):

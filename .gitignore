@@ -5,7 +5,11 @@
 \.pydevproject
 *.egg-info
 build/
+_build/
 dist/
 .idea/
 .coverage
 .tox/
+.cache
+.pytest_cache
+.python-version

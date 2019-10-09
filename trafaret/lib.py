@@ -1,5 +1,15 @@
 import sys
 import inspect
+try:
+    from collections.abc import (
+        Mapping as AbcMapping,
+        Iterable,
+    )
+except ImportError:  # pragma: no cover
+    from collections import (
+        Mapping as AbcMapping,
+        Iterable,
+    )
 
 
 py3 = sys.version_info[0] == 3
@@ -8,15 +18,17 @@ py36 = sys.version_info >= (3, 6, 0)
 
 if py3:
     getargspec = inspect.getfullargspec
-else:
+    STR_TYPES = (str, bytes)
+else:  # pragma: no cover
     getargspec = inspect.getargspec
+    STR_TYPES = (basestring,)  # noqa
 
 
 _empty = object()
 
 
 def py3metafix(cls):
-    if not py3:
+    if not py3:  # pragma: no cover
         return cls
     else:
         newcls = cls.__metaclass__(cls.__name__, (cls,), {})
@@ -32,9 +44,6 @@ class WithContextCaller(object):
 
     def __call__(self, value, context=None):
         return self.func(value, context=context)
-
-    def __repr__(self):
-        return repr(self.func)
 
 
 class WithoutContextCaller(WithContextCaller):
@@ -55,11 +64,35 @@ def with_context_caller(callble):
         return WithoutContextCaller(callble)
 
 
-def get_callable_argspec(callble):
-    if inspect.isroutine(callble):
-        return getargspec(callble)
-    spec = getargspec(callble.__call__)
+def get_callable_args(fn):
+    if inspect.isfunction(fn) or inspect.ismethod(fn):
+        inspectable = fn
+    elif inspect.isclass(fn):
+        inspectable = fn.__init__
+    elif hasattr(fn, '__call__'):
+        inspectable = fn.__call__
+    else:
+        inspectable = fn
+    try:
+        spec = getargspec(inspectable)
+    except TypeError:
+        return ()
     # check if callble is bound method
-    if hasattr(callble, '__self__'):
+    if hasattr(fn, '__self__'):
         spec.args.pop(0)  # remove `self` from args
-    return spec
+    return spec.args
+
+
+__all__ = (
+    AbcMapping,
+    Iterable,
+    py3,
+    py36,
+    getargspec,
+    STR_TYPES,
+    py3metafix,
+    WithContextCaller,
+    WithoutContextCaller,
+    with_context_caller,
+    get_callable_args,
+)

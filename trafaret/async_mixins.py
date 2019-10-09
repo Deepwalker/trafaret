@@ -1,9 +1,10 @@
 import inspect
-from collections import Mapping as AbcMapping
+from .lib import AbcMapping
 from .dataerror import DataError
 from .lib import (
     _empty,
 )
+from . import codes
 
 
 class TrafaretAsyncMixin:
@@ -21,17 +22,13 @@ class OrAsyncMixin:
                 return (await trafaret.async_check(value, context=context))
             except DataError as e:
                 errors.append(e)
-        raise DataError(dict(enumerate(errors)), trafaret=self)
+        self._failure(dict(enumerate(errors)), code=codes.NOTHING_MATCH)
 
 
 class AndAsyncMixin:
     async def async_transform(self, value, context=None):
         res = await self.trafaret.async_check(value, context=context)
-        if isinstance(res, DataError):
-            raise DataError
         res = await self.other.async_check(res, context=context)
-        if isinstance(res, DataError):
-            raise res
         return res
 
 
@@ -46,7 +43,7 @@ class ListAsyncMixin:
             except DataError as err:
                 errors[index] = err
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return lst
 
 
@@ -61,14 +58,14 @@ class TupleAsyncMixin:
             except DataError as err:
                 errors[idx] = err
         if errors:
-            self._failure(errors, value=value)
+            self._failure(errors, value=value, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return tuple(result)
 
 
 class MappingAsyncMixin:
     async def async_transform(self, mapping, context=None):
         if not isinstance(mapping, AbcMapping):
-            self._failure("value is not a dict", value=mapping)
+            self._failure("value is not a dict", value=mapping, code=codes.IS_NOT_A_DICT)
         checked_mapping = {}
         errors = {}
         for key, value in mapping.items():
@@ -82,11 +79,11 @@ class MappingAsyncMixin:
             except DataError as err:
                 pair_errors['value'] = err
             if pair_errors:
-                errors[key] = DataError(error=pair_errors)
+                errors[key] = DataError(error=pair_errors, code=codes.PAIR_MEMBERS_DID_NOT_MATCH)
             else:
                 checked_mapping[checked_key] = checked_value
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return checked_mapping
 
 
@@ -107,20 +104,18 @@ class CallAsyncMixin:
 class ForwardAsyncMixin:
     async def async_transform(self, value, context=None):
         if self.trafaret is None:
-            self._failure('trafaret not set yet', value=value)
+            self._failure('trafaret not set yet', value=value, code=codes.TRAFARET_IS_NOT_SET)
         return (await self.trafaret.async_check(value, context=context))
 
 
 class DictAsyncMixin:
     async def async_transform(self, value, context=None):
         if not isinstance(value, AbcMapping):
-            self._failure("value is not a dict", value=value)
+            self._failure("value is not a dict", value=value, code=codes.IS_NOT_A_DICT)
         collect = {}
         errors = {}
         touched_names = []
         for key in self._keys:
-            if not callable(key) and not hasattr(key, 'async_call'):
-                raise ValueError('Non callable Keys are not supported')
             key_run = getattr(key, 'async_call', key)(
                 value,
                 context=context,
@@ -147,16 +142,19 @@ class DictAsyncMixin:
                 if key in self.ignore:
                     continue
                 if not self.allow_any and key not in self.extras:
-                    errors[key] = DataError("%s is not allowed key" % key)
+                    if key in collect:
+                        errors[key] = DataError("%s key was shadowed" % key, code=codes.SHADOWED)
+                    else:
+                        errors[key] = DataError("%s is not allowed key" % key, code=codes.NOT_ALLOWED)
                 elif key in collect:
-                    errors[key] = DataError("%s key was shadowed" % key)
+                    errors[key] = DataError("%s key was shadowed" % key, code=codes.SHADOWED)
                 else:
                     try:
                         collect[key] = await self.extras_trafaret.async_check(value[key])
                     except DataError as de:
                         errors[key] = de
         if errors:
-            raise DataError(error=errors, trafaret=self)
+            self._failure(error=errors, code=codes.SOME_ELEMENTS_DID_NOT_MATCH)
         return collect
 
 
@@ -179,4 +177,4 @@ class KeyAsyncMixin:
             return
 
         if not self.optional:
-            yield self.name, DataError(error='is required'), (self.name,)
+            yield self.name, DataError(error='is required', code=codes.REQUIRED), (self.name,)

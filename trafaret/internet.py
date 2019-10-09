@@ -2,12 +2,13 @@
 
 import re
 from .regexp import Regexp
-from .base import String, Bytes, OnError
+from .base import String, FromBytes, OnError, WithRepr
 from .lib import py3
+from . import codes
 
 if py3:
     import urllib.parse as urlparse
-else:
+else:  # pragma: no cover
     import urlparse
 
 
@@ -30,20 +31,22 @@ EMAIL_REGEXP = re.compile(
 def email_idna_encode(value):
     if '@' in value:
         parts = value.split('@')
-        try:
-            parts[-1] = parts[-1].encode('idna').decode('ascii')
-            return '@'.join(parts)
-        except UnicodeError:
-            pass
+        parts[-1] = parts[-1].encode('idna').decode('ascii')
+        return '@'.join(parts)
     return value
 
 
-email_regexp_trafaret = OnError(Regexp(EMAIL_REGEXP), 'value is not a valid email address')
-email_trafaret = email_regexp_trafaret | ((Bytes('utf-8') | String()) & email_idna_encode & email_regexp_trafaret)
-Email = String(allow_blank=True) & OnError(
+to_str = OnError(FromBytes('utf-8') | String(), 'value is not a string', code=codes.IS_NOT_A_STRING)
+
+
+email_regexp_trafaret = OnError(to_str & Regexp(EMAIL_REGEXP), 'value is not a valid email address')
+email_trafaret = (email_regexp_trafaret | (to_str & email_idna_encode & email_regexp_trafaret))
+Email = to_str & String(allow_blank=True) & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
+    code=codes.IS_NOT_VALID_EMAIL,
 )
+Email = WithRepr(Email, '<Email>')
 
 
 URL_REGEXP = re.compile(
@@ -56,24 +59,21 @@ URL_REGEXP = re.compile(
     r'(?:/?|[/?]\S+)$',
     re.IGNORECASE,
 )
-URLRegexp = Regexp(URL_REGEXP)
+URLRegexp = to_str & Regexp(URL_REGEXP)
 
 
 def decode_url_idna(value):
-    try:
-        scheme, netloc, path, query, fragment = urlparse.urlsplit(value)
-        netloc = netloc.encode('idna').decode('ascii')  # IDN -> ACE
-    except UnicodeError:  # invalid domain part
-        pass
-    else:
-        return urlparse.urlunsplit((scheme, netloc, path, query, fragment))
-    return value
+    scheme, netloc, path, query, fragment = urlparse.urlsplit(value)
+    netloc = netloc.encode('idna').decode('ascii')  # IDN -> ACE
+    return urlparse.urlunsplit((scheme, netloc, path, query, fragment))
 
 
 URL = OnError(
-    URLRegexp | ((Bytes('utf-8') | String()) & decode_url_idna & URLRegexp),
+    URLRegexp | (to_str & decode_url_idna & URLRegexp),
     'value is not URL',
+    code=codes.IS_NOT_VALID_URL,
 )
+URL = WithRepr(URL, '<URL>')
 
 
 IPv4 = OnError(
@@ -81,7 +81,9 @@ IPv4 = OnError(
         r'^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3,3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$',  # noqa
     ),
     'value is not IPv4 address',
+    code=codes.IS_NOT_IPv4,
 )
+IPv4 = WithRepr(IPv4, '<IPv4>')
 
 
 IPv6 = OnError(
@@ -105,7 +107,10 @@ IPv6 = OnError(
         re.IGNORECASE,
     ),
     'value is not IPv6 address',
+    code=codes.IS_NOT_IPv6,
 )
+IPv6 = WithRepr(IPv6, '<IPv6>')
 
 
-IP = OnError(IPv4 | IPv6, 'value is not IP address')
+IP = OnError(IPv4 | IPv6, 'value is not IP address', code=codes.IS_NOT_IP)
+IP = WithRepr(IP, '<IP>')
