@@ -39,6 +39,27 @@ like in json schema implementation `Trafaret Schema <https://github.com/Deepwalk
 New
 ---
 
+2.0.0
+=====
+
+- ``WithRepr`` – use it to return custom representation, like ``<Email>``
+- Strip a lot from dict, like ``keys()``
+- Trafarets are not mutable
+- DataError has new ``code`` attribute, self.failure has ``code`` argument
+- OnError has ``code`` argument too
+- New ``DataError.to_struct`` method that returns errors in more consistent way
+- ``String``, ``AnyString``, ``Bytes``, ``FromBytes(encoding=utf-8)``
+- ``Int``, ``ToInt``, ``Float``, ``ToFloat``
+- ``ToDecimal``
+- ``Iterable`` that acts like a ``List``, but works with any iterable
+- New ``Date``, ``ToDate`` and ``DateTime``, ``ToDateTime`` trafarets
+- ``StrBool`` trafaret renamed to ``ToBool``
+- ``Visitor`` trafaret was deleted
+- Test coverage
+
+1.x.x
+=====
+
 * converters and ``convert=False`` are deleted in favor of ``And`` and ``&``
 * ``String`` parameter ``regex`` deleted in favor of ``Regexp`` and ``RegexpRaw`` usage
 * new ``OnError`` to customize error message
