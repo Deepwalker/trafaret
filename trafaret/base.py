@@ -386,7 +386,7 @@ class ToBool(Trafaret):
     False
     """
 
-    true_values = ('t', 'true', 'y', 'yes', 'on', '1', '1.0)
+    true_values = ('t', 'true', 'y', 'yes', 'on', '1', '1.0')
     false_values = ('false', 'n', 'no', 'off', '0', 'none', '0.0')
     convertable = true_values + false_values
 
