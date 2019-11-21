@@ -386,8 +386,8 @@ class ToBool(Trafaret):
     False
     """
 
-    true_values = ('t', 'true', 'y', 'yes', 'on', '1')
-    false_values = ('false', 'n', 'no', 'off', '0', 'none')
+    true_values = ('t', 'true', 'y', 'yes', 'on', '1', '1.0)
+    false_values = ('false', 'n', 'no', 'off', '0', 'none', '0.0')
     convertable = true_values + false_values
 
     def check_and_return(self, value):
@@ -398,7 +398,7 @@ class ToBool(Trafaret):
                 value=value,
                 code=codes.IS_NOT_CONVERTIBLE_TO_BOOL,
             )
-        return _value in ('t', 'true', 'y', 'yes', 'on', '1')
+        return _value in ('t', 'true', 'y', 'yes', 'on', '1', '1.0')
 
     def __repr__(self):
         return "<ToBool>"
