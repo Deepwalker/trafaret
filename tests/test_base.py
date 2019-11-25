@@ -577,6 +577,7 @@ class TestToBoolTrafaret:
         ('On', True),
         ('1', True),
         (1, True),
+        (1.0, True),
         (True, True),
         # False results
         ('false', False),
@@ -585,6 +586,7 @@ class TestToBoolTrafaret:
         ('off', False),
         ('0', False),
         (0, False),
+        (0.0, False),
         (False, False),
     ])
     def test_str_bool(self, value, expected_result):
