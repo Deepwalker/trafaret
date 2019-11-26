@@ -425,8 +425,8 @@ Sample with all supported equivalents:
 
 .. code-block:: python
 
-    equivalents  = ('t', 'true', 'y', 'yes', 'on', '1',\
-                    'false', 'n', 'no', 'off', '0', 'none')
+    equivalents  = ('t', 'true', 'y', 'yes', 'on', '1', '1.0',\
+                    'false', 'n', 'no', 'off', '0', '0.0', 'none')
 
     for value in equivalents:
       print("%s is %s" % (value, t.ToBool().check(value)))
@@ -437,11 +437,13 @@ Sample with all supported equivalents:
     # yes is True
     # on is True
     # 1 is True
+    # 1.0 is True
     # false is False
     # n is False
     # no is False
     # off is False
     # 0 is False
+    # 0.0 is False
     # none is False
 
 Also, function can take ``1`` and ``0`` as integers, ``booleans`` and ``None``.
