@@ -39,6 +39,10 @@ like in json schema implementation `Trafaret Schema <https://github.com/Deepwalk
 New
 ---
 
+2.0.2
+=====
+- construct for `int` and `float` will use `ToInt` and `ToFloat`
+
 2.0.0
 =====
 

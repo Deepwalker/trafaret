@@ -1,6 +1,10 @@
 Changelog
 =========
 
+2.0.2
+=====
+- construct for `int` and `float` will use `ToInt` and `ToFloat`
+
 2.0.0
 -----
 

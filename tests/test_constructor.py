@@ -58,8 +58,8 @@ class TestDictConstruct:
 
     def test_optional_key(self):
         tt = construct({'a': int, 'b?': bool})
-        assert tt({'a': '5'}) == {'a': '5'}
-        assert tt({'a': '5', 'b': True}) == {'a': '5', 'b': True}
+        assert tt({'a': '5'}) == {'a': 5}
+        assert tt({'a': '5', 'b': True}) == {'a': 5, 'b': True}
 
     def test_c(self):
         tt = construct({'a': C & int & float})

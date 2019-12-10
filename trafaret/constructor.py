@@ -46,9 +46,9 @@ def construct(arg):
         return t.Atom(arg)
     elif isinstance(arg, type):
         if arg is int:
-            return t.Int()
+            return t.ToInt()
         elif arg is float:
-            return t.Float()
+            return t.ToFloat()
         elif arg is str:
             return t.String()
         elif arg is bool:
