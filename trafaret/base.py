@@ -1123,14 +1123,14 @@ class Dict(Trafaret, DictAsyncMixin):
         Extends one Dict with other Dict Key`s or Key`s list,
         or dict instance supposed for Dict
         """
-        ignore = self.ignore
         extra = self.extras
         if isinstance(other, Dict):
             other_keys = other.keys
-            ignore += other.ignore
             extra += other.extras
+            ignore = '*' if (self.ignore_any or other.ignore_any) else self.ignore + other.ignore
         elif isinstance(other, (list, tuple)):
             other_keys = list(other)
+            ignore = self.ignore
         elif isinstance(other, dict):
             return self.__class__(other, *self.keys)
         else:
