@@ -181,6 +181,18 @@ class TestDictTrafaret:
         third.check({'bar': 4, 'bar1': 41})
         third.check({'bar': 4, 'bar1': 41, 'eggs': 'blabla'})
 
+    def test_add_kwargs_ignore_any(self):
+        first = t.Dict(
+            t.Key('bip', trafaret=t.String()), ignore_extra='*'
+        )
+        second = t.Dict(
+            t.Key('bop', trafaret=t.Int())
+        )
+
+        third = first + second
+        third.check({'bip': u'bam', 'bop': 17, 'matter': False})
+        assert third.ignore_any
+
     def test_add_kwargs_extra(self):
         first = t.Dict(
             t.Key('bar', trafaret=t.Int()), allow_extra=['eggs']
