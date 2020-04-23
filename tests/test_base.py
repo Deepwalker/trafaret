@@ -20,10 +20,9 @@ class TestTrafaret:
             t.ensure_trafaret(123)
 
     def test_is_valid(self):
-        string_trafaret = t.String()
-        assert string_trafaret.is_valid('F')
-        assert not string_trafaret.is_valid(1)
-
+        string_trafaret = t.Float()
+        assert string_trafaret.is_valid(1.5) == True
+        assert string_trafaret.is_valid('foo') == False
 
 
 class TestAnyTrafaret:
