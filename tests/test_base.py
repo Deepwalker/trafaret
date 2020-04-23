@@ -13,10 +13,17 @@ class TestTrafaret:
         trafaret = t.Trafaret()
         with pytest.raises(NotImplementedError):
             assert trafaret.check(obj) == obj
+            assert trafaret.is_valid(obj)
 
     def test_ensure(self):
         with pytest.raises(RuntimeError):
             t.ensure_trafaret(123)
+
+    def test_is_valid(self):
+        string_trafaret = t.String()
+        assert string_trafaret.is_valid('F')
+        assert not string_trafaret.is_valid(1)
+
 
 
 class TestAnyTrafaret:
