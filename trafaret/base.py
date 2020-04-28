@@ -123,6 +123,16 @@ class Trafaret(TrafaretAsyncMixin):
                 " check_and_return methods '%s'" % cls
             )
 
+    def is_valid(self, value):
+        """
+        Allows to check value and get bool, is value valid or not.
+        """
+        try:
+            self.check(value)
+            return True
+        except DataError:
+            return False
+
     def _failure(self, error=None, value=_empty, code=None):
         """
         Shortcut method for raising validation error
@@ -247,6 +257,8 @@ class Type(TypingTrafaret):
     1
     >>> extract_error(c, "foo")
     'value is not int'
+    >>> c.is_valid("foo")
+    False
     """
 
     typing_checker = isinstance
@@ -279,6 +291,12 @@ class Or(Trafaret, OrAsyncMixin):
     'test'
     >>> extract_error(nullString, 1)
     {0: 'value is not a string', 1: 'value should be None'}
+    >>> nullString.is_valid(None)
+    True
+    >>> nullString.is_valid("test")
+    True
+    >>> nullString.is_valid(1)
+    False
     """
 
     __slots__ = ['trafarets']
@@ -328,6 +346,10 @@ class Null(Trafaret):
     >>> Null().check(None)
     >>> extract_error(Null(), 1)
     'value should be None'
+    >>> Null().is_valid(None)
+    True
+    >>> Null().is_valid(1)
+    False
     """
 
     def check_value(self, value):
@@ -348,6 +370,12 @@ class Bool(Trafaret):
     False
     >>> extract_error(Bool(), 1)
     'value should be True or False'
+    >>> Null().is_valid(True)
+    True
+    >>> Null().is_valid(False)
+    True
+    >>> Null().is_valid(1)
+    False
     """
 
     def check_value(self, value):
@@ -410,6 +438,10 @@ class Atom(Trafaret):
     'atom'
     >>> extract_error(Atom('atom'), 'molecule')
     "value is not exactly 'atom'"
+    >>> Atom('atom').is_valid('atom')
+    True
+    >>> Atom('atom').is_valid('molecule')
+    False
     """
     __slots__ = ['value']
 
@@ -451,6 +483,12 @@ class String(Trafaret):
     AssertionError: Either allow_blank or min_length should be specified, not both
     >>> String(min_length=0, max_length=6, allow_blank=True).check('123')
     '123'
+    >>> String().is_valid("foo")
+    True
+    >>> String().is_valid("")
+    False
+    >>> String().is_valid(1)
+    False
     """
     str_type = STR_TYPE
 
@@ -510,6 +548,10 @@ class Date(Trafaret):
     'value does not match format %Y-%m-%d'
     >>> extract_error(Date(), 1564077758)
     'value cannot be converted to date'
+    >>> Date().is_valid(date.today())
+    True
+    >>> Date().is_valid(1564077758)
+    False
     """
 
     def __init__(self, format='%Y-%m-%d'):
@@ -581,6 +623,11 @@ class DateTime(Trafaret):
     'value does not match format %Y-%m-%d %H:%M:%S'
     >>> extract_error(DateTime(), date.today())
     'value cannot be converted to datetime'
+    >>> DateTime('%Y-%m-%d %H:%M').is_valid("2019-07-25 21:45")
+    True
+    >>> extract_error(DateTime(), "2019-07-25")
+    False
+
     """
 
     def __init__(self, format='%Y-%m-%d %H:%M:%S'):
@@ -736,6 +783,10 @@ class Iterable(Trafaret, ListAsyncMixin):
     'list length is greater than 2'
     >>> extract_error(List(Int), ["a"])
     {0: "value can't be converted to int"}
+    >>> List(Int).is_valid([1, 2, 3])
+    True
+    >>> List(Int).is_valid(1)
+    False
     """
 
     __metaclass__ = SquareBracketsMeta
@@ -1204,6 +1255,10 @@ class Enum(Trafaret):
     >>> trafaret.check(1)
     >>> extract_error(trafaret, 2)
     "value doesn't match any variant"
+    >>> trafaret.is_valid(1)
+    True
+    >>> trafaret.is_valid(2)
+    False
     """
     __slots__ = ['variants']
 
@@ -1227,6 +1282,10 @@ class Callable(Trafaret):
     >>> (Callable() >> ignore).check(lambda: 1)
     >>> extract_error(Callable(), 1)
     'value is not callable'
+    >>> (Callable() >> ignore).is_valid(lambda: 1)
+    True
+    >>> Callable().is_valid(1)
+    False
     """
 
     def check_value(self, value):
