@@ -76,9 +76,11 @@ __all__ = (
     "Key",
     "Dict",
     "Enum",
+    "ToEnum",
     "Tuple",
 
     "Atom",
+    "Literal",
     "String",
     "Date",
     "ToDate",
