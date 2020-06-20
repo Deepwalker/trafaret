@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import enum
 import pytest
 import trafaret as t
 from datetime import date, datetime
