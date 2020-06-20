@@ -33,7 +33,7 @@ class Regexp(RegexpRaw):
 
 class RegexString(String, Regexp):
     __slots__ = ()
-    #regex: str
+    # regex: str
     str_method = None
 
     def __init__(self, *args, **kwargs):
