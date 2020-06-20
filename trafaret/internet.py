@@ -41,12 +41,27 @@ to_str = OnError(FromBytes('utf-8') | String(), 'value is not a string', code=co
 
 email_regexp_trafaret = OnError(to_str & Regexp(EMAIL_REGEXP), 'value is not a valid email address')
 email_trafaret = (email_regexp_trafaret | (to_str & email_idna_encode & email_regexp_trafaret))
-Email = to_str & String(allow_blank=True) & OnError(
+Email = to_str & OnError(
     String(max_length=MAX_EMAIL_LEN) & email_trafaret,
     'value is not a valid email address',
     code=codes.IS_NOT_VALID_EMAIL,
 )
 Email = WithRepr(Email, '<Email>')
+
+
+class Hex(RegexString):
+    regex = r'^[0-9a-f]*$'
+    str_method = "lower"
+
+    def __repr__(self):
+        return '<Hex>'
+
+
+class URLSafe(RegexString):
+    regex = r'^[0-9A-Za-z-_]*$'
+
+    def __repr__(self):
+        return '<URLSafe>'
 
 
 URL_REGEXP = re.compile(

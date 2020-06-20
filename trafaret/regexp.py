@@ -1,5 +1,5 @@
 import re
-from .base import Trafaret
+from .base import Trafaret, String
 from .lib import STR_TYPES
 from . import codes
 
@@ -29,3 +29,22 @@ class RegexpRaw(Trafaret):
 class Regexp(RegexpRaw):
     def check_and_return(self, value):
         return super(Regexp, self).check_and_return(value).group()
+
+
+class RegexString(String, Regexp):
+    __slots__ = ()
+    regex: str
+    str_method = None
+
+    def __init__(self, *args, **kwargs):
+        String.__init__(self, *args, **kwargs)
+        Regexp.__init__(self, self.regex)
+
+    def check_and_return(self, value):
+        str_value = String.check_and_return(self, value)
+        if self.str_method is not None:
+            str_value = getattr(str_value, self.str_method)()
+        return Regexp.check_and_return(self, str_value)
+
+    def __repr__(self):
+        return '<RegexString>'
