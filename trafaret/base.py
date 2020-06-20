@@ -438,7 +438,7 @@ class Literal(Trafaret):
     >>> Literal('atom').check('atom')
     'atom'
     >>> extract_error(Literal('atom'), 'molecule')
-    "value is not exactly 'atom'"
+    "value doesn't match any variant"
     >>> Literal('atom').is_valid('atom')
     True
     >>> Literal('atom').is_valid('molecule')

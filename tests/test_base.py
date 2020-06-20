@@ -40,7 +40,7 @@ class TestAtomTrafaret:
         assert res == 'atom'
 
         err = extract_error(t.Atom('atom'), 'molecule')
-        assert err == "value is not exactly 'atom'"
+        assert err == "value doesn't match any variant"
 
 
 class TestBoolTrafaret:
@@ -372,9 +372,17 @@ class TestEnumTrafaret:
         res = extract_error(trafaret, 2)
         assert res == "value doesn't match any variant"
 
-    def test_repr(self):
-        trafaret = t.Enum("foo", "bar", 1)
-        assert repr(trafaret), "<Enum('foo', 'bar', 1)>"
+
+class TestToEnum:
+    def test_enum(self):
+        class MyEnum(enum.Enum):
+            foo = 3
+
+        trafaret = t.ToEnum(MyEnum)
+        assert trafaret.check(3) is MyEnum.foo
+
+        res = extract_error(trafaret, 2)
+        assert res == "not a valid value for <enum 'MyEnum'>"
 
 
 class TestToFloat:
@@ -499,6 +507,22 @@ class TestList:
         assert repr(res) == '<List(min_length=1 | <ToInt>)>'
         res = t.List[:10, t.ToInt]
         assert repr(res) == '<List(max_length=10 | <ToInt>)>'
+
+
+class TestLiteralTrafaret:
+    def test_literal(self):
+        res = t.Literal('atom').check('atom')
+        assert res == 'atom'
+
+        trafaret = t.Literal("foo", "bar", 1)
+        trafaret.check("foo")
+        trafaret.check(1)
+        res = extract_error(trafaret, 2)
+        assert res == "value doesn't match any variant"
+
+    def test_repr(self):
+        trafaret = t.Literal("foo", "bar", 1)
+        assert repr(trafaret), "<Literal('foo', 'bar', 1)>"
 
 
 class TestIterableTrafaret:
