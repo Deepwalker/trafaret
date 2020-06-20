@@ -716,6 +716,8 @@ class TestToBytesTrafaret:
         assert res == b'foo'
         res = extract_error(t.ToBytes(), 1)
         assert res == 'value is not str/bytes type'
+        res = extract_error(t.ToBytes('ascii'), '£')
+        assert res == 'value cannot be encoded with ascii encoding'
 
     def test_repr(self):
         res = t.ToBytes()
