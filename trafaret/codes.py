@@ -67,3 +67,4 @@ IS_NOT_CONVERTIBLE_TO_DATETIME = 'is_not_convertible_to_datetime'
 # Contrib
 NOT_DATETIME = 'not_datetime'
 NOT_DATE = 'not_date'
+NOT_ENUM = 'not_enum'

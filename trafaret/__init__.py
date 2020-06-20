@@ -13,6 +13,7 @@ from .base import (
     Key,
     Dict,
     Enum,
+    ToEnum,
     Tuple,
 
     Atom,

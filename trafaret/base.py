@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import enum
 import functools
 import itertools
 import warnings
@@ -1276,6 +1277,31 @@ class Enum(Literal):
     def __init__(self, *args, **kwargs):
         deprecated("Use Literal.")
         super().__init__(*args, **kwargs)
+
+
+class ToEnum(Trafaret):
+    """
+    Converts value to an Enum instance.
+
+    >>> class MyEnum(enum.Enum):
+    ...     foo = 3
+    >>> ToEnum(MyEnum).check(3)
+    <MyEnum.foo: 3>
+    """
+    __slots__ = ["enum"]
+
+    def __init__(self, enum_: enum.Enum):
+        self.enum = enum_
+
+    def check_and_return(self, value) -> enum.Enum:
+        try:
+            return self.enum(value)
+        except ValueError:
+            self._failure(
+                "not a valid value for %s" % self.enum,
+                value=value,
+                code=codes.NOT_ENUM,
+            )
 
 
 class Callable(Trafaret):
