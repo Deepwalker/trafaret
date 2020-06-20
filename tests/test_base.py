@@ -759,6 +759,8 @@ class TestRegexString:
 
         assert R(allow_blank=True).check('') == ''
 
+        assert repr(R()) == '<Regexp "^A?$">'
+
 
 class TestTrafaretMeta:
     def test_meta(self):
