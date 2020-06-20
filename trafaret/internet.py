@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-from .regexp import Regexp
+from .regexp import Regexp, RegexString
 from .base import String, FromBytes, OnError, WithRepr
 from .lib import py3
 from . import codes
