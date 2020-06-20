@@ -16,6 +16,7 @@ from .base import (
     Tuple,
 
     Atom,
+    Literal,
     Date,
     ToDate,
     DateTime,
