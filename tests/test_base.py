@@ -759,7 +759,7 @@ class TestRegexString:
 
         assert R(allow_blank=True).check('') == ''
 
-        assert repr(R()) == '<Regexp "^A?$">'
+        assert repr(R()) == '<RegexString "^A?$">'
 
 
 class TestTrafaretMeta:

@@ -47,4 +47,4 @@ class RegexString(String, Regexp):
         return Regexp.check_and_return(self, str_value)
 
     def __repr__(self):
-        return '<RegexString>'
+        return '<RegexString "%s">' % self.regex
