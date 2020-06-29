@@ -699,7 +699,7 @@ class ToBytes(Trafaret):
                 raise self._failure(
                     'value cannot be encoded with %s encoding' % self.encoding,
                     value=value,
-                    code=codes.CANNOT_BE_DECODED,
+                    code=codes.CANNOT_BE_ENCODED,
                 )
         else:
             self._failure(
