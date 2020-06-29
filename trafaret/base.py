@@ -1300,7 +1300,7 @@ class ToEnum(Trafaret):
             self._failure(
                 "not a valid value for %s" % self.enum,
                 value=value,
-                code=codes.NOT_ENUM,
+                code=codes.NOT_MEMBER_OF_ENUM,
             )
 
 
