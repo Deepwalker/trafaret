@@ -706,6 +706,24 @@ class TestDateTimeTrafaret:
         assert repr(to_datetime_repr) == '<ToDateTime %Y-%m-%d %H:%M>'
 
 
+class TestToBytesTrafaret:
+    def test_bytes(self):
+        res = t.ToBytes().check("foo")
+        assert res == b'foo'
+        res = t.ToBytes()("")
+        assert res == b''
+        res = t.ToBytes().check(b"foo")
+        assert res == b'foo'
+        res = extract_error(t.ToBytes(), 1)
+        assert res == 'value is not str/bytes type'
+        res = extract_error(t.ToBytes('ascii'), '£')
+        assert res == 'value cannot be encoded with ascii encoding'
+
+    def test_repr(self):
+        res = t.ToBytes()
+        assert repr(res) == '<ToBytes>'
+
+
 class TestFromBytesTrafaret:
     def test_bytes(self):
         res = t.FromBytes().check(b"foo")

@@ -29,6 +29,7 @@ IS_NOT_CALLABLE = 'is_not_callable'
 
 IS_NOT_BYTES = 'is_not_bytes'
 CANNOT_BE_DECODED = 'cannot_be_decoded'
+CANNOT_BE_ENCODED = 'cannot_be_encoded'
 
 IS_NOT_A_LIST = 'is_not_a_list'
 TOO_SHORT = 'too_short'
