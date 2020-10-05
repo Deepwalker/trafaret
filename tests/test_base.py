@@ -537,7 +537,7 @@ class TestNullTrafaret:
         res = t.Null().check(None)
         assert res is None
         res = extract_error(t.Null(), 1)
-        assert res == 'value should be None'
+        assert res == 'value should be None/null'
 
     def test_repr(self):
         res = t.Null()
@@ -552,7 +552,7 @@ class TestOrNotToTest:
         res = null_string.check(u"test")
         assert res == u'test'
         res = extract_error(null_string, 1)
-        assert res == {0: 'value is not a string', 1: 'value should be None'}
+        assert res == {0: 'value is not a string', 1: 'value should be None/null'}
 
     def test_operator(self):
         check = t.String | t.ToInt
