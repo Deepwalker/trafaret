@@ -350,11 +350,14 @@ class Null(Trafaret):
     True
     >>> Null().is_valid(1)
     False
+    >>> Null().is_valid("null")
+    True
     """
 
-    def check_value(self, value):
-        if value is not None:
-            self._failure("value should be None", value=value, code=codes.IS_NOT_NULL)
+    def check_and_return(self, value):
+        if value not in (None, "null"):
+            self._failure("value should be None/null", value=value, code=codes.IS_NOT_NULL)
+        return None
 
     def __repr__(self):
         return "<Null>"
