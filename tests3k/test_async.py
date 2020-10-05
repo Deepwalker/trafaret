@@ -46,7 +46,7 @@ async def test_async_or():
         await trafaret.async_check('blablabla')
     assert res.value.as_dict() == {
         0: 'value can\'t be converted to int',
-        1: 'value should be None',
+        1: 'value should be None/null',
     }
 
 async def test_async_call():
