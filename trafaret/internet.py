@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-from .regexp import Regexp, RegexString
+from .regexp import Regexp, RegexpString
 from .base import String, FromBytes, OnError, WithRepr
 from .lib import py3
 from . import codes
@@ -49,7 +49,7 @@ Email = to_str & OnError(
 Email = WithRepr(Email, '<Email>')
 
 
-class Hex(RegexString):
+class Hex(RegexpString):
     regex = r'^[0-9a-f]*$'
     str_method = "lower"
 
@@ -57,7 +57,7 @@ class Hex(RegexString):
         return '<Hex>'
 
 
-class URLSafe(RegexString):
+class URLSafe(RegexpString):
     regex = r'^[0-9A-Za-z-_]*$'
 
     def __repr__(self):

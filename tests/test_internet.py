@@ -101,7 +101,7 @@ class TestEmailTrafaret:
 
 
 class TestHexTrafaret:
-    def test_email(self):
+    def test_hex(self):
         res = t.Hex().check('bbd3ec7776d5684d87')
         assert res == 'bbd3ec7776d5684d87'
         res = t.Hex().check('47CCB8AEEC972')
@@ -128,7 +128,7 @@ class TestHexTrafaret:
 
 
 class TestURLSafeTrafaret:
-    def test_email(self):
+    def test_urlsafe(self):
         res = t.URLSafe().check('sB3ny_Vmu-C')
         assert res == 'sB3ny_Vmu-C'
         res = extract_error(t.URLSafe(), 'app/le')

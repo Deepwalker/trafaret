@@ -743,9 +743,9 @@ class TestRegexpTrafaret:
         assert repr(t.RegexpRaw('.*(cat).*')) == '<Regexp ".*(cat).*">'
 
 
-class TestRegexString:
-    def test_regexstring(serf):
-        class R(t.RegexString):
+class TestRegexpString:
+    def test_regexpstring(self):
+        class R(t.RegexpString):
             regex = r'^A?$'
             str_method = 'upper'
 
@@ -759,7 +759,7 @@ class TestRegexString:
 
         assert R(allow_blank=True).check('') == ''
 
-        assert repr(R()) == '<RegexString "^A?$">'
+        assert repr(R()) == '<RegexpString "^A?$">'
 
 
 class TestTrafaretMeta:

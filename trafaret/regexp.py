@@ -31,7 +31,7 @@ class Regexp(RegexpRaw):
         return super(Regexp, self).check_and_return(value).group()
 
 
-class RegexString(String, Regexp):
+class RegexpString(String, Regexp):
     __slots__ = ()
     # regex: str
     str_method = None
@@ -47,4 +47,4 @@ class RegexString(String, Regexp):
         return Regexp.check_and_return(self, str_value)
 
     def __repr__(self):
-        return '<RegexString "%s">' % self.regex
+        return '<RegexpString "%s">' % self.regex

@@ -50,7 +50,7 @@ from .numeric import (
     ToInt,
     ToDecimal,
 )
-from .regexp import Regexp, RegexpRaw, RegexString
+from .regexp import Regexp, RegexpRaw, RegexpString
 from .internet import (
     URL,
     URLSafe,
@@ -104,7 +104,7 @@ __all__ = (
 
     "Regexp",
     "RegexpRaw",
-    "RegexString",
+    "RegexpString",
     "URL",
     "URLSafe",
     "Email",
