@@ -684,6 +684,34 @@ class Bytes(String):
     TYPE_ERROR_CODE = codes.IS_NOT_A_BYTES_STRING
 
 
+class ToBytes(Trafaret):
+    """Get str and try to encode it with given encoding, utf-8 by default."""
+    def __init__(self, encoding='utf-8'):
+        self.encoding = encoding
+
+    def check_and_return(self, value):
+        if isinstance(value, BYTES_TYPE):
+            return value
+        elif isinstance(value, STR_TYPE):
+            try:
+                return value.encode(self.encoding)
+            except UnicodeError:
+                raise self._failure(
+                    'value cannot be encoded with %s encoding' % self.encoding,
+                    value=value,
+                    code=codes.CANNOT_BE_ENCODED,
+                )
+        else:
+            self._failure(
+                'value is not str/bytes type',
+                value=value,
+                code=codes.IS_NOT_A_STRING,
+            )
+
+    def __repr__(self):
+        return '<ToBytes>'
+
+
 class AnyString(String):
     str_type = (BYTES_TYPE, STR_TYPE)
 

@@ -23,6 +23,7 @@ from .base import (
     String,
     AnyString,
     Bytes,
+    ToBytes,
     FromBytes,
     Callable,
     Bool,
@@ -86,6 +87,7 @@ __all__ = (
     "ToDateTime",
     "AnyString",
     "Bytes",
+    "ToBytes",
     "FromBytes",
     "Float",
     "ToFloat",
@@ -123,4 +125,4 @@ __all__ = (
 )
 
 
-__VERSION__ = (2, 0, 2)
+__VERSION__ = (2, 1, 0)

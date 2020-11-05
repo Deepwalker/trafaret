@@ -1,6 +1,11 @@
 Changelog
 =========
 
+2.1.0
+=====
+- fix for `Dict` merge
+- new `is_valid` method
+
 2.0.2
 =====
 - construct for `int` and `float` will use `ToInt` and `ToFloat`
