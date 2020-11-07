@@ -100,6 +100,58 @@ class TestEmailTrafaret:
             t.Email.check(b'ahha@\xd0\xbf\xd1\x80\xd0\xb8\xd0\xbc\xd0\xb5\xd1\x80.\xd1\xd1\x84')
 
 
+class TestHexTrafaret:
+    def test_hex(self):
+        res = t.Hex().check('bbd3ec7776d5684d87')
+        assert res == 'bbd3ec7776d5684d87'
+        res = t.Hex().check('47CCB8AEEC972')
+        assert res == '47ccb8aeec972'
+        res = extract_error(t.Hex(), 'apple')
+        assert res == 'does not match pattern ^[0-9a-f]*$'
+        res = extract_error(t.Hex(), '')
+        assert res == 'blank value is not allowed'
+        res = t.Hex(allow_blank=True).check('')
+        assert res == ''
+        res = t.Hex(min_length=2, max_length=3).check('12a')
+        assert res == '12a'
+        res = extract_error(t.Hex(min_length=2, max_length=6), '1')
+        assert res == 'String is shorter than 2 characters'
+        res = extract_error(t.Hex(min_length=2, max_length=6), '1234567')
+        assert res == 'String is longer than 6 characters'
+
+        res = t.Hex(min_length=0, max_length=6, allow_blank=True).check('abc')
+        assert res == 'abc'
+
+    def test_repr(self):
+        res = t.Hex()
+        assert repr(res) == '<Hex>'
+
+
+class TestURLSafeTrafaret:
+    def test_urlsafe(self):
+        res = t.URLSafe().check('sB3ny_Vmu-C')
+        assert res == 'sB3ny_Vmu-C'
+        res = extract_error(t.URLSafe(), 'app/le')
+        assert res == 'does not match pattern ^[0-9A-Za-z-_]*$'
+        res = extract_error(t.URLSafe(), '')
+        assert res == 'blank value is not allowed'
+        res = t.URLSafe(allow_blank=True).check('')
+        assert res == ''
+        res = t.URLSafe(min_length=2, max_length=3).check('1-z')
+        assert res == '1-z'
+        res = extract_error(t.URLSafe(min_length=2, max_length=6), '_')
+        assert res == 'String is shorter than 2 characters'
+        res = extract_error(t.URLSafe(min_length=2, max_length=6), '1234567')
+        assert res == 'String is longer than 6 characters'
+
+        res = t.URLSafe(min_length=0, max_length=6, allow_blank=True).check('a_c')
+        assert res == 'a_c'
+
+    def test_repr(self):
+        res = t.URLSafe()
+        assert repr(res) == '<URLSafe>'
+
+
 def test_ipv4(valid_ips_v4, invalid_ips_v4):
     ip = t.IPv4
 

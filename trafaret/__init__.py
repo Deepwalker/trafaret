@@ -51,10 +51,12 @@ from .numeric import (
     ToInt,
     ToDecimal,
 )
-from .regexp import Regexp, RegexpRaw
+from .regexp import Regexp, RegexpRaw, RegexpString
 from .internet import (
     URL,
+    URLSafe,
     Email,
+    Hex,
     IPv4,
     IPv6,
     IP,
@@ -104,8 +106,11 @@ __all__ = (
 
     "Regexp",
     "RegexpRaw",
+    "RegexpString",
     "URL",
+    "URLSafe",
     "Email",
+    "Hex",
     "IPv4",
     "IPv6",
     "IP",

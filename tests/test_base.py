@@ -761,6 +761,25 @@ class TestRegexpTrafaret:
         assert repr(t.RegexpRaw('.*(cat).*')) == '<Regexp ".*(cat).*">'
 
 
+class TestRegexpString:
+    def test_regexpstring(self):
+        class R(t.RegexpString):
+            regex = r'^A?$'
+            str_method = 'upper'
+
+        assert R().check('a') == 'A'
+
+        res = extract_error(R(), 'b')
+        assert res == 'does not match pattern ^A?$'
+
+        res = extract_error(R(), '')
+        assert res == 'blank value is not allowed'
+
+        assert R(allow_blank=True).check('') == ''
+
+        assert repr(R()) == '<RegexpString "^A?$">'
+
+
 class TestTrafaretMeta:
     def test_meta(self):
         res = (t.ToInt() >> (lambda x: x * 2) >> (lambda x: x * 3)).check(1)
