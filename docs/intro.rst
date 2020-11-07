@@ -115,7 +115,7 @@ The checker test that a received string match with given regexp. With this
 Regexp you can write you own checker like Email or URL.
 
 Note that this uses `re.match()` and will return the matching group at the
-start of the string. If you want to ensure a full match ensure you add `^`
+start of the string. If you want to ensure a full match ensure you add `$`
 to the end of the expression.
 
 .. code-block:: python
