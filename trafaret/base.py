@@ -1486,14 +1486,13 @@ def guard(trafaret=None, **kwargs):
                 obj = None
                 checkargs = args
 
+            defaults = zip(reversed(fnargs), reversed(argspec.defaults or ()))
+            kw_only_defaults = (argspec.kwonlydefaults or {}).items()
+
             try:
                 call_args = dict(
-                    itertools.chain(zip(fnargs, checkargs), kwargs.items())
+                    itertools.chain(defaults, kw_only_defaults, zip(fnargs, checkargs), kwargs.items())
                 )
-                for name, default in zip(reversed(fnargs),
-                                         reversed(argspec.defaults or ())):
-                    if name not in call_args:
-                        call_args[name] = default
                 converted = trafaret(call_args)
             except DataError as err:
                 raise GuardError(error=err.error)
