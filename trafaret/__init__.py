@@ -13,9 +13,11 @@ from .base import (
     Key,
     Dict,
     Enum,
+    ToEnum,
     Tuple,
 
     Atom,
+    Literal,
     Date,
     ToDate,
     DateTime,
@@ -77,9 +79,11 @@ __all__ = (
     "Key",
     "Dict",
     "Enum",
+    "ToEnum",
     "Tuple",
 
     "Atom",
+    "Literal",
     "String",
     "Date",
     "ToDate",

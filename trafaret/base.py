@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import enum
 import functools
 import itertools
 import warnings
@@ -432,29 +433,52 @@ class ToBool(Trafaret):
         return "<ToBool>"
 
 
-class Atom(Trafaret):
+class Literal(Trafaret):
     """
-    >>> Atom('atom').check('atom')
+    >>> Literal('atom').check('atom')
     'atom'
-    >>> extract_error(Atom('atom'), 'molecule')
-    "value is not exactly 'atom'"
-    >>> Atom('atom').is_valid('atom')
+    >>> extract_error(Literal('atom'), 'molecule')
+    "value doesn't match any variant"
+    >>> Literal('atom').is_valid('atom')
     True
-    >>> Atom('atom').is_valid('molecule')
+    >>> Literal('atom').is_valid('molecule')
+    False
+    >>> trafaret = Literal('foo', 'bar', 1) >> ignore
+    >>> trafaret
+    <And(<Literal('foo', 'bar', 1)>, <Call(ignore)>)>
+    >>> trafaret.check('foo')
+    >>> trafaret.check(1)
+    >>> extract_error(trafaret, 2)
+    "value doesn't match any variant"
+    >>> trafaret.is_valid(1)
+    True
+    >>> trafaret.is_valid(2)
     False
     """
-    __slots__ = ['value']
+    __slots__ = ['variants']
 
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, *variants):
+        self.variants = variants
 
     def check_value(self, value):
-        if self.value != value:
+        if value not in self.variants:
             self._failure(
-                "value is not exactly '%s'" % self.value,
+                "value doesn't match any variant",
                 value=value,
-                code=codes.IS_NOT_EXACTLY,
+                code=codes.DOES_NOT_MATCH_ANY,
             )
+
+    def __repr__(self):
+        return "<Literal(%s)>" % (", ".join(repr(v) for v in self.variants))
+
+
+class Atom(Literal):
+    """
+    Deprecated: use Literal.
+    """
+    def __init__(self, *args, **kwargs):
+        deprecated("Use Literal.")
+        super().__init__(*args, **kwargs)
 
 
 class String(Trafaret):
@@ -1274,35 +1298,38 @@ class Mapping(Trafaret, MappingAsyncMixin):
         return "<Mapping(%r => %r)>" % (self.key, self.value)
 
 
-class Enum(Trafaret):
+class Enum(Literal):
     """
-    >>> trafaret = Enum("foo", "bar", 1) >> ignore
-    >>> trafaret
-    <Enum('foo', 'bar', 1)>
-    >>> trafaret.check("foo")
-    >>> trafaret.check(1)
-    >>> extract_error(trafaret, 2)
-    "value doesn't match any variant"
-    >>> trafaret.is_valid(1)
-    True
-    >>> trafaret.is_valid(2)
-    False
+    Deprecated: use Literal.
     """
-    __slots__ = ['variants']
+    def __init__(self, *args, **kwargs):
+        deprecated("Use Literal.")
+        super().__init__(*args, **kwargs)
 
-    def __init__(self, *variants):
-        self.variants = variants[:]
 
-    def check_value(self, value):
-        if value not in self.variants:
+class ToEnum(Trafaret):
+    """
+    Converts value to an Enum instance.
+
+    >>> class MyEnum(enum.Enum):
+    ...     foo = 3
+    >>> ToEnum(MyEnum).check(3)
+    <MyEnum.foo: 3>
+    """
+    __slots__ = ["enum"]
+
+    def __init__(self, enum_: enum.Enum):
+        self.enum = enum_
+
+    def check_and_return(self, value) -> enum.Enum:
+        try:
+            return self.enum(value)
+        except ValueError:
             self._failure(
-                "value doesn't match any variant",
+                "not a valid value for %s" % self.enum,
                 value=value,
-                code=codes.DOES_NOT_MATCH_ANY,
+                code=codes.NOT_MEMBER_OF_ENUM,
             )
-
-    def __repr__(self):
-        return "<Enum(%s)>" % (", ".join(repr(v) for v in self.variants))
 
 
 class Callable(Trafaret):
