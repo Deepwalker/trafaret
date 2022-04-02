@@ -4,9 +4,9 @@ jobs:
   # using tox
   toxify:
       docker:
-        - image: circleci/python:3.6.6
+        - image: circleci/python:3.8.5
       environment:
-        TOXENV: py27,py35,py36
+        TOXENV: py37,py38
       steps: &toxsteps
         - checkout
         - restore_cache:
@@ -22,12 +22,6 @@ jobs:
             key: pip_cache_{{ checksum "setup.py" }}
             paths:
               - "~/project/.tox"
-  toxify3.7:
-      docker:
-        - image: circleci/python:3.7-rc
-      environment:
-        TOXENV: py37
-      steps: *toxsteps
 
 workflows:
   version: 2
@@ -35,4 +29,3 @@ workflows:
   build:
     jobs:
       - toxify
-      - toxify3.7
